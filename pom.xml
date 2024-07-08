@@ -1,0 +1,758 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.jservlet.nexus.backend</groupId>
+    <artifactId>nexus-backend</artifactId>
+    <packaging>${packaging}</packaging>
+    <version>1.0.3</version>
+
+    <name>nexus-backend</name>
+    <description>The Java Nexus BackendService, an advanced and secure Rest Backend Gateway</description>
+    <url>https://github.com/javaguru/nexus-backend</url>
+
+    <organization>
+        <name>JServlet.com</name>
+        <url>https://github.com/javaguru</url>
+    </organization>
+    <inceptionYear>2020</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License (GPL) version 3.0</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>fan</id>
+            <name>Franck Andriano.</name>
+            <email>franck@jservlet.com</email>
+            <organization>JServlet.com</organization>
+            <organizationUrl>https://www.jservlet.com</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/javaguru/nexus-backend.git</connection>
+        <developerConnection>scm:git:git@github.com:javaguru/nexus-backend.git</developerConnection>
+        <url>https://github.com/javaguru/nexus-backend</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <name>Sonatype Nexus Snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <name>Nexus Release Repository</name>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/javaguru/nexus-backend/issues</url>
+    </issueManagement>
+
+    <properties>
+        <buildnumber>SNAPSHOT</buildnumber>
+        <buildtime>NOW</buildtime>
+        <buildtime>NOW</buildtime>
+        <gitRevision>unknown</gitRevision>
+        <gitBranch>unknown</gitBranch>
+        <buildprofile>unknown</buildprofile>
+
+        <java.version>13</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <packageClassifier>exec</packageClassifier>
+        <mainClass>com.jservlet.nexus.config.Application</mainClass>
+
+        <!-- Update the last Tomcat 9.x.x version with springboot starter-parent-->
+        <tomcat.version>9.0.90</tomcat.version>
+
+        <!-- Dependency version -->
+        <spring-boot.version>2.7.18</spring-boot.version>
+        <spring.framework.version>5.3.37</spring.framework.version>
+        <spring.security.version>5.7.12</spring.security.version>
+        <servlet.api.version>4.0.1</servlet.api.version>
+
+        <swagger.version>3.0.0</swagger.version>
+        <springdoc.version>1.6.11</springdoc.version>
+        <jackson.version>2.17.1</jackson.version>
+        <ziplet.version>2.4.1</ziplet.version>
+
+        <!--<wildfly.version>10.1.0.Final</wildfly.version>-->
+        <!--<spring.data.version>Lovelace-SR9</spring.data.version>-->
+        <!--<hibernate.version>5.2.4.Final</hibernate.version>-->
+        <!--<mariadb.version>1.5.7</mariadb.version>-->
+        <!--<ehcache.version>3.1.1</ehcache.version>-->
+
+        <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
+        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
+
+        <maven-war-plugin.version>2.6</maven-war-plugin.version>
+        <maven-jar-plugin.version>3.4.1</maven-jar-plugin.version>
+        <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
+        <maven-javadoc-plugin.version>2.9.1</maven-javadoc-plugin.version>
+        <license-maven-plugin.version>2.0.0</license-maven-plugin.version>
+
+        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
+        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
+        <nexus-staging-maven-plugin.version>1.6.7</nexus-staging-maven-plugin.version>
+
+        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+        <maven-scm-provider-gitexe.version>1.11.2</maven-scm-provider-gitexe.version>
+
+    </properties>
+
+    <profiles>
+        <!-- GPG Signature on release -->
+        <profile>
+            <id>release-sign-artifacts</id>
+            <properties>
+                <packaging>jar</packaging>
+            </properties>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!-- withoutTomcat build a WAR -->
+        <profile>
+            <id>withoutTomcat</id>
+            <properties>
+                <packaging>war</packaging>
+                <buildprofile>withoutTomcat</buildprofile>
+            </properties>
+            <dependencies>
+                <!-- Spring Web -->
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <scope>provided</scope>
+                    <exclusions>
+                        <exclusion>
+                            <artifactId>spring-boot-starter-tomcat</artifactId>
+                            <groupId>org.springframework.boot</groupId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <!--<dependency>
+                   <groupId>org.springframework.boot</groupId>
+                   <artifactId>spring-boot-starter-data-jpa</artifactId>
+                   <version>${spring-boot.version}</version>
+                   <exclusions>
+                       <exclusion>
+                           <artifactId>tomcat-jdbc</artifactId>
+                           <groupId>org.apache.tomcat</groupId>
+                       </exclusion>
+                   </exclusions>
+                </dependency>-->
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-devtools</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!-- withTomcat build a JAR -->
+        <profile>
+            <id>withTomcat</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <packaging>jar</packaging>
+                <buildprofile>withTomcat</buildprofile>
+            </properties>
+            <dependencies>
+                <!-- Spring Web -->
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                    <version>${spring-boot.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <scope>provided</scope>
+                </dependency>
+                <!--<dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-data-jpa</artifactId>
+                    <version>${spring-boot.version}</version>
+                </dependency>-->
+            </dependencies>
+        </profile>
+        <!--<profile>
+            <id>license</id>
+            <properties>
+                <packaging>jar</packaging>
+            </properties>
+            <build>
+                <plugins>
+                &lt;!&ndash; gpl license&ndash;&gt;
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <version>${license-maven-plugin.version}</version>
+                    <configuration>
+                        <licenseName>gpl_v3</licenseName>
+                        <organizationName>Franck Andriano.</organizationName>
+                        <copyrightOwners>JServlet.com</copyrightOwners>
+                        <trimHeaderLine>true</trimHeaderLine>
+                        <useJavaNoReformatCommentStartTag>true</useJavaNoReformatCommentStartTag>
+                        <extraExtensions>
+                            <myProprietaryExtension>java</myProprietaryExtension>
+                        </extraExtensions>
+                        <licenseFile>${basedir}/LICENSE.txt</licenseFile>
+                        <roots>
+                            <root>src/main/java</root>
+                        </roots>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>first</id>
+                            <goals>
+                                <goal>update-file-header</goal>
+                            </goals>
+                            <phase>process-sources</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+            </build>
+        </profile>-->
+    </profiles>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <resources>
+            <!-- Filtered Resources -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+            <!-- Unfiltered Resources -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>logback.xml</include>
+                    <include>logo-marianne.svg</include>
+                    <include>persistence.xml</include>
+                    <include>api-ui/api-docs.yaml</include>
+                    <include>META-INF/services/javax.servlet.ServletContainerInitializer</include>
+                </includes>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- SpringBoot maven runner -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${packageClassifier}</classifier>
+                            <executable>true</executable>
+                            <mainClass>${mainClass}</mainClass>
+                            <outputDirectory>${project.build.directory}/docker</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <showDeprecation>true</showDeprecation>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>${maven-war-plugin.version}</version>
+                <configuration>
+                    <!-- Add manifest in the war -->
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>${mainClass}</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <Group-Id>${project.groupId}</Group-Id>
+                            <ArtifactId>${project.artifactId}</ArtifactId>
+                            <Version>${project.version}</Version>
+                            <Url>${project.url}</Url>
+                            <Mode>development</Mode>
+                        </manifestEntries>
+                    </archive>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${maven-resources-plugin.version}</version>
+                <configuration>
+                    <propertiesEncoding>ISO-8859-1</propertiesEncoding>
+                </configuration>
+            </plugin>
+            <!-- Additional attached JAR, generate nexus-backend-${version}-shared.jar with the shared Api -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <!-- let the normal nexus-backend-${version}.jar be generated during the goal-jar -->
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>${mainClass}</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <Group-Id>${project.groupId}</Group-Id>
+                            <ArtifactId>${project.artifactId}</ArtifactId>
+                            <Version>${project.version}</Version>
+                            <Url>${project.url}</Url>
+                            <Mode>development</Mode>
+                        </manifestEntries>
+                    </archive>
+                    <includes>
+                        <include>/META-INF/*.properties</include>
+                        <include>/META-INF/*.MF</include>
+                        <include>com/jservlet/nexus/shared/**/*.class</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <!-- generated nexus-backend-${version}-shared.jar during the goal-jar -->
+                   <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <addClasspath>true</addClasspath>
+                                    <classpathPrefix>lib/</classpathPrefix>
+                                    <mainClass>${mainClass}</mainClass>
+                                </manifest>
+                                <manifestEntries>
+                                    <Group-Id>${project.groupId}</Group-Id>
+                                    <ArtifactId>${project.artifactId}</ArtifactId>
+                                    <Version>${project.version}</Version>
+                                    <Url>${project.url}</Url>
+                                    <Mode>shared</Mode>
+                                </manifestEntries>
+                            </archive>
+                            <classifier>shared</classifier>
+                            <excludes>
+                                <exclude>settings.properties</exclude>
+                                <exclude>logback.xml</exclude>
+                                <exclude>com/jservlet/nexus/config/**/*.*</exclude>
+                                <exclude>com/jservlet/nexus/controller/**/*.*</exclude>
+                            </excludes>
+                            <includes>
+                                <include>/META-INF/*.properties</include>
+                                <include>/META-INF/*.MF</include>
+                                <include>com/jservlet/nexus/shared/**/*.class</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven-source-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven-javadoc-plugin.version}</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <detectJavaApiLink>false</detectJavaApiLink>
+                    <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
+                    <!--<source>13</source>-->
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadoc</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven-release-plugin.version}</version>
+                <configuration>
+                    <localCheckout>true</localCheckout>
+                    <pushChanges>false</pushChanges>
+                    <mavenExecutorId>forked-path</mavenExecutorId>
+                    <arguments>-Dgpg.passphrase=${gpg.passphrase}</arguments>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.scm</groupId>
+                        <artifactId>maven-scm-provider-gitexe</artifactId>
+                        <version>${maven-scm-provider-gitexe.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <buildNumberPropertyName>gitRevision</buildNumberPropertyName>
+                    <timestampPropertyName>buildtime</timestampPropertyName>
+                    <timestampFormat>{0,date,yyyy-MM-dd HH:mm:ss}</timestampFormat>
+                    <scmBranchPropertyName>gitBranch</scmBranchPropertyName>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven-deploy-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>${nexus-staging-maven-plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+            <!--<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>3.1.1</version>
+                <configuration>
+                    <allowIncompleteProjects>true</allowIncompleteProjects>
+                </configuration>
+            </plugin>-->
+        </plugins>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring.framework.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-bom</artifactId>
+                <version>${spring.security.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Tomcat Embed and Jsp support Tomcat9 -->
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-jasper</artifactId>
+            <version>${tomcat.version}</version>
+        </dependency>
+
+        <!-- Fix Spring Web with last snakeyaml -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.0</version>
+        </dependency>
+
+        <!-- Fix logback classic jdk8 -->
+        <!-- setProperty "org.springframework.boot.logging.LoggingSystem" at "none") -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.3.14</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.3.14</version>
+        </dependency>
+
+        <!-- Spring Actuator -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+            <version>${spring-boot.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.yaml</groupId>
+                    <artifactId>snakeyaml</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Web support -->
+         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context-support</artifactId>
+        </dependency>
+
+        <!-- Security -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+        </dependency>
+
+        <!-- force javax.annotation -->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+
+        <!-- force servlet.api depend servlet container -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>${servlet.api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- jstl and jsp-api 2.0 -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>jstl</artifactId>
+            <version>1.2</version>
+        </dependency>
+
+        <!-- Swagger Parser, read yaml open-api file -->
+        <dependency>
+            <groupId>io.swagger.parser.v3</groupId>
+            <artifactId>swagger-parser</artifactId>
+            <version>2.1.21</version>
+        </dependency>
+
+        <!-- logback IfAction Janino -->
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>2.6.1</version>
+        </dependency>
+
+        <!-- OpenApi-ui springdoc, 1.7.0 cause 'Unable to render' error version fields are swagger: "2.0" or openapi: 3.0.0 -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-security</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- Jackson, JSON parser, annotations, databind and dataformat-xml -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!-- Tomcat log4j to slf4j -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+            <version>2.19.0</version>
+        </dependency>
+
+        <!-- Apache commons io and collections4 -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.16.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.5.0-M1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.17.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.14.0</version>
+        </dependency>
+
+        <!-- Compressing Filter -->
+        <dependency>
+            <groupId>com.github.ziplet</groupId>
+            <artifactId>ziplet</artifactId>
+            <version>${ziplet.version}</version>
+        </dependency>
+
+        <!-- Tests junit and spring-test -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Apache POI export Excel
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.26.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>org.apache.commons</artifactId>
+                    <groupId>commons-compress</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.17.1</version>
+        </dependency> -->
+   </dependencies>
+
+    <repositories>
+        <repository>
+            <id>maven_central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2/</url>
+        </repository>
+    </repositories>
+
+</project>

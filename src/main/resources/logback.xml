@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <!-- name which is used in the jmx configuration -->
+    <contextName>${HOSTNAME}</contextName>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date{HH:mm:ss.SSS} %-5level %logger{36} - %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="errorfile">
+        <file>${catalina.base}/logs/nexus_backend_error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>nexus-backend_error.%d{yyyy-MM-dd}.log</FileNamePattern>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>[%contextName][[%thread]:%d{dd.MM.yyyy HH:mm:ss.SSS}][id:%mdc{APP-REQUEST-ID}] %-5level %logger{36}: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="fullAccessLog">
+        <file>${catalina.base}/logs/nexus_backend_full_access.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>nexus_backend_full_access.%d{yyyy-MM-dd}.log</FileNamePattern>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>[%contextName][[%thread]:%d{dd.MM.yyyy HH:mm:ss.SSS}][id:%mdc{APP-REQUEST-ID}] %-5level: %file:%line : %msg%n</Pattern>
+        </encoder>
+    </appender>
+
+    <!-- Alias ASYNC to error file-->
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="errorfile" />
+    </appender>
+
+    <!-- Alias ASYNC_FULL_ACCESS to the Full access log -->
+    <appender name="ASYNC_FULL_ACCESS" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="fullAccessLog" />
+    </appender>
+
+
+    <!-- set ON to debug Http RestOperations -->
+    <logger name="org.apache.http.wire" level="OFF"/>
+    <logger name="org.apache.http" level="OFF"/>
+    <logger name="org.apache.http.headers" level="OFF"/>
+
+    <!-- Neutralized hibernate, ziplet -->
+    <logger name="org.hibernate" level="OFF"/>
+    <logger name="com.github.ziplet.filter.compression" level="OFF"/>
+
+    <!-- set ON to debug 'security.web' and see also key logging.level.web=DEBUG -->
+    <logger name="org.springframework.security.web" level="OFF"/>
+
+    <!-- WARN DEBUG ServletContextInitializerBeans: Mapping filters (Should be at level INFO) -->
+    <logger name="org.springframework.boot.web.servlet.ServletContextInitializerBeans" level="INFO"/>
+
+    <!-- set DEBUG Spring Framework -->
+    <logger name="org.springframework" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC"/>
+    </logger>
+    <!-- set DEBUG jsp -->
+    <logger name="org.apache.jasper.servlet" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC"/>
+    </logger>
+
+    <!-- War only OFF for Springboot -->
+    <logger name="org.springframework.boot.web.servlet.support.ErrorPageFilter" level="OFF"/>
+
+    <!-- set DEBUG Swagger -->
+    <logger name="springfox.documentation.swagger" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC"/>
+    </logger>
+    <!-- set DEBUG SpringDoc -->
+    <logger name="org.springdoc.api" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC"/>
+    </logger>
+
+    <!-- RACE Activate the access log in Tomcat Embedded -->
+    <logger name="com.jservlet.nexus.config.web.tomcat.TomcatCustomContainer" additivity="false" level="TRACE"/>
+
+    <!-- WARN set DEBUG to activate the Full access log -->
+    <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" additivity="false" level="OFF">
+        <appender-ref ref="ASYNC_FULL_ACCESS"/>
+    </logger>
+
+    <!-- set DEBUG the JServlet Nexus package -->
+    <logger name="com.jservlet.nexus" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC"/>
+    </logger>
+
+    <!-- if-then-else / java -DrootLevel=INFO -->
+    <if condition='isDefined("rootLevel")'>
+        <then>
+            <root level="${rootLevel}">
+                <appender-ref ref="CONSOLE"/>
+                <appender-ref ref="ASYNC"/>
+            </root>
+        </then>
+        <else>
+            <root level="INFO">
+                <appender-ref ref="CONSOLE"/>
+                <appender-ref ref="ASYNC"/>
+            </root>
+        </else>
+    </if>
+</configuration>

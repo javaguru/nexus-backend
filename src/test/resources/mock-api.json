@@ -1,0 +1,811 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Mock Test API",
+    "description": "The Mock Test Api Nexus Backend Application\n- 1 Test GET, POST, PUT, PATCH, DELETE\n- 2 Test POST, PUT, PATCH file\n- 3 Test Error 400, 401 and 500\n- 4 Test Security GET and POST XSS data\n",
+    "contact": {
+      "name": "Franck Andriano.",
+      "email": "franck@jservlet.com"
+    },
+    "license": {
+      "name": "Copyright (c) JServlet.com",
+      "url": "https://jservlet.com"
+    },
+    "version": "1.0.3-SNAPSHOT"
+  },
+  "servers": [
+    {
+      "url": "/nexus-backend"
+    }
+  ],
+  "paths": {
+    "/mock/v1/datafile": {
+      "get": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Get datafile",
+        "description": "Get datafile",
+        "operationId": "getFile",
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Put datafile",
+        "description": "Put datafile",
+        "operationId": "putFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "100 CONTINUE",
+                    "101 SWITCHING_PROTOCOLS",
+                    "102 PROCESSING",
+                    "103 CHECKPOINT",
+                    "200 OK",
+                    "201 CREATED",
+                    "202 ACCEPTED",
+                    "203 NON_AUTHORITATIVE_INFORMATION",
+                    "204 NO_CONTENT",
+                    "205 RESET_CONTENT",
+                    "206 PARTIAL_CONTENT",
+                    "207 MULTI_STATUS",
+                    "208 ALREADY_REPORTED",
+                    "226 IM_USED",
+                    "300 MULTIPLE_CHOICES",
+                    "301 MOVED_PERMANENTLY",
+                    "302 FOUND",
+                    "302 MOVED_TEMPORARILY",
+                    "303 SEE_OTHER",
+                    "304 NOT_MODIFIED",
+                    "305 USE_PROXY",
+                    "307 TEMPORARY_REDIRECT",
+                    "308 PERMANENT_REDIRECT",
+                    "400 BAD_REQUEST",
+                    "401 UNAUTHORIZED",
+                    "402 PAYMENT_REQUIRED",
+                    "403 FORBIDDEN",
+                    "404 NOT_FOUND",
+                    "405 METHOD_NOT_ALLOWED",
+                    "406 NOT_ACCEPTABLE",
+                    "407 PROXY_AUTHENTICATION_REQUIRED",
+                    "408 REQUEST_TIMEOUT",
+                    "409 CONFLICT",
+                    "410 GONE",
+                    "411 LENGTH_REQUIRED",
+                    "412 PRECONDITION_FAILED",
+                    "413 PAYLOAD_TOO_LARGE",
+                    "413 REQUEST_ENTITY_TOO_LARGE",
+                    "414 URI_TOO_LONG",
+                    "414 REQUEST_URI_TOO_LONG",
+                    "415 UNSUPPORTED_MEDIA_TYPE",
+                    "416 REQUESTED_RANGE_NOT_SATISFIABLE",
+                    "417 EXPECTATION_FAILED",
+                    "418 I_AM_A_TEAPOT",
+                    "419 INSUFFICIENT_SPACE_ON_RESOURCE",
+                    "420 METHOD_FAILURE",
+                    "421 DESTINATION_LOCKED",
+                    "422 UNPROCESSABLE_ENTITY",
+                    "423 LOCKED",
+                    "424 FAILED_DEPENDENCY",
+                    "425 TOO_EARLY",
+                    "426 UPGRADE_REQUIRED",
+                    "428 PRECONDITION_REQUIRED",
+                    "429 TOO_MANY_REQUESTS",
+                    "431 REQUEST_HEADER_FIELDS_TOO_LARGE",
+                    "451 UNAVAILABLE_FOR_LEGAL_REASONS",
+                    "500 INTERNAL_SERVER_ERROR",
+                    "501 NOT_IMPLEMENTED",
+                    "502 BAD_GATEWAY",
+                    "503 SERVICE_UNAVAILABLE",
+                    "504 GATEWAY_TIMEOUT",
+                    "505 HTTP_VERSION_NOT_SUPPORTED",
+                    "506 VARIANT_ALSO_NEGOTIATES",
+                    "507 INSUFFICIENT_STORAGE",
+                    "508 LOOP_DETECTED",
+                    "509 BANDWIDTH_LIMIT_EXCEEDED",
+                    "510 NOT_EXTENDED",
+                    "511 NETWORK_AUTHENTICATION_REQUIRED"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Post datafile",
+        "description": "Post datafile",
+        "operationId": "postFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "100 CONTINUE",
+                    "101 SWITCHING_PROTOCOLS",
+                    "102 PROCESSING",
+                    "103 CHECKPOINT",
+                    "200 OK",
+                    "201 CREATED",
+                    "202 ACCEPTED",
+                    "203 NON_AUTHORITATIVE_INFORMATION",
+                    "204 NO_CONTENT",
+                    "205 RESET_CONTENT",
+                    "206 PARTIAL_CONTENT",
+                    "207 MULTI_STATUS",
+                    "208 ALREADY_REPORTED",
+                    "226 IM_USED",
+                    "300 MULTIPLE_CHOICES",
+                    "301 MOVED_PERMANENTLY",
+                    "302 FOUND",
+                    "302 MOVED_TEMPORARILY",
+                    "303 SEE_OTHER",
+                    "304 NOT_MODIFIED",
+                    "305 USE_PROXY",
+                    "307 TEMPORARY_REDIRECT",
+                    "308 PERMANENT_REDIRECT",
+                    "400 BAD_REQUEST",
+                    "401 UNAUTHORIZED",
+                    "402 PAYMENT_REQUIRED",
+                    "403 FORBIDDEN",
+                    "404 NOT_FOUND",
+                    "405 METHOD_NOT_ALLOWED",
+                    "406 NOT_ACCEPTABLE",
+                    "407 PROXY_AUTHENTICATION_REQUIRED",
+                    "408 REQUEST_TIMEOUT",
+                    "409 CONFLICT",
+                    "410 GONE",
+                    "411 LENGTH_REQUIRED",
+                    "412 PRECONDITION_FAILED",
+                    "413 PAYLOAD_TOO_LARGE",
+                    "413 REQUEST_ENTITY_TOO_LARGE",
+                    "414 URI_TOO_LONG",
+                    "414 REQUEST_URI_TOO_LONG",
+                    "415 UNSUPPORTED_MEDIA_TYPE",
+                    "416 REQUESTED_RANGE_NOT_SATISFIABLE",
+                    "417 EXPECTATION_FAILED",
+                    "418 I_AM_A_TEAPOT",
+                    "419 INSUFFICIENT_SPACE_ON_RESOURCE",
+                    "420 METHOD_FAILURE",
+                    "421 DESTINATION_LOCKED",
+                    "422 UNPROCESSABLE_ENTITY",
+                    "423 LOCKED",
+                    "424 FAILED_DEPENDENCY",
+                    "425 TOO_EARLY",
+                    "426 UPGRADE_REQUIRED",
+                    "428 PRECONDITION_REQUIRED",
+                    "429 TOO_MANY_REQUESTS",
+                    "431 REQUEST_HEADER_FIELDS_TOO_LARGE",
+                    "451 UNAVAILABLE_FOR_LEGAL_REASONS",
+                    "500 INTERNAL_SERVER_ERROR",
+                    "501 NOT_IMPLEMENTED",
+                    "502 BAD_GATEWAY",
+                    "503 SERVICE_UNAVAILABLE",
+                    "504 GATEWAY_TIMEOUT",
+                    "505 HTTP_VERSION_NOT_SUPPORTED",
+                    "506 VARIANT_ALSO_NEGOTIATES",
+                    "507 INSUFFICIENT_STORAGE",
+                    "508 LOOP_DETECTED",
+                    "509 BANDWIDTH_LIMIT_EXCEEDED",
+                    "510 NOT_EXTENDED",
+                    "511 NETWORK_AUTHENTICATION_REQUIRED"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Delete datafile",
+        "description": "Delete datafile",
+        "operationId": "deleteFile",
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "100 CONTINUE",
+                    "101 SWITCHING_PROTOCOLS",
+                    "102 PROCESSING",
+                    "103 CHECKPOINT",
+                    "200 OK",
+                    "201 CREATED",
+                    "202 ACCEPTED",
+                    "203 NON_AUTHORITATIVE_INFORMATION",
+                    "204 NO_CONTENT",
+                    "205 RESET_CONTENT",
+                    "206 PARTIAL_CONTENT",
+                    "207 MULTI_STATUS",
+                    "208 ALREADY_REPORTED",
+                    "226 IM_USED",
+                    "300 MULTIPLE_CHOICES",
+                    "301 MOVED_PERMANENTLY",
+                    "302 FOUND",
+                    "302 MOVED_TEMPORARILY",
+                    "303 SEE_OTHER",
+                    "304 NOT_MODIFIED",
+                    "305 USE_PROXY",
+                    "307 TEMPORARY_REDIRECT",
+                    "308 PERMANENT_REDIRECT",
+                    "400 BAD_REQUEST",
+                    "401 UNAUTHORIZED",
+                    "402 PAYMENT_REQUIRED",
+                    "403 FORBIDDEN",
+                    "404 NOT_FOUND",
+                    "405 METHOD_NOT_ALLOWED",
+                    "406 NOT_ACCEPTABLE",
+                    "407 PROXY_AUTHENTICATION_REQUIRED",
+                    "408 REQUEST_TIMEOUT",
+                    "409 CONFLICT",
+                    "410 GONE",
+                    "411 LENGTH_REQUIRED",
+                    "412 PRECONDITION_FAILED",
+                    "413 PAYLOAD_TOO_LARGE",
+                    "413 REQUEST_ENTITY_TOO_LARGE",
+                    "414 URI_TOO_LONG",
+                    "414 REQUEST_URI_TOO_LONG",
+                    "415 UNSUPPORTED_MEDIA_TYPE",
+                    "416 REQUESTED_RANGE_NOT_SATISFIABLE",
+                    "417 EXPECTATION_FAILED",
+                    "418 I_AM_A_TEAPOT",
+                    "419 INSUFFICIENT_SPACE_ON_RESOURCE",
+                    "420 METHOD_FAILURE",
+                    "421 DESTINATION_LOCKED",
+                    "422 UNPROCESSABLE_ENTITY",
+                    "423 LOCKED",
+                    "424 FAILED_DEPENDENCY",
+                    "425 TOO_EARLY",
+                    "426 UPGRADE_REQUIRED",
+                    "428 PRECONDITION_REQUIRED",
+                    "429 TOO_MANY_REQUESTS",
+                    "431 REQUEST_HEADER_FIELDS_TOO_LARGE",
+                    "451 UNAVAILABLE_FOR_LEGAL_REASONS",
+                    "500 INTERNAL_SERVER_ERROR",
+                    "501 NOT_IMPLEMENTED",
+                    "502 BAD_GATEWAY",
+                    "503 SERVICE_UNAVAILABLE",
+                    "504 GATEWAY_TIMEOUT",
+                    "505 HTTP_VERSION_NOT_SUPPORTED",
+                    "506 VARIANT_ALSO_NEGOTIATES",
+                    "507 INSUFFICIENT_STORAGE",
+                    "508 LOOP_DETECTED",
+                    "509 BANDWIDTH_LIMIT_EXCEEDED",
+                    "510 NOT_EXTENDED",
+                    "511 NETWORK_AUTHENTICATION_REQUIRED"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Patch datafile",
+        "description": "Patch datafile",
+        "operationId": "patchFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "100 CONTINUE",
+                    "101 SWITCHING_PROTOCOLS",
+                    "102 PROCESSING",
+                    "103 CHECKPOINT",
+                    "200 OK",
+                    "201 CREATED",
+                    "202 ACCEPTED",
+                    "203 NON_AUTHORITATIVE_INFORMATION",
+                    "204 NO_CONTENT",
+                    "205 RESET_CONTENT",
+                    "206 PARTIAL_CONTENT",
+                    "207 MULTI_STATUS",
+                    "208 ALREADY_REPORTED",
+                    "226 IM_USED",
+                    "300 MULTIPLE_CHOICES",
+                    "301 MOVED_PERMANENTLY",
+                    "302 FOUND",
+                    "302 MOVED_TEMPORARILY",
+                    "303 SEE_OTHER",
+                    "304 NOT_MODIFIED",
+                    "305 USE_PROXY",
+                    "307 TEMPORARY_REDIRECT",
+                    "308 PERMANENT_REDIRECT",
+                    "400 BAD_REQUEST",
+                    "401 UNAUTHORIZED",
+                    "402 PAYMENT_REQUIRED",
+                    "403 FORBIDDEN",
+                    "404 NOT_FOUND",
+                    "405 METHOD_NOT_ALLOWED",
+                    "406 NOT_ACCEPTABLE",
+                    "407 PROXY_AUTHENTICATION_REQUIRED",
+                    "408 REQUEST_TIMEOUT",
+                    "409 CONFLICT",
+                    "410 GONE",
+                    "411 LENGTH_REQUIRED",
+                    "412 PRECONDITION_FAILED",
+                    "413 PAYLOAD_TOO_LARGE",
+                    "413 REQUEST_ENTITY_TOO_LARGE",
+                    "414 URI_TOO_LONG",
+                    "414 REQUEST_URI_TOO_LONG",
+                    "415 UNSUPPORTED_MEDIA_TYPE",
+                    "416 REQUESTED_RANGE_NOT_SATISFIABLE",
+                    "417 EXPECTATION_FAILED",
+                    "418 I_AM_A_TEAPOT",
+                    "419 INSUFFICIENT_SPACE_ON_RESOURCE",
+                    "420 METHOD_FAILURE",
+                    "421 DESTINATION_LOCKED",
+                    "422 UNPROCESSABLE_ENTITY",
+                    "423 LOCKED",
+                    "424 FAILED_DEPENDENCY",
+                    "425 TOO_EARLY",
+                    "426 UPGRADE_REQUIRED",
+                    "428 PRECONDITION_REQUIRED",
+                    "429 TOO_MANY_REQUESTS",
+                    "431 REQUEST_HEADER_FIELDS_TOO_LARGE",
+                    "451 UNAVAILABLE_FOR_LEGAL_REASONS",
+                    "500 INTERNAL_SERVER_ERROR",
+                    "501 NOT_IMPLEMENTED",
+                    "502 BAD_GATEWAY",
+                    "503 SERVICE_UNAVAILABLE",
+                    "504 GATEWAY_TIMEOUT",
+                    "505 HTTP_VERSION_NOT_SUPPORTED",
+                    "506 VARIANT_ALSO_NEGOTIATES",
+                    "507 INSUFFICIENT_STORAGE",
+                    "508 LOOP_DETECTED",
+                    "509 BANDWIDTH_LIMIT_EXCEEDED",
+                    "510 NOT_EXTENDED",
+                    "511 NETWORK_AUTHENTICATION_REQUIRED"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock/v1/data": {
+      "get": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Get a data",
+        "description": "Get a data",
+        "operationId": "get",
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Put a data",
+        "description": "Put a data",
+        "operationId": "put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Post a data",
+        "description": "Post a data",
+        "operationId": "post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Patch a data",
+        "description": "Patch a data",
+        "operationId": "patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock/v1/dataPostXss": {
+      "post": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Post data Xss",
+        "description": "Post data Xss",
+        "operationId": "postXss",
+        "parameters": [
+          {
+            "name": "param1",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock/v1/dataXss": {
+      "get": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Get data Xss",
+        "description": "Get data Xss",
+        "operationId": "getXss",
+        "parameters": [
+          {
+            "name": "param1",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock/v1/dataList": {
+      "get": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Get data List",
+        "description": "Get data List",
+        "operationId": "getList",
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock/v1/dataError500": {
+      "get": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Get Error 500",
+        "description": "Get Error 500",
+        "operationId": "getError500",
+        "responses": {
+          "500": {
+            "description": "Internal server error, see error code and documentation for more details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock/v1/dataError401": {
+      "get": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Get Error 401",
+        "description": "Get Error 401",
+        "operationId": "getError401",
+        "responses": {
+          "401": {
+            "description": "User not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock/v1/dataError400": {
+      "get": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Get Error 400",
+        "description": "Get Error 400",
+        "operationId": "getError400",
+        "responses": {
+          "400": {
+            "description": "Request is not formed correctly",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock/v1/dataBytes": {
+      "get": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Get Binary data",
+        "description": "Get Binary data",
+        "operationId": "getBytes",
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Data": {
+        "type": "object",
+        "properties": {
+          "data1": {
+            "type": "string"
+          },
+          "data2": {
+            "type": "string"
+          },
+          "data3": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorMessage": {
+        "required": [
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Message"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "parameter": {
+            "type": "string",
+            "writeOnly": true
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+openapi: 3.0.1
+info:
+  title: Mock Test API
+  description: The Mock Test Api Nexus Backend Application
+  version: 0.1.xx
+#components:
+#  securitySchemes:
+paths: {}
+# apply security globally...
+#security:
+servers:
+  - url: /nexus-backend
