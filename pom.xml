@@ -376,11 +376,6 @@
                             <Mode>development</Mode>
                         </manifestEntries>
                     </archive>
-                    <includes>
-                        <include>/META-INF/*.properties</include>
-                        <include>/META-INF/*.MF</include>
-                        <include>com/jservlet/nexus/shared/**/*.class</include>
-                    </includes>
                 </configuration>
                 <executions>
                     <!-- generated nexus-backend-${version}-shared.jar during the goal-jar -->
