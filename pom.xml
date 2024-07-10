@@ -173,17 +173,6 @@
                         </exclusion>
                     </exclusions>
                 </dependency>
-                <!--<dependency>
-                   <groupId>org.springframework.boot</groupId>
-                   <artifactId>spring-boot-starter-data-jpa</artifactId>
-                   <version>${spring-boot.version}</version>
-                   <exclusions>
-                       <exclusion>
-                           <artifactId>tomcat-jdbc</artifactId>
-                           <groupId>org.apache.tomcat</groupId>
-                       </exclusion>
-                   </exclusions>
-                </dependency>-->
                 <dependency>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-devtools</artifactId>
@@ -191,6 +180,33 @@
                     <scope>runtime</scope>
                 </dependency>
             </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-war-plugin</artifactId>
+                        <version>${maven-war-plugin.version}</version>
+                        <configuration>
+                            <!-- Add manifest in the war -->
+                            <archive>
+                                <manifest>
+                                    <addClasspath>true</addClasspath>
+                                    <classpathPrefix>lib/</classpathPrefix>
+                                    <mainClass>${mainClass}</mainClass>
+                                </manifest>
+                                <manifestEntries>
+                                    <Group-Id>${project.groupId}</Group-Id>
+                                    <ArtifactId>${project.artifactId}</ArtifactId>
+                                    <Version>${project.version}</Version>
+                                    <Url>${project.url}</Url>
+                                    <Mode>development</Mode>
+                                </manifestEntries>
+                            </archive>
+                            <failOnMissingWebXml>false</failOnMissingWebXml>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <!-- withTomcat build a JAR -->
         <profile>
@@ -215,76 +231,9 @@
                     <version>${spring-boot.version}</version>
                     <scope>provided</scope>
                 </dependency>
-                <!--<dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-data-jpa</artifactId>
-                    <version>${spring-boot.version}</version>
-                </dependency>-->
             </dependencies>
-            <build>
-                <plugins>
-                    <!-- Add dependencies class lib -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>copy-dependencies</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>copy-dependencies</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
-                                    <overWriteReleases>false</overWriteReleases>
-                                    <overWriteSnapshots>false</overWriteSnapshots>
-                                    <overWriteIfNewer>true</overWriteIfNewer>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+
         </profile>
-        <!--<profile>
-            <id>license</id>
-            <properties>
-                <packaging>jar</packaging>
-            </properties>
-            <build>
-                <plugins>
-                &lt;!&ndash; gpl license&ndash;&gt;
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>license-maven-plugin</artifactId>
-                    <version>${license-maven-plugin.version}</version>
-                    <configuration>
-                        <licenseName>gpl_v3</licenseName>
-                        <organizationName>Franck Andriano.</organizationName>
-                        <copyrightOwners>JServlet.com</copyrightOwners>
-                        <trimHeaderLine>true</trimHeaderLine>
-                        <useJavaNoReformatCommentStartTag>true</useJavaNoReformatCommentStartTag>
-                        <extraExtensions>
-                            <myProprietaryExtension>java</myProprietaryExtension>
-                        </extraExtensions>
-                        <licenseFile>${basedir}/LICENSE.txt</licenseFile>
-                        <roots>
-                            <root>src/main/java</root>
-                        </roots>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>first</id>
-                            <goals>
-                                <goal>update-file-header</goal>
-                            </goals>
-                            <phase>process-sources</phase>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-            </build>
-        </profile>-->
     </profiles>
 
     <build>
@@ -348,29 +297,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>${maven-war-plugin.version}</version>
-                <configuration>
-                    <!-- Add manifest in the war -->
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>${mainClass}</mainClass>
-                        </manifest>
-                        <manifestEntries>
-                            <Group-Id>${project.groupId}</Group-Id>
-                            <ArtifactId>${project.artifactId}</ArtifactId>
-                            <Version>${project.version}</Version>
-                            <Url>${project.url}</Url>
-                            <Mode>development</Mode>
-                        </manifestEntries>
-                    </archive>
-                    <failOnMissingWebXml>false</failOnMissingWebXml>
-                </configuration>
-            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
@@ -378,6 +305,26 @@
                 <configuration>
                     <propertiesEncoding>ISO-8859-1</propertiesEncoding>
                 </configuration>
+            </plugin>
+            <!-- Add dependencies class lib -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>false</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <!-- Additional attached JAR, generate nexus-backend-${version}-shared.jar with the shared Api -->
             <plugin>
