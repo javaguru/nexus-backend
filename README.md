@@ -319,8 +319,9 @@ MyData data = backendService.get(url, DATA_TYPE);
 ```
 
 ## Last News
-* Last version **1.0.4**, released at 08/07/2024.
-* Last version **1.0.3**, released at 23/06/2024.
+* Last version **1.0.5**, released at 13/07/2024 Optimize build war/jar.
+* Version **1.0.4**, released at 08/07/2024.
+* Version **1.0.3**, released at 23/06/2024 Reinit.
 * Version **1.0.2** released on 28/04/2024.
 * Version **1.0.1** released on 21/11/2022.
 * Initial release **1.0.0** at 03/06/2021.
