@@ -65,7 +65,7 @@ public class JServletBanner implements Banner, ResourceLoaderAware {
     };
 
     private static final String NEXUS_BACKEND = " :: NexusBackend :: Secure RestApi Backend Gateway";
-    private static final int STRAP_LINE_SIZE = 74;
+    private static final int STRAP_LINE_SIZE = 63;
 
     @Override
     public void printBanner(Environment environment, Class<?> sourceClass, PrintStream printStream) {

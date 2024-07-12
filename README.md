@@ -53,6 +53,12 @@ Nexus-Backend Service
 | nexus.backend.tomcat.accesslog.valve.enable   | false             | Activated an Accesslog in a Embedded Tomcat        | 
 
 
+#### Noted the Spring config location can be overridden
+
+* -Dspring.config.location=/your/config/dir/
+* -Dspring.config.name=spring.properties
+ 
+
 ### The Nexus Backend Url Server and miscellaneous options can be configured by the following keys Settings
 
  **Settings keys settings.properties**
@@ -89,7 +95,7 @@ Nexus-Backend Service
 | nexus.spring.web.security.debug              | false                                | true                            | Debug the Spring FilterChain                    |
 
 
-### Noted the settings.properties can be overridden by a file Path config.properties
+#### Noted the settings.properties can be overridden by a file Path config.properties
  
 * **${user.home}**/conf-global/config.properties
 * **${user.home}**/conf/config.properties
@@ -313,6 +319,7 @@ MyData data = backendService.get(url, DATA_TYPE);
 ```
 
 ## Last News
+* Last version **1.0.4**, released at 08/07/2024.
 * Last version **1.0.3**, released at 23/06/2024.
 * Version **1.0.2** released on 28/04/2024.
 * Version **1.0.1** released on 21/11/2022.
@@ -322,7 +329,7 @@ MyData data = backendService.get(url, DATA_TYPE);
 If you need help using Nexus Backend Service feel free to drop an email or create an issue in GitHub.com (preferred).
 
 ## Contributions
-To help ApiBackend / BackendService development you are encouraged to
+To help Nexus-Backend / ApiBackend / BackendService development you are encouraged to
 * Provide suggestion/feedback/Issue
 * pull requests for new features
 * Star :star2: the project
