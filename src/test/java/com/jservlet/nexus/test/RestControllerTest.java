@@ -34,12 +34,13 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Run tests with a local Tomcat localhost:8082/nexus-backend
  */
-@Ignore
+@Ignore // Remove for unit test
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
 @ContextConfiguration(classes={ApplicationTestConfig.class})
@@ -87,6 +88,8 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
     public void testGetBytesBackend() throws NexusGetException, NexusResourceNotFoundException {
         String url = "/mock/v1/dataBytes";
         byte[] data = backendService.get(url, BYTES_RESPONSE_TYPE);
+        logger.debug(Arrays.toString(data));
+        logger.debug(new String(data, StandardCharsets.UTF_8));
         MatcherAssert.assertThat(new String(data, StandardCharsets.UTF_8),
                 CoreMatchers.containsString("GET_BYTES"));
     }

@@ -11,8 +11,8 @@ Nexus-Backend Service
 | Clients               | RestApi Nexus-Backend Service                      | Backend Server Services                         |
 |-----------------------|:---------------------------------------------------|:------------------------------------------------|
 | Ajax / XMLHttpRequest | http://localhost:8082/nexus-backend/api/**         | https://secure.jservlet.com:9092/api/v1/service |   
-| "                     | https://front.jservlet.com:80/nexus-backend/api/** | https://secure.jservlet.com:9092/api/v1/service |   
-| "                     | https://intra.jservlet.com:80/nexus-backend/api/** | https://10.100.100.50:9092/api/v1/service       |   
+| HttpClient            | https://front.jservlet.com:80/nexus-backend/api/** | https://secure.jservlet.com:9092/api/v1/service |   
+| Curl                  | https://intra.jservlet.com:80/nexus-backend/api/** | https://10.100.100.50:9092/api/v1/service       |   
 
 ***An Ajax Single Page Application communicate through the Rest Controller ApiBackend and its BackendService to a RestApi Backend Server.***
 
@@ -226,6 +226,10 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.tomcat.accesslog.throwOnFailure | true                                                                                                                                       | Throw on failure       |   
 | nexus.backend.tomcat.accesslog.maxDay         | -1                                                                                                                                         | Max day file retention |   
 
+**Noted** the Full access logs are available with the CommonsRequestLoggingFilter, included the RequestBody.
+
+Already initialized, activated by setting the logback.xml at level="DEBUG".
+
 
 ## Build Nexus Backend
 
@@ -307,21 +311,71 @@ Normally, it communicates to an API interface Backend.
  
 ### Sample BackendService API
 
+#### Prerequisites:
+
+* **RestOperations** should be configured with an Apache-HttpClient and a Pooling connection should be properly configured.
+* **HttpMessageConverter** are also mandatory, StringHttp, FormHttp, ResourceHttp, MappingJackson2Http are the minimal.
+* **Typed Response** parameter Class Object or a ParameterizedTypeReference are mandatory
+* **Object.class** cannot be converted in a Resource or Byte Array directly without a minimal support Typed Response.
+
+#### Initialize the RestApi BackendService
+
 ```
 BackendService backendService = new BackendServiceImpl();
 backendService.setBackendURL("https://internal.domain.com:9094");
 backendService.setRestOperations(new RestTemplate());
 backendService.setObjectMapper(new ObjectMapper());
-
-String url = "/api/v1/MyService";
-ResponseType<MyData> DATA_TYPE = backendService.createResponseType(MyData.class);
-MyData data = backendService.get(url, DATA_TYPE);
 ```
+
+#### Get Data
+
+```
+Data data = backendService.get("/mock/v1/data", backendService.createResponseType(Data.class));
+```
+
+#### Get List Data
+
+```
+ResponseType<List<Data>> typeReference = backendService.createResponseType(new ParameterizedTypeReference<>(){});
+List<Data> list = backendService.get("/mock/v1/dataList", typeReference);
+```
+
+#### Get Resource File
+
+```
+Resource image = backendService.getFile("/static/images/logo-marianne.svg");
+FileUtils.copyInputStreamToFile(image.getInputStream(), new File(System.getProperty("java.io.tmpdir") + "/logo-marianne.svg"));
+```
+
+
+#### Do Request List Data
+```
+ResponseType<List<Data>> typeReference = backendService.createResponseType(new ParameterizedTypeReference<>(){});
+Object obj = backendService.doRequest("/mock/v1/dataList", HttpMethod.GET, typeReference, null, null);
+System.out.println(obj);
+```
+
+#### Do Request Resource
+```
+Resource resource = backendService.doRequest("/mock/v1/datafile", HttpMethod.GET,
+backendService.createResponseType(Resource.class), null, headers);  // WARN mandatory typed Resource.class
+String data = StreamUtils.copyToString(resource.getInputStream(), Charset.defaultCharset());
+System.out.println(data);
+```
+
+#### Do Request Byte Array
+```
+ResponseType<byte[]> typeReference = backendService.createResponseType(byte[].class)
+byte[] bytes = backendService.doRequest("/mock/v1/dataBytes", HttpMethod.GET, typeReference , null, null); // WARN mandatory typed byte[].class
+System.out.println(new String(bytes, StandardCharsets.UTF_8));
+```
+
+
 
 ## Last News
 * Last version **1.0.5**, released at 13/07/2024 Optimize build war/jar.
 * Version **1.0.4**, released at 08/07/2024.
-* Version **1.0.3**, released at 23/06/2024 Reinit.
+* Version **1.0.3**, released at 23/06/2024 Reinit project.
 * Version **1.0.2** released on 28/04/2024.
 * Version **1.0.1** released on 21/11/2022.
 * Initial release **1.0.0** at 03/06/2021.
@@ -340,3 +394,4 @@ To help Nexus-Backend / ApiBackend / BackendService development you are encourag
 This project is an Open Source Software released under the [GPL-3.0 license](https://github.com/javaguru/nexus-backend/blob/master/LICENSE.txt).
 
 Copyright (c) 2001-2024 JServlet.com [Franck ANDRIANO.](http://jservlet.com)
+
