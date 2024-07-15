@@ -39,12 +39,12 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 /**
- * Rest control ApiBackend, redirects all HTTP requests to the Backend Server...
+ * Rest control ApiBackend, replicate all HTTP requests to the Backend Server...
  * <p>
  * Activated by only 'nexus.api.backend.enabled=true' in the configuration
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping(value = "/api")
 @ConditionalOnProperty(value = "nexus.api.backend.enabled")
 @Hidden
 public class ApiBackend extends ApiBase {
@@ -62,37 +62,14 @@ public class ApiBackend extends ApiBase {
         this.backendService = backendService;
     }
 
-    @GetMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
-    public final Object get(HttpMethod method, HttpServletRequest request)
-            throws NexusIllegalUrlException, NexusHttpException {
-        return getResponseEntity(Object.class,null, method, request);
+    @RequestMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
+    public  final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method, HttpServletRequest request)
+            throws NexusHttpException, NexusIllegalUrlException {
+        return responseEntity(Object.class, body, method, request);
     }
 
-    @PostMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
-    public final Object post(@RequestBody(required = false) Object body, HttpMethod method, HttpServletRequest request)
-            throws NexusIllegalUrlException, NexusHttpException {
-        return getResponseEntity(Object.class, body, method, request);
-    }
-
-    @PutMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
-    public final Object put(@RequestBody(required = false) Object body, HttpMethod method, HttpServletRequest request)
-            throws NexusIllegalUrlException, NexusHttpException {
-        return getResponseEntity(Object.class, body, method, request);
-    }
-
-    @DeleteMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
-    public final Object delete(HttpMethod method, HttpServletRequest request)
-            throws NexusIllegalUrlException, NexusHttpException {
-        return getResponseEntity(HttpStatus.class, null, method, request);
-    }
-
-    @PatchMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
-    public final Object patch(@RequestBody(required = false) Object body, HttpMethod method, HttpServletRequest request)
-            throws NexusIllegalUrlException, NexusHttpException {
-        return getResponseEntity(HttpStatus.class, body, method, request);
-    }
-
-    private Object getResponseEntity(Class<?> objectClass, Object body, HttpMethod method, HttpServletRequest request)
+    @SuppressWarnings("SameParameterValue")
+    private Object responseEntity(Class<?> objectClass, Object body, HttpMethod method, HttpServletRequest request)
             throws NexusHttpException, NexusIllegalUrlException {
         try {
             // create a ResponseType!

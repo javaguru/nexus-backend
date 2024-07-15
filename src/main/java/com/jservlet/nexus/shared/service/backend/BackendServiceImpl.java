@@ -366,7 +366,7 @@ public class BackendServiceImpl implements BackendService {
         if (headers == null || removeHeaders) {
             headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON); // mandatory forced!
-            headers.add("User-Agent", userAgent);  // mandatory forced, some RestApi filter the User-Agent!
+            headers.add("User-Agent", userAgent != null ? userAgent : "JavaNexus");  // mandatory forced, some RestApi filter the User-Agent!
         }
 
         // Some RestApi can filter the Host header! (localhost)

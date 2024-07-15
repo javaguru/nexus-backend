@@ -7,7 +7,7 @@
     <groupId>com.jservlet.nexus.backend</groupId>
     <artifactId>nexus-backend</artifactId>
     <packaging>${packaging}</packaging>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
 
     <name>nexus-backend</name>
     <description>The Java Nexus BackendService, an advanced and secure Rest Backend Gateway</description>
@@ -94,12 +94,6 @@
         <springdoc.version>1.6.11</springdoc.version>
         <jackson.version>2.17.1</jackson.version>
         <ziplet.version>2.4.1</ziplet.version>
-
-        <!--<wildfly.version>10.1.0.Final</wildfly.version>-->
-        <!--<spring.data.version>Lovelace-SR9</spring.data.version>-->
-        <!--<hibernate.version>5.2.4.Final</hibernate.version>-->
-        <!--<mariadb.version>1.5.7</mariadb.version>-->
-        <!--<ehcache.version>3.1.1</ehcache.version>-->
 
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
@@ -232,7 +226,30 @@
                     <scope>provided</scope>
                 </dependency>
             </dependencies>
-
+            <build>
+                <plugins>
+                    <!-- Add dependencies class lib -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-dependencies</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>copy-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
+                                    <overWriteReleases>false</overWriteReleases>
+                                    <overWriteSnapshots>false</overWriteSnapshots>
+                                    <overWriteIfNewer>true</overWriteIfNewer>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 
@@ -305,26 +322,6 @@
                 <configuration>
                     <propertiesEncoding>ISO-8859-1</propertiesEncoding>
                 </configuration>
-            </plugin>
-            <!-- Add dependencies class lib -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-dependencies</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
-                            <overWriteReleases>false</overWriteReleases>
-                            <overWriteSnapshots>false</overWriteSnapshots>
-                            <overWriteIfNewer>true</overWriteIfNewer>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <!-- Additional attached JAR, generate nexus-backend-${version}-shared.jar with the shared Api -->
             <plugin>
@@ -482,14 +479,6 @@
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
-            <!--<plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-install-plugin</artifactId>
-                <version>3.1.1</version>
-                <configuration>
-                    <allowIncompleteProjects>true</allowIncompleteProjects>
-                </configuration>
-            </plugin>-->
         </plugins>
     </build>
 

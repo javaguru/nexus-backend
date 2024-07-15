@@ -50,7 +50,7 @@ public class ApplicationTestConfig {
     public BackendService backendService(@Value("${nexus.backend.url}") String backendUrl,
                                          RestOperations restOperations,
                                          ObjectMapper objectMapper) {
-        final BackendServiceImpl backendService = new BackendServiceImpl();
+        final BackendService backendService = new BackendServiceImpl();
         backendService.setBackendURL(backendUrl);
         backendService.setRestOperations(restOperations);
         backendService.setObjectMapper(objectMapper);
@@ -95,12 +95,6 @@ public class ApplicationTestConfig {
                 .build();
     }
 
-    /*@Bean
-    public XmlMapper xmlMapper() {
-        JacksonXmlModule xmlModule = new JacksonXmlModule();
-        xmlModule.setDefaultUseWrapper(false);
-        return new XmlMapper(xmlModule);
-    }*/
 
     @Bean
     public RestOperations backendRestOperations(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) {
@@ -108,8 +102,9 @@ public class ApplicationTestConfig {
         mappingJackson2HttpMessageConverter.setSupportedMediaTypes(Collections.singletonList(MediaType.APPLICATION_JSON));
         restTemplate.setMessageConverters(Arrays.asList(
                 new StringHttpMessageConverter(UTF_8),
-                mappingJackson2HttpMessageConverter,
                 new FormHttpMessageConverter(),
+                new ByteArrayHttpMessageConverter(),
+                //new ResourceHttpMessageConverter(), // WARN mandatory or use HttpMessageConverter<Resource>
                 new HttpMessageConverter<Resource>() {
                     @Override
                     public boolean canRead(@NonNull Class<?> clazz, MediaType mediaType) {
@@ -166,7 +161,8 @@ public class ApplicationTestConfig {
                     public void write(@NonNull Resource resource, MediaType contentType, @NonNull HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
 
                     }
-                }
+                },
+                mappingJackson2HttpMessageConverter
         ));
         return restTemplate;
     }
