@@ -112,7 +112,7 @@ public class RestApiTest extends TestCase {
     @Test
     public void testGetResource() {
         try {
-            // get Resource Byte Array!
+            // get Resource file in ByteArray!
             HttpHeaders headers = new HttpHeaders();
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_OCTET_STREAM));
             Resource resource = backendService.doRequest("/mock/v1/datafile", HttpMethod.GET,
@@ -131,10 +131,10 @@ public class RestApiTest extends TestCase {
     @Test
     public void testGetByteArray() {
         try {
-            // get Byte Array!
-            Object obj = backendService.doRequest("/mock/v1/dataBytes", HttpMethod.GET,
+            // get data in ByteArray!
+            byte[] obj = backendService.doRequest("/mock/v1/dataBytes", HttpMethod.GET,
                     backendService.createResponseType(byte[].class), null, null); // WARN mandatory typed byte[].class
-            System.out.println(new String((byte[]) obj, StandardCharsets.UTF_8));
+            System.out.println(new String(obj, StandardCharsets.UTF_8));
         } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
             System.out.println("Failed to GET Bytes entity/entities on backend: " + e.getMessage());
         } catch (NexusResourceNotFoundException ex) {

@@ -158,6 +158,7 @@ public class ApplicationConfig  {
         });
         module.addSerializer(Double.class, new JsonSerializer<>() {
             @Override
+
             public void serialize(Double value, JsonGenerator jgen, SerializerProvider unused) throws IOException {
                 if (null == value) {
                     jgen.writeNull();
@@ -180,10 +181,19 @@ public class ApplicationConfig  {
         RestTemplate restTemplate = new RestTemplate(httpRequestFactory());
         // not MediaType.ALL only Json and Json wildcard!
         mappingJackson2HttpMessageConverter.setSupportedMediaTypes(
-                Arrays.asList(MediaType.APPLICATION_JSON, new MediaType("application", "*+json")));
+                Arrays.asList(
+                        MediaType.APPLICATION_JSON,
+                        new MediaType("application", "*+json"),
+                        MediaType.APPLICATION_JSON_UTF8,
+                        MediaType.APPLICATION_FORM_URLENCODED,
+                        MediaType.APPLICATION_PROBLEM_JSON_UTF8
+                )
+        );
+
         restTemplate.setMessageConverters(Arrays.asList(
                 new StringHttpMessageConverter(UTF_8),
                 new FormHttpMessageConverter(),
+                new ByteArrayHttpMessageConverter(),
                 //new ResourceHttpMessageConverter(), // WARN or let the ResourceHttpRequestHandler create for us!
                 mappingJackson2HttpMessageConverter
         ));

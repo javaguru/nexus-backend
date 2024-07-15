@@ -18,7 +18,6 @@
 
 package com.jservlet.nexus.config.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.ziplet.filter.compression.CompressingFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,10 +39,6 @@ import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.ResourceHttpMessageConverter;
-import org.springframework.http.converter.StringHttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.lang.NonNull;
 import org.springframework.web.context.ServletContextAware;
 import org.springframework.web.cors.CorsConfiguration;
@@ -57,12 +52,8 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 /*
  * Web Mvc Configuration
  */
@@ -89,9 +80,6 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     private ServletContext servletContext;
 
     private static ApplicationContext context;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Autowired
     public void setEnv(Environment env) {
@@ -166,14 +154,16 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         configurer.enable();
     }
 
-    @Override // for Mock only!
+    /*
+     * For Mock only!
+     * WARN Neutralised Converters for receive a native ByteArray conversion Json from Jackson and not only a content in Base64!
+      @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-        // Note that the order matters here! If the StringHttpMessageConverter is add after the jsonConverter
-        // the documentation JSON is returned as a giant string instead of a (valid) JSON object
         converters.add(new StringHttpMessageConverter(UTF_8));
+        converters.add(new FormHttpMessageConverter());
         converters.add(new ResourceHttpMessageConverter());
         converters.add(new MappingJackson2HttpMessageConverter(objectMapper));
-    }
+    }*/
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
@@ -238,29 +228,6 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         });
     }
 
-    /**
-     * Http Method Override Filter
-     *
-     * @return The Method Override
-
-    @Order(4)
-    @Bean
-    public FilterRegistrationBean httpMethodOverrideFilterRegistrationBean() {
-        FilterRegistrationBean registrationBean = new FilterRegistrationBean();
-        registrationBean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ERROR, DispatcherType.ASYNC);
-        registrationBean.setFilter(new HTTPMethodOverrideFilter());
-        registrationBean.setOrder(4);
-        return registrationBean;
-    }*/
-
-    /**
-     * Listener RequestId
-     * @return a Listener RequestId
-
-    @Bean
-    public ServletListenerRegistrationBean<ServletRequestListener> servletRequestId() {
-        return new ServletListenerRegistrationBean<>(new RequestIdServletRequestListener());
-    }*/
 
     /**
      * The full logs request and response
@@ -299,7 +266,9 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         return new StandardServletMultipartResolver() {
             @Override
             public boolean isMultipart(@NonNull HttpServletRequest request) {
-                if (!"POST".equalsIgnoreCase(request.getMethod()) && !"PUT".equalsIgnoreCase(request.getMethod())) {
+                if (!"POST".equalsIgnoreCase(request.getMethod()) &&
+                    !"PUT".equalsIgnoreCase(request.getMethod()) &&
+                    !"PATCH".equalsIgnoreCase(request.getMethod())) {
                     return false;
                 }
                 String contentType = request.getContentType();
@@ -311,9 +280,7 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         if ("development".equals(env.getProperty(ENV_VAR))) {
-            registry.addResourceHandler("/swagger-ui/**")
-                    .addResourceLocations("classpath:/META-INF/resources/webjars/springfox-swagger-ui/")
-                    .resourceChain(false);
+            registry.addResourceHandler("/swagger-ui/**").resourceChain(false);
         }
 
         // Enable static resources

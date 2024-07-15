@@ -21,6 +21,7 @@ package com.jservlet.nexus.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.ErrorMessage;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -35,18 +36,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.List;
 
 import static com.jservlet.nexus.config.web.WebConstants.*;
@@ -152,6 +157,56 @@ public class MockController extends ApiBase {
         dataList.add(new Data("info1","info2","info3"));
         dataList.add(new Data("info4","info5","info6"));
         return new ResponseEntity<>(dataList, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Post data List", description = "Post data List")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = Data[].class))}),
+    })
+    @PostMapping(path = "/v1/dataList", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> postDataList() {
+        List<Data> dataList = new ArrayList<>();
+        dataList.add(new Data("info1","info2","info3"));
+        dataList.add(new Data("info4","info5","info6"));
+        return new ResponseEntity<>(dataList, HttpStatus.OK);
+    }
+
+    /*
+     * Proxy in ByteArray
+     * The data can be retrieved as a byte[] is a direct proxy without any in-app data conversion.
+     * (See WebMvcConfigurer.configureMessageConverters(List<HttpMessageConverter<?>> converters) need to be disabled)
+     */
+    @Operation(summary = "Proxy Post data ", description = "Proxy Post data")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = byte[].class))}),
+    })
+    @PostMapping(value = "/v1/proxy", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE) //
+    public ResponseEntity<byte[]> redirect(@RequestBody(required = false) String body, HttpServletRequest request) throws URISyntaxException {
+        String queryString = request.getQueryString();
+        // Switch url /v1/proxy --> /v1/redirect
+        String url = request.getRequestURL().toString().replaceAll("/proxy", "/redirect");
+        URI uri = new URI(url + "?" + (queryString !=null ? queryString : ""));
+        RestTemplate restTemplate = new RestTemplate();
+        RequestEntity<String> req = new RequestEntity<>(body, extractHeaders(request), HttpMethod.POST, uri);
+        try {
+            ResponseEntity<byte[]> responseEntity = restTemplate.exchange(req, byte[].class);
+            return new ResponseEntity<>(responseEntity.getBody(), filterHeaders(responseEntity.getHeaders()), responseEntity.getStatusCode());
+        } catch (HttpClientErrorException e) {
+            logger.info("Error occured during proxying: {}", e.getMessage());
+            return new ResponseEntity<>(e.getResponseBodyAsByteArray(), filterHeaders(e.getResponseHeaders()), e.getStatusCode());
+        }
+    }
+    /*
+     * Hidden Redirect endpoint!
+     */
+    @Hidden
+    @RequestMapping(value = "/v1/redirect", consumes = "application/x-www-form-urlencoded")
+    public ResponseEntity<?> redirect(@RequestBody(required = false) String body,
+                                      HttpMethod method,
+                                      HttpServletRequest request) {
+        // Switch url /v1/redirect --> /v1/dataPostEntity
+        String url = request.getRequestURL().toString().replaceAll("/redirect", "/dataList");
+        return new RestTemplate().exchange( url, method, new HttpEntity<>(body, extractHeaders(request)), Object.class);
     }
 
     @Operation(summary = "Post datafile", description = "Post datafile")
@@ -277,4 +332,38 @@ public class MockController extends ApiBase {
         }
     }
 
+
+
+    private HttpHeaders extractHeaders(HttpServletRequest request) {
+        Enumeration<String> headerNames = request.getHeaderNames();
+        HttpHeaders requestHeaders = new HttpHeaders();
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            List<String> values = new ArrayList<>();
+            Enumeration<String> headers = request.getHeaders(headerName);
+            while (headers.hasMoreElements()) {
+                values.add(headers.nextElement());
+            }
+            requestHeaders.put(headerName, values);
+        }
+        return requestHeaders;
+    }
+
+    private HttpHeaders filterHeaders(HttpHeaders originalHeaders) {
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.putAll(originalHeaders);
+        //chuncked and length headers must not be forwarded
+        responseHeaders.remove(HttpHeaders.TRANSFER_ENCODING);
+        responseHeaders.remove(HttpHeaders.CONTENT_LENGTH);
+        //responseHeaders.remove("Accept-Encoding"); // Gzip !?
+        //Following headers must not be included, because they would appear twice
+        responseHeaders.remove(HttpHeaders.CACHE_CONTROL);
+        responseHeaders.remove(HttpHeaders.PRAGMA);
+        responseHeaders.remove(HttpHeaders.VARY);
+        responseHeaders.remove(HttpHeaders.EXPIRES);
+        responseHeaders.remove("X-Content-Type-Options");
+        responseHeaders.remove("X-XSS-Protection");
+        responseHeaders.remove("X-Frame-Options");
+        return responseHeaders;
+    }
 }
