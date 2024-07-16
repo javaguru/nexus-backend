@@ -78,7 +78,6 @@ public class StatusController implements ResourceLoaderAware {
     private final Environment env;
 
     private static final String ENV_VAR = "environment";
-    private final static String INNER_API_URI = "/api/";
 
     @Autowired
     public StatusController(BackendService backendService, Environment env) {
@@ -164,7 +163,6 @@ public class StatusController implements ResourceLoaderAware {
             sb.append("--------------------------------------------------------------").append(sep);
             sb.append("Service-Name: ").append("Nexus-Backend Service").append(sep);
             sb.append("Service-Status: ").append(health).append(sep);
-            sb.append("Service-URL: ").append(INNER_API_URI).append(sep);
             sb.append("Backend-URL: ").append(backendService.getBackendURL()).append(sep);
             sb.append("Backend-Test-Uri: ").append(uriAlive).append(sep);
             sb.append("Removed-Header: ").append(backendService.isRemovedHeaders()).append(sep);
