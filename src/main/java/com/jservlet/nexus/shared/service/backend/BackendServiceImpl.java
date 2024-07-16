@@ -99,7 +99,7 @@ public class BackendServiceImpl implements BackendService {
     private boolean truncated;
 
     @Value("${nexus.backend.header.user-agent:JavaNexus}")
-    private String userAgent;
+    private String userAgent = "JavaNexus";
 
 
     @Value("${nexus.backend.exception.http500:true}")
@@ -162,6 +162,7 @@ public class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.add("User-Agent", userAgent);
             return doRequest(url, HttpMethod.POST, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -196,6 +197,7 @@ public class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.add("User-Agent", userAgent);
             return doRequest(url, HttpMethod.PUT, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -246,6 +248,7 @@ public class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.add("User-Agent", userAgent);
             return doRequest(url, HttpMethod.PATCH, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -366,7 +369,7 @@ public class BackendServiceImpl implements BackendService {
         if (headers == null || removeHeaders) {
             headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON); // mandatory forced!
-            headers.add("User-Agent", userAgent != null ? userAgent : "JavaNexus");  // mandatory forced, some RestApi filter the User-Agent!
+            headers.add("User-Agent", userAgent);  // mandatory forced, some RestApi filter the User-Agent!
         }
 
         // Some RestApi can filter the Host header! (localhost)

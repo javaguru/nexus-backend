@@ -181,15 +181,7 @@ public class ApplicationConfig  {
         RestTemplate restTemplate = new RestTemplate(httpRequestFactory());
         // not MediaType.ALL only Json and Json wildcard!
         mappingJackson2HttpMessageConverter.setSupportedMediaTypes(
-                Arrays.asList(
-                        MediaType.APPLICATION_JSON,
-                        new MediaType("application", "*+json"),
-                        MediaType.APPLICATION_JSON_UTF8,
-                        MediaType.APPLICATION_FORM_URLENCODED,
-                        MediaType.APPLICATION_PROBLEM_JSON_UTF8
-                )
-        );
-
+                Arrays.asList(MediaType.APPLICATION_JSON, new MediaType("application", "*+json")));
         restTemplate.setMessageConverters(Arrays.asList(
                 new StringHttpMessageConverter(UTF_8),
                 new FormHttpMessageConverter(),
@@ -312,4 +304,8 @@ public class ApplicationConfig  {
                 .build());
     }
 
+    /*@Bean
+    public CommonsMultipartResolver commonsMultipartResolver() {
+        return new CommonsMultipartResolver();
+    }*/
 }
