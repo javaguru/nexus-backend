@@ -18,6 +18,7 @@
 
 package com.jservlet.nexus.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.ErrorMessage;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
@@ -42,17 +43,16 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
+import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.jservlet.nexus.config.web.WebConstants.*;
 
@@ -171,44 +171,6 @@ public class MockController extends ApiBase {
         return new ResponseEntity<>(dataList, HttpStatus.OK);
     }
 
-    /*
-     * Proxy in ByteArray
-     * The data can be retrieved as a byte[] is a direct proxy without any in-app data conversion.
-     * (See WebMvcConfigurer.configureMessageConverters(List<HttpMessageConverter<?>> converters) need to be disabled)
-     */
-    @Operation(summary = "Proxy Post data ", description = "Proxy Post data")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = byte[].class))}),
-    })
-    @PostMapping(value = "/v1/proxy", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE) //
-    public ResponseEntity<byte[]> redirect(@RequestBody(required = false) String body, HttpServletRequest request) throws URISyntaxException {
-        String queryString = request.getQueryString();
-        // Switch url /v1/proxy --> /v1/redirect
-        String url = request.getRequestURL().toString().replaceAll("/proxy", "/redirect");
-        URI uri = new URI(url + "?" + (queryString !=null ? queryString : ""));
-        RestTemplate restTemplate = new RestTemplate();
-        RequestEntity<String> req = new RequestEntity<>(body, extractHeaders(request), HttpMethod.POST, uri);
-        try {
-            ResponseEntity<byte[]> responseEntity = restTemplate.exchange(req, byte[].class);
-            return new ResponseEntity<>(responseEntity.getBody(), filterHeaders(responseEntity.getHeaders()), responseEntity.getStatusCode());
-        } catch (HttpClientErrorException e) {
-            logger.info("Error occured during proxying: {}", e.getMessage());
-            return new ResponseEntity<>(e.getResponseBodyAsByteArray(), filterHeaders(e.getResponseHeaders()), e.getStatusCode());
-        }
-    }
-    /*
-     * Hidden Redirect endpoint!
-     */
-    @Hidden
-    @RequestMapping(value = "/v1/redirect", consumes = "application/x-www-form-urlencoded")
-    public ResponseEntity<?> redirect(@RequestBody(required = false) String body,
-                                      HttpMethod method,
-                                      HttpServletRequest request) {
-        // Switch url /v1/redirect --> /v1/dataPostEntity
-        String url = request.getRequestURL().toString().replaceAll("/redirect", "/dataList");
-        return new RestTemplate().exchange( url, method, new HttpEntity<>(body, extractHeaders(request)), Object.class);
-    }
-
     @Operation(summary = "Post datafile", description = "Post datafile")
     @ApiResponses(value = {
             @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = HttpStatus.class))}),
@@ -296,6 +258,72 @@ public class MockController extends ApiBase {
         return new ResponseEntity<>(new ErrorMessage("500", SOURCE,"Internal Server Error"), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    /*
+     * Proxy in ByteArray
+     * The data can be retrieved as a byte[] is a direct proxy without any in-app data conversion.
+     * (See WebMvcConfigurer.configureMessageConverters(List<HttpMessageConverter<?>> converters) need to be disabled)
+     */
+    @Operation(summary = "Proxy Post data ", description = "Proxy Post data")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = byte[].class))}),
+    })
+    @PostMapping(value = "/v1/proxy", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE) //
+    public ResponseEntity<byte[]> redirect(@RequestBody(required = false) String body, HttpServletRequest request) throws URISyntaxException {
+        // Switch url /v1/proxy --> /v1/redirect
+        String queryString = request.getQueryString();
+        String url = request.getRequestURL().toString().replaceAll("/proxy", "/redirect") + "?" + (queryString !=null ? queryString : "");
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url).replaceQuery(queryString);
+        RestTemplate restTemplate = new RestTemplate();
+        RequestEntity<String> req = new RequestEntity<>(body, extractHeaders(request), HttpMethod.POST, builder.build().toUri());
+        try {
+            ResponseEntity<byte[]> responseEntity = restTemplate.exchange(req, byte[].class);
+            return new ResponseEntity<>(responseEntity.getBody(), filterHeaders(responseEntity.getHeaders()), responseEntity.getStatusCode());
+        } catch (HttpClientErrorException e) {
+            logger.info("Error occured during proxying: {}", e.getMessage());
+            return new ResponseEntity<>(e.getResponseBodyAsByteArray(), filterHeaders(e.getResponseHeaders()), e.getStatusCode());
+        }
+    }
+    /* Hidden Redirect endpoint */
+    @Hidden
+    @RequestMapping(value = "/v1/redirect", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<?> redirect(@RequestBody(required = false) String body,
+                                      HttpMethod method,
+                                      HttpServletRequest request) {
+        // Switch url /v1/redirect --> /v1/echo
+        String queryString = request.getQueryString();
+        String url = request.getRequestURL().toString().replaceAll("/redirect", "/echo") + "?" + (queryString !=null ? queryString : "");
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url).replaceQuery(queryString);
+        // WARN All is Byte Array! Or a Typed response is mandatory!
+        // WARN An Object.class can only return a ResponseEntity<Object>, try /datList, and not a ResponseEntity<String> try /echo !?
+        // WARN No suitable HttpMessageConverter found for response type [class java.lang.Object] and content type [text/plain;charset=ISO-8859-1]
+        return new RestTemplate().exchange(builder.build().toUri(), method, new HttpEntity<>(body, extractHeaders(request)), byte[].class);
+    }
+    /* Hidden Echo endpoint */
+    @Hidden
+    @RequestMapping(path = "/v1/echo", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<?> echo(@RequestBody(required = false) String body, HttpMethod method, HttpServletRequest request)
+            throws JsonProcessingException {
+        Map<String, String[]> map = request.getParameterMap();
+        Map<String, String[]> headers = extractHeaders(request).entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toArray(new String[0])));
+        String json = objectMapper.writeValueAsString(new EchoEntity(method.name(), body, map, headers));
+        return new ResponseEntity<>(json, HttpStatus.OK);
+    }
+
+    private static class EchoEntity implements Serializable {
+        public Map<String, String[]> headers;
+        public Map<String, String[]> map;
+        public String body;
+        public String method;
+
+        public EchoEntity(String method, String body, Map<String, String[]> map, Map<String, String[]> headers) {
+            this.method = method;
+            this.body = body;
+            this.headers = headers;
+            this.map = map;
+        }
+    }
+
     @Schema
     public static class Data {
 
@@ -332,21 +360,15 @@ public class MockController extends ApiBase {
         }
     }
 
-
-
-    private HttpHeaders extractHeaders(HttpServletRequest request) {
+    private static HttpHeaders extractHeaders(HttpServletRequest request) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setOrigin(request.getRequestURL().toString());
         Enumeration<String> headerNames = request.getHeaderNames();
-        HttpHeaders requestHeaders = new HttpHeaders();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            List<String> values = new ArrayList<>();
-            Enumeration<String> headers = request.getHeaders(headerName);
-            while (headers.hasMoreElements()) {
-                values.add(headers.nextElement());
-            }
-            requestHeaders.put(headerName, values);
+            headers.add(headerName, request.getHeader(headerName));
         }
-        return requestHeaders;
+        return headers;
     }
 
     private HttpHeaders filterHeaders(HttpHeaders originalHeaders) {
