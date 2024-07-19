@@ -320,18 +320,19 @@ public class BackendServiceImpl implements BackendService {
     @SuppressWarnings("unchecked")
     private <T> T handleResponse(ResponseEntity<T> exchange) {
         T responseBody = exchange.getBody();
+        HttpStatus httpStatus = exchange.getStatusCode();
         if (logger.isDebugEnabled()) {
-            logger.debug("Headers response: {}", exchange.getHeaders());
+            HttpHeaders httpHeaders = exchange.getHeaders();
+            logger.debug("Headers response: {}", httpHeaders);
             if (responseBody != null) {
-                logger.debug("The response is: {} {}", exchange.getStatusCode(), LogFormatUtils.formatValue(responseBody, truncated));
+                logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, truncated));
             } else {
-                logger.debug("The response is empty with HttpState: {}", exchange.getStatusCode());
+                logger.debug("The response is empty with HttpState: {}", httpStatus);
             }
         }
-        if (responseBody == null) return (T) exchange.getStatusCode();
-        if (isHandleHttpState(exchange.getStatusCode()))
-            return (T) new EntityError<>(exchange.getBody(), exchange.getStatusCode());
-        return exchange.getBody();
+        if (responseBody == null) return (T) httpStatus;
+        if (isHandleHttpState(httpStatus)) return (T) new EntityError<>(responseBody, httpStatus);
+        return responseBody;
     }
 
     private <T> T handleResponseError(String url, HttpStatusCodeException e) throws NexusResourceNotFoundException, NexusHttpException {
