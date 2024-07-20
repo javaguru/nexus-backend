@@ -110,19 +110,19 @@ Nexus-Backend Service
 | **Keys**                                            | **Default value** | **Example value** | **Descriptions**               |
 |-----------------------------------------------------|:------------------|:------------------|:-------------------------------|
 | nexus.backend.client.header.user-agent              | JavaNexus         | curl              | User Agent Header              |
-| nexus.backend.client.connectTimeout                 | 10                | 5                 | Connection timeout             |
-| nexus.backend.client.requestTimeout                 | 20                | 10                | Request timeout                |
-| nexus.backend.client.sockettimeout                  | 10                | 5                 | Socket timeout                 |
+| nexus.backend.client.connectTimeout                 | 10                | 5                 | Connection timeout in second   |
+| nexus.backend.client.requestTimeout                 | 20                | 10                | Request timeout in second      |
+| nexus.backend.client.socketTimeout                  | 10                | 5                 | Socket timeout in second       |
 | nexus.backend.client.max_connections_per_route      | 20                | 30                | Max Connections per route      |
 | nexus.backend.client.max_connections                | 100               | 300               | Max Connections in the Pool    |
 | nexus.backend.client.close_idle_connections_timeout | 0                 | 0                 | Close idle connections timeout |
 | nexus.backend.client.validate_after_inactivity      | 2                 | 2                 | Validate after inactivity      |
 | nexus.backend.client.requestSentRetryEnabled        | false             | true              | Request Sent Retry Enabled     |
 | nexus.backend.client.retryCount                     | 3                 | 2                 | Retry Count                    |
-| nexus.backend.client.redirectsEnabled               | true              | true              | Retry Count                    |
-| nexus.backend.client.maxRedirects                   | 5                 | 2                 | Retry Count                    |
-| nexus.backend.client.authenticationEnabled          | false             | true              | Retry Count                    |
-| nexus.backend.client.circularRedirectsAllowed       | false             | true              | Retry Count                    |
+| nexus.backend.client.redirectsEnabled               | true              | true              | Redirects enabled              |
+| nexus.backend.client.maxRedirects                   | 5                 | 2                 | Maximum redirections           |
+| nexus.backend.client.authenticationEnabled          | false             | true              | Authentication enabled         |
+| nexus.backend.client.circularRedirectsAllowed       | false             | true              | Circular redirections allowed  |
 
 
 ### The Nexus-Backend Firewall and the WAF Filter Configuration
@@ -323,7 +323,7 @@ Normally, it communicates to an API interface Backend.
 #### Prerequisites:
 
 * **RestOperations** should be configured with an Apache-HttpClient and a Pooling connection should be properly configured.
-* **HttpMessageConverter** are also mandatory, StringHttp, FormHttp, ResourceHttp, ByteArrayHttp and MappingJackson2Http are the minimal.
+* **HttpMessageConverter** are also mandatory, StringHttp, FormHttp, ByteArrayHttp, ResourceHttp and MappingJackson2Http are the minimal.
 * **Typed Response** parameter Class Object or a ParameterizedTypeReference are mandatory
 * **Object.class** cannot be converted in a Resource or ByteArray directly without a minimal support Typed Response.
 
