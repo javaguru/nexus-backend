@@ -199,8 +199,12 @@ public class ApplicationConfig  {
     }
 
 
-    @Value("${nexus.backend.client.timeout:30}")
-    private int readTimeout;
+    @Value("${nexus.backend.client.connectTimeout:10}")
+    private int connectTimeout;
+    @Value("${nexus.backend.client.requestTimeout:20}")
+    private int requestTimeout;
+    @Value("${nexus.backend.client.socketTimeout:10}")
+    private int socketTimeout;
 
     @Value("${nexus.backend.client.max_connections_per_route:20}")
     private int defaultMaxConnectionsPerRoute;
@@ -219,6 +223,19 @@ public class ApplicationConfig  {
     @Value("${nexus.backend.client.requestSentRetryEnabled:false}")
     private boolean requestSentRetryEnabled;
 
+    @Value("${nexus.backend.client.redirectsEnabled:true}")
+    private boolean redirectsEnabled;
+    @Value("${nexus.backend.client.maxRedirects:5}")
+    private int maxRedirects;
+    @Value("${nexus.backend.client.authenticationEnabled:false}")
+    private boolean authenticationEnabled;
+    @Value("${nexus.backend.client.circularRedirectsAllowed:false}")
+    private boolean circularRedirectsAllowed;
+
+
+    /**
+     * User-Agent
+     */
     @Value("${nexus.backend.client.header.user-agent:JavaNexus}")
     private String userAgent;
 
@@ -300,10 +317,13 @@ public class ApplicationConfig  {
                 .setUserAgent(userAgent)
                 .setConnectionManager(cm)
                 .setDefaultRequestConfig(RequestConfig.custom()
-                    .setConnectTimeout(readTimeout * 1000)
-                    .setConnectionRequestTimeout(readTimeout * 1000)
-                    .setSocketTimeout(readTimeout * 1000)
-                    .setAuthenticationEnabled(true)
+                    .setConnectTimeout(connectTimeout * 1000)
+                    .setConnectionRequestTimeout(requestTimeout * 1000)
+                    .setSocketTimeout(socketTimeout * 1000)
+                    .setRedirectsEnabled(redirectsEnabled)
+                    .setMaxRedirects(maxRedirects)
+                    .setAuthenticationEnabled(authenticationEnabled)
+                    .setCircularRedirectsAllowed(circularRedirectsAllowed)
                     .build())
                 .setConnectionReuseStrategy(new DefaultConnectionReuseStrategy())
                 .setKeepAliveStrategy(myStrategy)

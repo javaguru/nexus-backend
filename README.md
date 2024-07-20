@@ -110,13 +110,19 @@ Nexus-Backend Service
 | **Keys**                                            | **Default value** | **Example value** | **Descriptions**               |
 |-----------------------------------------------------|:------------------|:------------------|:-------------------------------|
 | nexus.backend.client.header.user-agent              | JavaNexus         | curl              | User Agent Header              |
-| nexus.backend.client.timeout                        | 30                | 10                | Connection/Read/Write timeout  |
+| nexus.backend.client.connectTimeout                 | 10                | 5                 | Connection timeout             |
+| nexus.backend.client.requestTimeout                 | 20                | 10                | Request timeout                |
+| nexus.backend.client.sockettimeout                  | 10                | 5                 | Socket timeout                 |
 | nexus.backend.client.max_connections_per_route      | 20                | 30                | Max Connections per route      |
 | nexus.backend.client.max_connections                | 100               | 300               | Max Connections in the Pool    |
 | nexus.backend.client.close_idle_connections_timeout | 0                 | 0                 | Close idle connections timeout |
 | nexus.backend.client.validate_after_inactivity      | 2                 | 2                 | Validate after inactivity      |
 | nexus.backend.client.requestSentRetryEnabled        | false             | true              | Request Sent Retry Enabled     |
 | nexus.backend.client.retryCount                     | 3                 | 2                 | Retry Count                    |
+| nexus.backend.client.redirectsEnabled               | true              | true              | Retry Count                    |
+| nexus.backend.client.maxRedirects                   | 5                 | 2                 | Retry Count                    |
+| nexus.backend.client.authenticationEnabled          | false             | true              | Retry Count                    |
+| nexus.backend.client.circularRedirectsAllowed       | false             | true              | Retry Count                    |
 
 
 ### The Nexus-Backend Firewall and the WAF Filter Configuration
