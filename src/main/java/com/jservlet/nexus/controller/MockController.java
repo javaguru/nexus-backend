@@ -19,7 +19,6 @@
 package com.jservlet.nexus.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.ErrorMessage;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -74,9 +73,6 @@ public class MockController extends ApiBase {
 
     private static final String fileName = "logo-marianne.svg";
     private static final String fileTest = System.getProperty("java.io.tmpdir") + fileName;
-
-    @Autowired
-    public ObjectMapper objectMapper;
 
     public MockController() {
         super(SOURCE);
@@ -271,12 +267,11 @@ public class MockController extends ApiBase {
     public ResponseEntity<byte[]> redirect(@RequestBody(required = false) String body, HttpServletRequest request) throws URISyntaxException {
         // Switch url /v1/proxy --> /v1/redirect
         String queryString = request.getQueryString();
-        String url = request.getRequestURL().toString().replaceAll("/proxy", "/redirect") + "?" + (queryString !=null ? queryString : "");
+        String url = request.getRequestURL().toString().replaceAll("/proxy", "/redirect");
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url).replaceQuery(queryString);
-        RestTemplate restTemplate = new RestTemplate();
         RequestEntity<String> req = new RequestEntity<>(body, extractHeaders(request), HttpMethod.POST, builder.build().toUri());
         try {
-            ResponseEntity<byte[]> responseEntity = restTemplate.exchange(req, byte[].class);
+            ResponseEntity<byte[]> responseEntity = new RestTemplate().exchange(req, byte[].class);
             return new ResponseEntity<>(responseEntity.getBody(), filterHeaders(responseEntity.getHeaders()), responseEntity.getStatusCode());
         } catch (HttpClientErrorException e) {
             logger.info("Error occured during proxying: {}", e.getMessage());
@@ -290,13 +285,11 @@ public class MockController extends ApiBase {
                                       HttpMethod method,
                                       HttpServletRequest request) {
         // Switch url /v1/redirect --> /v1/echo
-        String queryString = request.getQueryString();
-        String url = request.getRequestURL().toString().replaceAll("/redirect", "/echo") + "?" + (queryString !=null ? queryString : "");
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url).replaceQuery(queryString);
-        // WARN All is Byte Array! Or a Typed response is mandatory!
-        // WARN An Object.class can only return a ResponseEntity<Object>, try /datList, and not a ResponseEntity<String> try /echo !?
-        // WARN No suitable HttpMessageConverter found for response type [class java.lang.Object] and content type [text/plain;charset=ISO-8859-1]
-        return new RestTemplate().exchange(builder.build().toUri(), method, new HttpEntity<>(body, extractHeaders(request)), byte[].class);
+        String url = request.getRequestURL().toString().replaceAll("/redirect", "/echo");
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+        return new RestTemplate().exchange(builder.build().toUri(), method,
+                new HttpEntity<>(body, extractHeaders(request)), byte[].class); // All is Bytes!
+
     }
     /* Hidden Echo endpoint */
     @Hidden
@@ -306,8 +299,7 @@ public class MockController extends ApiBase {
         Map<String, String[]> map = request.getParameterMap();
         Map<String, String[]> headers = extractHeaders(request).entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toArray(new String[0])));
-        String json = objectMapper.writeValueAsString(new EchoEntity(method.name(), body, map, headers));
-        return new ResponseEntity<>(json, HttpStatus.OK);
+        return new ResponseEntity<>(new EchoEntity(method.name(), body, map, headers), HttpStatus.OK);
     }
 
     private static class EchoEntity implements Serializable {

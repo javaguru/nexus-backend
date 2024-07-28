@@ -29,7 +29,6 @@ import io.swagger.v3.oas.annotations.Hidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -63,16 +62,8 @@ public class ApiBackend extends ApiBase {
         this.backendService = backendService;
     }
 
-    /**
-     * List filtered Headers
-     * SpEL reads allow method delimited with a comma and splits into a List of Strings
-     */
-    @Value("#{'${nexus.api.backend.filteredHeaders:}'.split(',')}")
-    private List<String> filteredHeaders;
-
-
     @RequestMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
-    public  final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method, HttpServletRequest request)
+    public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method, HttpServletRequest request)
             throws NexusHttpException, NexusIllegalUrlException {
         return responseEntity(Object.class, body, method, request);
     }
@@ -105,15 +96,13 @@ public class ApiBackend extends ApiBase {
         return UriComponentsBuilder.fromUriString(url).buildAndExpand().toString(); // No .encode()!
     }
 
-    private HttpHeaders getAllHeaders(HttpServletRequest request) {
+    private static HttpHeaders getAllHeaders(HttpServletRequest request) {
         HttpHeaders headers = new HttpHeaders();
         headers.setOrigin(request.getRequestURL().toString());
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            if (!filteredHeaders.contains(headerName)) {
-                headers.add(headerName, request.getHeader(headerName));
-            }
+            headers.add(headerName, request.getHeader(headerName));
         }
         return headers;
     }
