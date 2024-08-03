@@ -93,7 +93,7 @@ public class ApiBackend extends ApiBase {
                 String.join("&", Arrays.stream(value).distinct().toArray(String[]::new)))); // remove duplicate values!
         url = !parameterMap.isEmpty() ? url + "?" + String.join("&", params) : url;
         logger.debug("Request for: {}", url);
-        return UriComponentsBuilder.fromUriString(url).buildAndExpand().toString(); // No .encode()!
+        return UriComponentsBuilder.fromUriString(url).encode().build().toString();
     }
 
     private static HttpHeaders getAllHeaders(HttpServletRequest request) {
