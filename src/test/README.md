@@ -34,8 +34,8 @@ Collection is available here: [Postman_Echo.postman_collection.json](./resources
 Test run collection result is available here: [Postman_Echo.postman_test_run.json](./resources/Postman_Echo.postman_test_run.json)
 
 All local tests passed to postman-echo.com:
- * Passed 67  - Basic Auth, Requests: GET,POST,PATCH,HEAD,DELETE, Time Utils etc...
- * Failed 17  - Auth Digest/ Hawk / Verify Signature not working anymore, Cookie, Stream and all text/html Content-Type
+ * Passed 69  - Basic Auth, Requests: GET,POST,PATCH,HEAD,DELETE, Time Utils etc...
+ * Failed 15  - Auth Digest/ Hawk / Verify Signature not working anymore, Cookie, Stream and all text/html Content-Type
  * Skipped 0
 
 ## Method GET parameters

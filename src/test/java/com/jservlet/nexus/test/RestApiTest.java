@@ -142,6 +142,51 @@ public class RestApiTest extends TestCase {
         }
     }
 
+    @Test
+    public void testEchoProxy() {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Type", MediaType.APPLICATION_FORM_URLENCODED_VALUE);
+            // get Echo data in ByteArray through the proxy!
+            byte[] obj = backendService.doRequest("/mock/v1/proxy", HttpMethod.POST,
+                    backendService.createResponseType(byte[].class), "Hello Proxy!", headers); // WARN mandatory typed byte[].class
+            System.out.println(new String(obj, StandardCharsets.UTF_8));
+        } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
+            System.out.println("Failed to POST Echo Bytes entity/entities on backend: " + e.getMessage());
+        } catch (NexusResourceNotFoundException ex) {
+            System.out.println("ResourceNotFound: " + ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testGetEchoEntityProxy() {
+        try {
+            // get Echo data in ByteArray through the proxy!
+            byte[] obj = backendService.doRequest("/mock/v1/echo", HttpMethod.GET,
+                    backendService.createResponseType(byte[].class), "Hello Echo!", null); // WARN mandatory typed byte[].class
+            System.out.println(new String(obj, StandardCharsets.UTF_8));
+        } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
+            System.out.println("Failed to POST Echo Bytes entity/entities on backend: " + e.getMessage());
+        } catch (NexusResourceNotFoundException ex) {
+            System.out.println("ResourceNotFound: " + ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testPostEchoEntityProxy() {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Type", MediaType.APPLICATION_FORM_URLENCODED_VALUE); // WARN mandatory!
+            // get Echo data in ByteArray through the proxy!
+            byte[] obj = backendService.doRequest("/mock/v1/echo", HttpMethod.POST,
+                    backendService.createResponseType(byte[].class), "Hello Echo!", headers); // WARN mandatory typed byte[].class
+            System.out.println(new String(obj, StandardCharsets.UTF_8));
+        } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
+            System.out.println("Failed to POST Echo Bytes entity/entities on backend: " + e.getMessage());
+        } catch (NexusResourceNotFoundException ex) {
+            System.out.println("ResourceNotFound: " + ex.getMessage());
+        }
+    }
 
     @Test
     public void testNotFoundGetEntity() {

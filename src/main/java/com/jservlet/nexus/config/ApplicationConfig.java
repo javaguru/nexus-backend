@@ -58,6 +58,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import javax.net.ssl.SSLContext;
 import java.io.FileInputStream;
@@ -183,10 +184,19 @@ public class ApplicationConfig  {
 
     @Bean
     public RestOperations backendRestOperations(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) throws Exception {
+
         RestTemplate restTemplate = new RestTemplate(httpRequestFactory());
+
+        // Does not encode the URI template and instead applies strict encoding to URI variables via UriUtils.
+        // encodeUriVariables prior to expanding them into the template.
+        DefaultUriBuilderFactory uriFactory = new DefaultUriBuilderFactory();
+        uriFactory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.VALUES_ONLY);
+        restTemplate.setUriTemplateHandler(uriFactory);
+
         // Json + Json wildcard and MediaType.ALL now!
         mappingJackson2HttpMessageConverter.setSupportedMediaTypes(
                 Arrays.asList(MediaType.APPLICATION_JSON, new MediaType("application", "*+json"), MediaType.ALL));
+
         // List HttpMessage Converters
         restTemplate.setMessageConverters(Arrays.asList(
                 new StringHttpMessageConverter(UTF_8), // String

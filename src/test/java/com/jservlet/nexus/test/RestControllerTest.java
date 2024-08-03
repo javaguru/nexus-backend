@@ -212,6 +212,18 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
         assertTrue(true);
    }
 
+
+    @Test
+    public void testEchoProxyBackend() throws NexusGetException, NexusResourceNotFoundException {
+        String url = "/mock/v1/echo";
+        byte[] data = backendService.get(url, BYTES_RESPONSE_TYPE);
+        logger.debug(Arrays.toString(data));
+        logger.debug(new String(data, StandardCharsets.UTF_8));
+        MatcherAssert.assertThat(new String(data, StandardCharsets.UTF_8),
+                CoreMatchers.containsString("echo"));
+    }
+
+
     @Test
     public void testXErrorBackend400() throws NexusGetException, NexusResourceNotFoundException {
         String url = "/mock/v1/dataError400";

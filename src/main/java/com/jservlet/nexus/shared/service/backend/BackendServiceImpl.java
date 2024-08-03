@@ -314,7 +314,9 @@ public class BackendServiceImpl implements BackendService {
     private String getBackendURL(String url) throws NexusIllegalUrlException {
         if (ObjectUtils.isEmpty(url)) throw new NexusIllegalUrlException("The parameter 'url' should not be empty!");
         if (!url.startsWith("/")) url = "/" + url;
-        return backendURL + url;
+        final String finalURL = backendURL + url.replaceAll("#", "%23"); // special case sharp character!
+        logger.debug("BackendURL: {}", finalURL);
+        return finalURL;
     }
 
     @SuppressWarnings("unchecked")

@@ -1,22 +1,22 @@
 {
-	"id": "a52cbea0-152e-46c3-b5b5-53f5cd4d2b6c",
+	"id": "0146e4dc-a3b3-4972-aaec-0968102306cd",
 	"name": "Postman Echo",
-	"timestamp": "2024-07-17T22:57:41.133Z",
+	"timestamp": "2024-08-02T21:35:10.922Z",
 	"collection_id": "5266980-55548714-bfe1-4d87-bc97-cd915e82fcf1",
 	"folder_id": 0,
 	"environment_id": "5266980-443be3ff-8a62-4ae4-8dea-10ddc7417e04",
-	"totalPass": 67,
+	"totalPass": 69,
 	"delay": 0,
 	"persist": true,
 	"status": "finished",
-	"startedAt": "2024-07-17T22:57:28.599Z",
-	"totalFail": 17,
+	"startedAt": "2024-08-02T21:34:58.651Z",
+	"totalFail": 15,
 	"results": [
 		{
 			"id": "ede243e5-78b3-427e-a3c2-be1c552fb55e",
 			"name": "Basic Auth",
 			"url": "http://localhost:8082/nexus-backend/api/basic-auth",
-			"time": 899,
+			"time": 947,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -36,7 +36,7 @@
 				}
 			},
 			"times": [
-				899
+				947
 			],
 			"allTests": [
 				{
@@ -49,7 +49,7 @@
 			"id": "1ae52c41-98de-4c10-808d-9cbea3e0d05d",
 			"name": "OAuth1.0 Verify Signature",
 			"url": "http://localhost:8082/nexus-backend/api/oauth1",
-			"time": 140,
+			"time": 650,
 			"responseCode": {
 				"code": 401,
 				"name": "Unauthorized"
@@ -69,7 +69,7 @@
 				}
 			},
 			"times": [
-				140
+				650
 			],
 			"allTests": [
 				{
@@ -82,7 +82,7 @@
 			"id": "b50da305-15a9-4d13-8189-d3b8c688b71d",
 			"name": "Hawk Auth",
 			"url": "http://localhost:8082/nexus-backend/api/auth/hawk",
-			"time": 134,
+			"time": 131,
 			"responseCode": {
 				"code": 401,
 				"name": "Unauthorized"
@@ -97,7 +97,7 @@
 				}
 			},
 			"times": [
-				134
+				131
 			],
 			"allTests": [
 				{
@@ -109,7 +109,7 @@
 			"id": "22a71a75-3abb-4eca-bd99-ed642214e28d",
 			"name": "Set Cookies",
 			"url": "http://localhost:8082/nexus-backend/api/cookies/set?foo1=bar1&foo2=bar2",
-			"time": 235,
+			"time": 249,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -149,7 +149,7 @@
 				}
 			},
 			"times": [
-				235
+				249
 			],
 			"allTests": [
 				{
@@ -166,7 +166,7 @@
 			"id": "4e3a5f83-cbca-45ca-a6df-4ab759f7041a",
 			"name": "Get Cookies",
 			"url": "http://localhost:8082/nexus-backend/api/cookies",
-			"time": 118,
+			"time": 119,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -191,7 +191,7 @@
 				}
 			},
 			"times": [
-				118
+				119
 			],
 			"allTests": [
 				{
@@ -205,7 +205,7 @@
 			"id": "6d4cd094-85ef-47ef-af7d-3c4c9572c72e",
 			"name": "Delete Cookies",
 			"url": "http://localhost:8082/nexus-backend/api/cookies/delete?foo1&foo2",
-			"time": 234,
+			"time": 507,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -245,7 +245,7 @@
 				}
 			},
 			"times": [
-				234
+				507
 			],
 			"allTests": [
 				{
@@ -262,7 +262,7 @@
 			"id": "60f8f9e2-c294-4ae7-b0f7-df5a29d9b14b",
 			"name": "Request Headers",
 			"url": "http://localhost:8082/nexus-backend/api/headers",
-			"time": 118,
+			"time": 210,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -287,7 +287,7 @@
 				}
 			},
 			"times": [
-				118
+				210
 			],
 			"allTests": [
 				{
@@ -301,19 +301,19 @@
 			"id": "e7503622-7ae0-4538-a0cb-a9d71dc2df67",
 			"name": "Response Headers",
 			"url": "http://localhost:8082/nexus-backend/api/response-headers?Content-Type=text/html&test=response_headers",
-			"time": 154,
+			"time": 114,
 			"responseCode": {
-				"code": 503,
-				"name": "Service Unavailable"
+				"code": 200,
+				"name": "OK"
 			},
 			"tests": {
-				"Body contains Content-Type": false,
+				"Body contains Content-Type": true,
 				"response headers have key sent as part of request": false
 			},
 			"testPassFailCounts": {
 				"Body contains Content-Type": {
-					"pass": 0,
-					"fail": 1
+					"pass": 1,
+					"fail": 0
 				},
 				"response headers have key sent as part of request": {
 					"pass": 0,
@@ -321,11 +321,11 @@
 				}
 			},
 			"times": [
-				154
+				114
 			],
 			"allTests": [
 				{
-					"Body contains Content-Type": false,
+					"Body contains Content-Type": true,
 					"response headers have key sent as part of request": false
 				}
 			]
@@ -334,7 +334,7 @@
 			"id": "95eb6f4a-c9ba-4420-9c48-f45b1cbcb95a",
 			"name": "GET Request",
 			"url": "http://localhost:8082/nexus-backend/api/get?test=123",
-			"time": 114,
+			"time": 117,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -374,7 +374,7 @@
 				}
 			},
 			"times": [
-				114
+				117
 			],
 			"allTests": [
 				{
@@ -436,7 +436,7 @@
 			"id": "eb1aa446-d144-4dad-b6ce-50d29d150e71",
 			"name": "POST Form Data",
 			"url": "http://localhost:8082/nexus-backend/api/post",
-			"time": 122,
+			"time": 120,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -461,7 +461,7 @@
 				}
 			},
 			"times": [
-				122
+				120
 			],
 			"allTests": [
 				{
@@ -475,7 +475,7 @@
 			"id": "9c6de124-95bf-4a26-a3ed-16c70ae54c86",
 			"name": "PUT Request",
 			"url": "http://localhost:8082/nexus-backend/api/put",
-			"time": 126,
+			"time": 121,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -500,7 +500,7 @@
 				}
 			},
 			"times": [
-				126
+				121
 			],
 			"allTests": [
 				{
@@ -514,7 +514,7 @@
 			"id": "9103ca4e-8334-49b0-a26a-9c8eaa1eef5f",
 			"name": "PATCH Request",
 			"url": "http://localhost:8082/nexus-backend/api/patch",
-			"time": 120,
+			"time": 115,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -539,7 +539,7 @@
 				}
 			},
 			"times": [
-				120
+				115
 			],
 			"allTests": [
 				{
@@ -592,7 +592,7 @@
 			"id": "c19fbecb-faa3-40ab-a765-fdf24784ac7b",
 			"name": "Response Status Code",
 			"url": "http://localhost:8082/nexus-backend/api/status/200",
-			"time": 114,
+			"time": 116,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -612,7 +612,7 @@
 				}
 			},
 			"times": [
-				114
+				116
 			],
 			"allTests": [
 				{
@@ -625,19 +625,19 @@
 			"id": "8219d594-d835-4e41-860d-48a7e4eb756b",
 			"name": "Streamed Response",
 			"url": "http://localhost:8082/nexus-backend/api/stream/10",
-			"time": 118,
+			"time": 116,
 			"responseCode": {
-				"code": 503,
-				"name": "Service Unavailable"
+				"code": 200,
+				"name": "OK"
 			},
 			"tests": {
-				"response code is 200": false,
+				"response code is 200": true,
 				"response is sent in chunks": true
 			},
 			"testPassFailCounts": {
 				"response code is 200": {
-					"pass": 0,
-					"fail": 1
+					"pass": 1,
+					"fail": 0
 				},
 				"response is sent in chunks": {
 					"pass": 1,
@@ -645,11 +645,11 @@
 				}
 			},
 			"times": [
-				118
+				116
 			],
 			"allTests": [
 				{
-					"response code is 200": false,
+					"response code is 200": true,
 					"response is sent in chunks": true
 				}
 			]
@@ -658,7 +658,7 @@
 			"id": "720f6ce1-db91-4d7e-9eee-5b8e34cf9eed",
 			"name": "Delay Response",
 			"url": "http://localhost:8082/nexus-backend/api/delay/3",
-			"time": 3116,
+			"time": 3118,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -678,7 +678,7 @@
 				}
 			},
 			"times": [
-				3116
+				3118
 			],
 			"allTests": [
 				{
@@ -691,7 +691,7 @@
 			"id": "3e77c741-a2c3-41c5-8ec7-78f403d40142",
 			"name": "Get UTF8 Encoded Response",
 			"url": "http://localhost:8082/nexus-backend/api/encoding/utf8",
-			"time": 214,
+			"time": 222,
 			"responseCode": {
 				"code": 503,
 				"name": "Service Unavailable"
@@ -706,7 +706,7 @@
 				}
 			},
 			"times": [
-				214
+				222
 			],
 			"allTests": [
 				{
@@ -763,7 +763,7 @@
 			"id": "4495857c-182d-4fdf-95cd-282ba6a2b204",
 			"name": "Deflate Compressed Response",
 			"url": "http://localhost:8082/nexus-backend/api/deflate",
-			"time": 114,
+			"time": 119,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -793,7 +793,7 @@
 				}
 			},
 			"times": [
-				114
+				119
 			],
 			"allTests": [
 				{
@@ -808,7 +808,7 @@
 			"id": "50aaf38a-9c68-4b57-907a-ab50432c5319",
 			"name": "IP address in JSON format",
 			"url": "http://localhost:8082/nexus-backend/api/ip",
-			"time": 117,
+			"time": 112,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -828,7 +828,7 @@
 				}
 			},
 			"times": [
-				117
+				112
 			],
 			"allTests": [
 				{
@@ -841,7 +841,7 @@
 			"id": "8d2fdd63-ef4d-412e-a61c-177895648460",
 			"name": "Current UTC time",
 			"url": "http://localhost:8082/nexus-backend/api/time/now",
-			"time": 122,
+			"time": 117,
 			"responseCode": {
 				"code": 503,
 				"name": "Service Unavailable"
@@ -861,7 +861,7 @@
 				}
 			},
 			"times": [
-				122
+				117
 			],
 			"allTests": [
 				{
@@ -874,7 +874,7 @@
 			"id": "cea020b3-f123-47bf-ad2a-6b77871fb909",
 			"name": "Timestamp validity",
 			"url": "http://localhost:8082/nexus-backend/api/time/valid?timestamp=2016-10-10",
-			"time": 127,
+			"time": 120,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -894,7 +894,7 @@
 				}
 			},
 			"times": [
-				127
+				120
 			],
 			"allTests": [
 				{
@@ -907,7 +907,7 @@
 			"id": "53929109-6ed6-4876-a53a-2408f0706d3e",
 			"name": "Format timestamp",
 			"url": "http://localhost:8082/nexus-backend/api/time/format?timestamp=2016-10-10&format=mm",
-			"time": 127,
+			"time": 114,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -927,7 +927,7 @@
 				}
 			},
 			"times": [
-				127
+				114
 			],
 			"allTests": [
 				{
@@ -940,7 +940,7 @@
 			"id": "2a916d1b-1d4d-4141-8752-1784b598fac7",
 			"name": "Extract timestamp unit",
 			"url": "http://localhost:8082/nexus-backend/api/time/unit?timestamp=2016-10-10&unit=day",
-			"time": 124,
+			"time": 118,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -960,7 +960,7 @@
 				}
 			},
 			"times": [
-				124
+				118
 			],
 			"allTests": [
 				{
@@ -973,33 +973,6 @@
 			"id": "57c30b3e-9d8d-4e06-8b6d-6ee5195e3c83",
 			"name": "Time addition",
 			"url": "http://localhost:8082/nexus-backend/api/time/add?timestamp=2016-10-10&years=100",
-			"time": 190,
-			"responseCode": {
-				"code": 200,
-				"name": "OK"
-			},
-			"tests": {
-				"Status code is 200": true
-			},
-			"testPassFailCounts": {
-				"Status code is 200": {
-					"pass": 1,
-					"fail": 0
-				}
-			},
-			"times": [
-				190
-			],
-			"allTests": [
-				{
-					"Status code is 200": true
-				}
-			]
-		},
-		{
-			"id": "ac979179-08ae-43bf-ae66-94be4107347d",
-			"name": "Time subtraction",
-			"url": "http://localhost:8082/nexus-backend/api/time/subtract?timestamp=2016-10-10&years=100",
 			"time": 116,
 			"responseCode": {
 				"code": 200,
@@ -1024,10 +997,10 @@
 			]
 		},
 		{
-			"id": "e3531abb-b3ff-48d5-8a23-8b1047a241a4",
-			"name": "Start of time",
-			"url": "http://localhost:8082/nexus-backend/api/time/start?timestamp=2016-10-10&unit=month",
-			"time": 438,
+			"id": "ac979179-08ae-43bf-ae66-94be4107347d",
+			"name": "Time subtraction",
+			"url": "http://localhost:8082/nexus-backend/api/time/subtract?timestamp=2016-10-10&years=100",
+			"time": 115,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1042,7 +1015,34 @@
 				}
 			},
 			"times": [
-				438
+				115
+			],
+			"allTests": [
+				{
+					"Status code is 200": true
+				}
+			]
+		},
+		{
+			"id": "e3531abb-b3ff-48d5-8a23-8b1047a241a4",
+			"name": "Start of time",
+			"url": "http://localhost:8082/nexus-backend/api/time/start?timestamp=2016-10-10&unit=month",
+			"time": 114,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				114
 			],
 			"allTests": [
 				{
@@ -1054,7 +1054,7 @@
 			"id": "6b5fca75-5fc6-4187-957f-1bdc429e3eea",
 			"name": "Object representation",
 			"url": "http://localhost:8082/nexus-backend/api/time/start?timestamp=2016-10-10&unit=month",
-			"time": 111,
+			"time": 125,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1069,7 +1069,7 @@
 				}
 			},
 			"times": [
-				111
+				125
 			],
 			"allTests": [
 				{
@@ -1081,7 +1081,7 @@
 			"id": "ea211f39-8fc1-4a7b-88de-4c5128549d02",
 			"name": "Before comparisons",
 			"url": "http://localhost:8082/nexus-backend/api/time/before?timestamp=2016-10-10&target=2017-10-10",
-			"time": 113,
+			"time": 114,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1101,7 +1101,7 @@
 				}
 			},
 			"times": [
-				113
+				114
 			],
 			"allTests": [
 				{
@@ -1147,7 +1147,7 @@
 			"id": "100939a6-f006-4921-811c-c9ece72f0bf6",
 			"name": "Between timestamps",
 			"url": "http://localhost:8082/nexus-backend/api/time/between?timestamp=2016-10-10&start=2017-10-10&end=2019-10-10",
-			"time": 120,
+			"time": 117,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1167,7 +1167,7 @@
 				}
 			},
 			"times": [
-				120
+				117
 			],
 			"allTests": [
 				{
@@ -1180,7 +1180,7 @@
 			"id": "4250cac7-9e32-4a88-8011-77a9fb9d0a76",
 			"name": "Leap year check",
 			"url": "http://localhost:8082/nexus-backend/api/time/leap?timestamp=2016-10-10",
-			"time": 116,
+			"time": 113,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1200,7 +1200,7 @@
 				}
 			},
 			"times": [
-				116
+				113
 			],
 			"allTests": [
 				{
@@ -1213,7 +1213,7 @@
 			"id": "2f2581d8-3603-4180-92b2-196425b9f15e",
 			"name": "Transform collection from format v1 to v2",
 			"url": "http://localhost:8082/nexus-backend/api/transform/collection?from=1&to=2",
-			"time": 138,
+			"time": 133,
 			"responseCode": {
 				"code": 404,
 				"name": "Not Found"
@@ -1221,7 +1221,7 @@
 			"tests": {},
 			"testPassFailCounts": {},
 			"times": [
-				138
+				133
 			],
 			"allTests": [
 				{}
@@ -1231,7 +1231,7 @@
 			"id": "90a5188a-36e7-4fe1-8501-2f5edbb4e865",
 			"name": "Transform collection from format v2 to v1",
 			"url": "http://localhost:8082/nexus-backend/api/transform/collection?from=2&to=1",
-			"time": 130,
+			"time": 120,
 			"responseCode": {
 				"code": 404,
 				"name": "Not Found"
@@ -1239,7 +1239,7 @@
 			"tests": {},
 			"testPassFailCounts": {},
 			"times": [
-				130
+				120
 			],
 			"allTests": [
 				{}
@@ -1247,7 +1247,7 @@
 		}
 	],
 	"count": 1,
-	"totalTime": 8751,
+	"totalTime": 9211,
 	"collection": {
 		"requests": [
 			{
