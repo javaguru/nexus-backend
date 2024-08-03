@@ -45,7 +45,7 @@ Nexus-Backend Service
 
 | **Keys**                                      | **Default value** | **Descriptions**                                   |
 |-----------------------------------------------|:------------------|:---------------------------------------------------|
-| nexus.api.backend.enabled                     | true              | Activated the Nexus Backend Service                |   
+| nexus.api.backend.enabled                     | true              | Activated the Nexus-Backend Service                |   
 | nexus.api.backend.filter.waf.enabled          | true              | Activated the WAF Filter Json RequestBody          |   
 | nexus.api.backend.listener.requestid.enabled  | true              | Activated the Fingerprint for each Http Request    |   
 | nexus.api.backend.filter.httpoverride.enabled | false             | Activated the Http Override Method                 | 
@@ -59,7 +59,7 @@ Nexus-Backend Service
 * -Dspring.config.name=spring.properties
  
 
-### The Nexus Backend Url Server and miscellaneous options can be configured by the following keys Settings
+### The Nexus-Backend Url Server and miscellaneous options can be configured by the following keys Settings
 
  **Settings keys settings.properties**
 
@@ -107,17 +107,25 @@ Nexus-Backend Service
 
  **Settings keys settings.properties**
 
-| **Keys**                                            | **Default value**                    | **Example value** | **Descriptions**               |
-|-----------------------------------------------------|:-------------------------------------|:------------------|:-------------------------------|
-| nexus.backend.client.header.user-agent              | JavaNexus                            | curl              | User Agent Header              |
-| nexus.backend.client.timeout                        | 30                                   | 10                | Connection/Read/Write timeout  |
-| nexus.backend.client.max_connections_per_route      | 20                                   | 30                | Max Connections per route      |
-| nexus.backend.client.max_connections                | 100                                  | 300               | Max Connections in the Pool    |
-| nexus.backend.client.close_idle_connections_timeout | 0                                    | 0                 | Close idle connections timeout |
-| nexus.backend.client.validate_after_inactivity      | 2                                    | 2                 | Validate after inactivity      |
+| **Keys**                                            | **Default value** | **Example value** | **Descriptions**               |
+|-----------------------------------------------------|:------------------|:------------------|:-------------------------------|
+| nexus.backend.client.header.user-agent              | JavaNexus         | curl              | User Agent Header              |
+| nexus.backend.client.connectTimeout                 | 10                | 5                 | Connection timeout in second   |
+| nexus.backend.client.requestTimeout                 | 20                | 10                | Request timeout in second      |
+| nexus.backend.client.socketTimeout                  | 10                | 5                 | Socket timeout in second       |
+| nexus.backend.client.max_connections_per_route      | 20                | 30                | Max Connections per route      |
+| nexus.backend.client.max_connections                | 100               | 300               | Max Connections in the Pool    |
+| nexus.backend.client.close_idle_connections_timeout | 0                 | 0                 | Close idle connections timeout |
+| nexus.backend.client.validate_after_inactivity      | 2                 | 2                 | Validate after inactivity      |
+| nexus.backend.client.requestSentRetryEnabled        | false             | true              | Request Sent Retry Enabled     |
+| nexus.backend.client.retryCount                     | 3                 | 2                 | Retry Count                    |
+| nexus.backend.client.redirectsEnabled               | true              | true              | Redirects enabled              |
+| nexus.backend.client.maxRedirects                   | 5                 | 2                 | Maximum redirections           |
+| nexus.backend.client.authenticationEnabled          | false             | true              | Authentication enabled         |
+| nexus.backend.client.circularRedirectsAllowed       | false             | true              | Circular redirections allowed  |
 
 
-### The Nexus Backend Firewall and the WAF Filter Configuration
+### The Nexus-Backend Firewall and the WAF Filter Configuration
 
 The **Nexus-Backend** implements a **HttpFirewall** protection against evasion and rejected any suspicious Http Request 
 on the Headers and Cookies, the Parameters, the keys and Values.
@@ -232,7 +240,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 Already initialized, activated by setting the logback.xml at level="DEBUG".
 
 
-## Build Nexus Backend
+## Build Nexus-Backend
 
 [SpringBoot](https://projects.spring.io/spring-boot/)
 
@@ -315,7 +323,7 @@ Normally, it communicates to an API interface Backend.
 #### Prerequisites:
 
 * **RestOperations** should be configured with an Apache-HttpClient and a Pooling connection should be properly configured.
-* **HttpMessageConverter** are also mandatory, StringHttp, FormHttp, ResourceHttp, MappingJackson2Http are the minimal.
+* **HttpMessageConverter** are also mandatory, StringHttp, FormHttp, ByteArrayHttp, ResourceHttp and MappingJackson2Http are the minimal.
 * **Typed Response** parameter Class Object or a ParameterizedTypeReference are mandatory
 * **Object.class** cannot be converted in a Resource or ByteArray directly without a minimal support Typed Response.
 
@@ -382,7 +390,7 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 * Initial release **1.0.0** at 03/06/2021.
 
 ## Support
-If you need help using Nexus Backend Service feel free to drop an email or create an issue in GitHub.com (preferred).
+If you need help using Nexus-Backend Service feel free to drop an email or create an issue in GitHub.com (preferred).
 
 ## Contributions
 To help Nexus-Backend / ApiBackend / BackendService development you are encouraged to

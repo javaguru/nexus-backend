@@ -20,14 +20,14 @@ package com.jservlet.nexus.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
-import com.jservlet.nexus.config.web.tomcat.ssl.TomcatConnectorConfig;
 import com.jservlet.nexus.config.web.WebConfig;
-import com.jservlet.nexus.shared.config.annotation.ConfigProperties;
 import com.jservlet.nexus.config.web.WebSecurityConfig;
+import com.jservlet.nexus.config.web.tomcat.ssl.TomcatConnectorConfig;
+import com.jservlet.nexus.shared.config.annotation.ConfigProperties;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl;
 import org.apache.http.HttpResponse;
@@ -37,25 +37,32 @@ import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
-import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.PrivateKeyDetails;
 import org.apache.http.ssl.PrivateKeyStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.*;
-import org.springframework.http.*;
-import org.springframework.http.client.*;
-import org.springframework.http.converter.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.ByteArrayHttpMessageConverter;
+import org.springframework.http.converter.FormHttpMessageConverter;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import javax.net.ssl.SSLContext;
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.Socket;
@@ -158,7 +165,6 @@ public class ApplicationConfig  {
         });
         module.addSerializer(Double.class, new JsonSerializer<>() {
             @Override
-
             public void serialize(Double value, JsonGenerator jgen, SerializerProvider unused) throws IOException {
                 if (null == value) {
                     jgen.writeNull();
@@ -178,31 +184,37 @@ public class ApplicationConfig  {
 
     @Bean
     public RestOperations backendRestOperations(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) throws Exception {
-        RestTemplate restTemplate = new RestTemplate(httpRequestFactory());
-        // not MediaType.ALL only Json and Json wildcard!
-        mappingJackson2HttpMessageConverter.setSupportedMediaTypes(
-                Arrays.asList(
-                        MediaType.APPLICATION_JSON,
-                        new MediaType("application", "*+json"),
-                        MediaType.APPLICATION_JSON_UTF8,
-                        MediaType.APPLICATION_FORM_URLENCODED,
-                        MediaType.APPLICATION_PROBLEM_JSON_UTF8
-                )
-        );
 
+        RestTemplate restTemplate = new RestTemplate(httpRequestFactory());
+
+        // Does not encode the URI template and instead applies strict encoding to URI variables via UriUtils.
+        // encodeUriVariables prior to expanding them into the template.
+        DefaultUriBuilderFactory uriFactory = new DefaultUriBuilderFactory();
+        uriFactory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.VALUES_ONLY);
+        restTemplate.setUriTemplateHandler(uriFactory);
+
+        // Json + Json wildcard and MediaType.ALL now!
+        mappingJackson2HttpMessageConverter.setSupportedMediaTypes(
+                Arrays.asList(MediaType.APPLICATION_JSON, new MediaType("application", "*+json"), MediaType.ALL));
+
+        // List HttpMessage Converters
         restTemplate.setMessageConverters(Arrays.asList(
-                new StringHttpMessageConverter(UTF_8),
-                new FormHttpMessageConverter(),
-                new ByteArrayHttpMessageConverter(),
-                //new ResourceHttpMessageConverter(), // WARN or let the ResourceHttpRequestHandler create for us!
-                mappingJackson2HttpMessageConverter
+                new StringHttpMessageConverter(UTF_8), // String
+                new FormHttpMessageConverter(),        // Form data to/from a MultiValueMap<String, String>
+                new ByteArrayHttpMessageConverter(),   // byte[]
+                //new ResourceHttpMessageConverter(),  // Resource // WARN or let the ResourceHttpRequestHandler create for us!
+                mappingJackson2HttpMessageConverter    // JSON
         ));
         return restTemplate;
     }
 
 
-    @Value("${nexus.backend.client.timeout:30}")
-    private int readTimeout;
+    @Value("${nexus.backend.client.connectTimeout:10}")
+    private int connectTimeout;
+    @Value("${nexus.backend.client.requestTimeout:20}")
+    private int requestTimeout;
+    @Value("${nexus.backend.client.socketTimeout:10}")
+    private int socketTimeout;
 
     @Value("${nexus.backend.client.max_connections_per_route:20}")
     private int defaultMaxConnectionsPerRoute;
@@ -216,6 +228,24 @@ public class ApplicationConfig  {
     @Value("${nexus.backend.client.validate_after_inactivity:2}")
     private int validateAfterInactivity;
 
+    @Value("${nexus.backend.client.retryCount:3}")
+    private int retryCount;
+    @Value("${nexus.backend.client.requestSentRetryEnabled:false}")
+    private boolean requestSentRetryEnabled;
+
+    @Value("${nexus.backend.client.redirectsEnabled:true}")
+    private boolean redirectsEnabled;
+    @Value("${nexus.backend.client.maxRedirects:5}")
+    private int maxRedirects;
+    @Value("${nexus.backend.client.authenticationEnabled:false}")
+    private boolean authenticationEnabled;
+    @Value("${nexus.backend.client.circularRedirectsAllowed:false}")
+    private boolean circularRedirectsAllowed;
+
+
+    /**
+     * User-Agent
+     */
     @Value("${nexus.backend.client.header.user-agent:JavaNexus}")
     private String userAgent;
 
@@ -293,18 +323,22 @@ public class ApplicationConfig  {
         cm.setMaxTotal(maxConnections);
         cm.setValidateAfterInactivity(validateAfterInactivity * 1000);
         cm.closeIdleConnections(closeIdleConnectionsTimeout, TimeUnit.SECONDS);
-
-        return new HttpComponentsClientHttpRequestFactory(HttpClientBuilder.create()
+       return new HttpComponentsClientHttpRequestFactory(HttpClientBuilder.create()
                 .setUserAgent(userAgent)
                 .setConnectionManager(cm)
                 .setDefaultRequestConfig(RequestConfig.custom()
-                    .setConnectTimeout(readTimeout * 1000)
-                    .setConnectionRequestTimeout(readTimeout * 1000)
-                    .setSocketTimeout(readTimeout * 1000)
-                    .setAuthenticationEnabled(true)
+                    .setConnectTimeout(connectTimeout * 1000)
+                    .setConnectionRequestTimeout(requestTimeout * 1000)
+                    .setSocketTimeout(socketTimeout * 1000)
+                    .setRedirectsEnabled(redirectsEnabled)
+                    .setMaxRedirects(maxRedirects)
+                    .setAuthenticationEnabled(authenticationEnabled)
+                    .setCircularRedirectsAllowed(circularRedirectsAllowed)
                     .build())
                 .setConnectionReuseStrategy(new DefaultConnectionReuseStrategy())
                 .setKeepAliveStrategy(myStrategy)
+                .setRedirectStrategy(new LaxRedirectStrategy())
+                .setRetryHandler(new DefaultHttpRequestRetryHandler(retryCount, requestSentRetryEnabled))
                 .disableCookieManagement()
                 .disableAuthCaching()
                 .disableConnectionState()

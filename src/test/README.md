@@ -1,6 +1,7 @@
 Nexus-Backend Service
 =====================
 
+
 ### Postman Echo Service
 
 Postman Echo is a service you can use to test your REST clients and make sample API calls. 
@@ -11,10 +12,31 @@ The documentation for the endpoints as well as example responses can be found at
 
 © 2024 Postman, Inc.
 
-## Url Backend Server configuration
 
- * nexus.backend.url=https://postman-echo.com
- * nexus.backend.uri.alive=/get
+## Nexus-Backend Url Backend Server configuration
+
+Setting file [settings.properties](../../src/main/resources/settings.properties)
+
+| **Variable**             | **Default value**        |
+|--------------------------|:-------------------------|
+| nexus.backend.url        | https://postman-echo.com |  
+| nexus.backend.uri.alive  | /get                     |
+
+## Postman Echo Collection Json
+
+Collection is available here: [Postman_Echo.postman_collection.json](./resources/Postman_Echo.postman_collection.json)
+
+| **Variable**    | **Default value**     |
+|-----------------|:----------------------|
+| 1. [x] base_url | http://localhost:8082 |  
+| 2. [x] app_url  | nexus-backend/api     |
+
+Test run collection result is available here: [Postman_Echo.postman_test_run.json](./resources/Postman_Echo.postman_test_run.json)
+
+All local tests passed to postman-echo.com:
+ * Passed 69  - Basic Auth, Requests: GET,POST,PATCH,HEAD,DELETE, Time Utils etc...
+ * Failed 15  - Auth Digest/ Hawk / Verify Signature not working anymore, Cookie, Stream and all text/html Content-Type
+ * Skipped 0
 
 ## Method GET parameters
 

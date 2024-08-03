@@ -10,11 +10,20 @@ import com.jservlet.nexus.shared.service.backend.BackendServiceImpl;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
+import org.apache.http.ssl.PrivateKeyDetails;
+import org.apache.http.ssl.PrivateKeyStrategy;
+import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,10 +41,14 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 
+import javax.net.ssl.SSLContext;
 import java.io.*;
+import java.net.Socket;
+import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -97,7 +110,7 @@ public class ApplicationTestConfig {
 
 
     @Bean
-    public RestOperations backendRestOperations(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) {
+    public RestOperations backendRestOperations(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) throws Exception {
         RestTemplate restTemplate = new RestTemplate(httpRequestFactory());
         mappingJackson2HttpMessageConverter.setSupportedMediaTypes(Collections.singletonList(MediaType.APPLICATION_JSON));
         restTemplate.setMessageConverters(Arrays.asList(
@@ -167,21 +180,69 @@ public class ApplicationTestConfig {
         return restTemplate;
     }
 
-    @Value("${nexus.backend.timeout:30}")
-    private int readTimeout;
+    @Value("${nexus.backend.client.connectTimeout:10}")
+    private int connectTimeout;
+    @Value("${nexus.backend.client.requestTimeout:20}")
+    private int requestTimeout;
+    @Value("${nexus.backend.client.socketTimeout:10}")
+    private int socketTimeout;
 
-    @Value("${nexus.backend.max_connections_per_route:20}")
+    @Value("${nexus.backend.client.max_connections_per_route:20}")
     private int defaultMaxConnectionsPerRoute;
 
-    @Value("${nexus.backend.max_connections:30}")
+    @Value("${nexus.backend.client.max_connections:100}")
     private int maxConnections;
 
-    @Value("${nexus.backend.close_idle_connections_timeout:0}")
+    @Value("${nexus.backend.client.close_idle_connections_timeout:0}")
     private int closeIdleConnectionsTimeout;
 
+    @Value("${nexus.backend.client.validate_after_inactivity:2}")
+    private int validateAfterInactivity;
+
+    @Value("${nexus.backend.client.retryCount:3}")
+    private int retryCount;
+    @Value("${nexus.backend.client.requestSentRetryEnabled:false}")
+    private boolean requestSentRetryEnabled;
+
+    @Value("${nexus.backend.client.redirectsEnabled:true}")
+    private boolean redirectsEnabled;
+    @Value("${nexus.backend.client.maxRedirects:5}")
+    private int maxRedirects;
+    @Value("${nexus.backend.client.authenticationEnabled:false}")
+    private boolean authenticationEnabled;
+    @Value("${nexus.backend.client.circularRedirectsAllowed:false}")
+    private boolean circularRedirectsAllowed;
+
+
+    /**
+     * User-Agent
+     */
+    @Value("${nexus.backend.client.header.user-agent:JavaNexus}")
+    private String userAgent;
+
+
+    /**
+     * Activated the Mutual Authentication or mTLS, default protocol TLSv1.3
+     */
+    @Value("${nexus.backend.client.ssl.mtls.enable:false}")
+    private boolean isMTLS;
+
+    @Value("${nexus.backend.client.ssl.key-store:nexus-default.jks}")
+    private String pathJKS;
+    @Value("${nexus.backend.client.ssl.key-store-password:changeit}")
+    private String keyStorePassword;
+    @Value("${nexus.backend.client.ssl.certificate.alias:key_server}")
+    private String certificateAlias;
+    /**
+     * SpEL reads allow method delimited with a comma and splits into a List of Strings
+     */
+    @Value("#{'${nexus.backend.client.ssl.https.protocols:TLSv1.3}'.split(',')}")
+    private List<String> httpsProtocols;
+    @Value("#{'${nexus.backend.client.ssl.https.cipherSuites:TLS_AES_256_GCM_SHA384}'.split(',')}")
+    private List<String> httpsCipherSuites;
 
     @Bean
-    public ClientHttpRequestFactory httpRequestFactory() {
+    public ClientHttpRequestFactory httpRequestFactory() throws Exception {
 
         DefaultConnectionKeepAliveStrategy myStrategy = new DefaultConnectionKeepAliveStrategy() {
             @Override
@@ -190,26 +251,69 @@ public class ApplicationTestConfig {
             }
         };
 
-        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        final PoolingHttpClientConnectionManager cm;
+
+        if (isMTLS) {
+            final KeyStore identityKeyStore = KeyStore.getInstance("jks");
+            final FileInputStream identityKeyStoreFile = new FileInputStream(pathJKS);
+            identityKeyStore.load(identityKeyStoreFile, keyStorePassword.toCharArray());
+
+            final KeyStore trustKeyStore = KeyStore.getInstance("jks");
+            final FileInputStream trustKeyStoreFile = new FileInputStream(pathJKS);
+            trustKeyStore.load(trustKeyStoreFile, keyStorePassword.toCharArray());
+
+            final SSLContext sslContext = SSLContexts.custom()
+                    // load identity keystore
+                    .loadKeyMaterial(identityKeyStore, keyStorePassword.toCharArray(), new PrivateKeyStrategy() {
+                        @Override
+                        public String chooseAlias(Map<String, PrivateKeyDetails> aliases, Socket socket) {
+                            return certificateAlias;
+                        }
+                    })
+                    // load trust keystore
+                    .loadTrustMaterial(trustKeyStore, null)
+                    .build();
+
+            // WARN only protocol TLSv1.3, Not a mix with TLSv1.2,TLSv1.1 cause SSLSocket duplex close failed!!!
+            // WARN only CipherSuites TLS_AES_256_GCM_SHA384 or TLS_AES_128_GCM_SHA256
+            final SSLConnectionSocketFactory sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContext,
+                    httpsProtocols.toArray(new String[0]),
+                    httpsCipherSuites.toArray(new String[0]), // TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256
+                    SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+
+            // WARN Not set a sslConnectionSocketFactory cause a HandshakeContext with a dummy KeyManager!!!
+            cm = new PoolingHttpClientConnectionManager(RegistryBuilder.<ConnectionSocketFactory>create()
+                    .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                    .register("https", sslConnectionSocketFactory)
+                    .build());
+        } else {
+            cm = new PoolingHttpClientConnectionManager();
+        }
+
         cm.setDefaultMaxPerRoute(defaultMaxConnectionsPerRoute);
         cm.setMaxTotal(maxConnections);
-        cm.setValidateAfterInactivity(2 * 1000); // 2s
+        cm.setValidateAfterInactivity(validateAfterInactivity * 1000);
         cm.closeIdleConnections(closeIdleConnectionsTimeout, TimeUnit.SECONDS);
-
         return new HttpComponentsClientHttpRequestFactory(HttpClientBuilder.create()
+                .setUserAgent(userAgent)
                 .setConnectionManager(cm)
                 .setDefaultRequestConfig(RequestConfig.custom()
-                        .setConnectTimeout(readTimeout * 1000)
-                        .setConnectionRequestTimeout(readTimeout * 1000)
-                        .setSocketTimeout(readTimeout * 1000)
-                        //.setStaleConnectionCheckEnabled(true)
-                        .setAuthenticationEnabled(true)
+                        .setConnectTimeout(connectTimeout * 1000)
+                        .setConnectionRequestTimeout(requestTimeout * 1000)
+                        .setSocketTimeout(socketTimeout * 1000)
+                        .setRedirectsEnabled(redirectsEnabled)
+                        .setMaxRedirects(maxRedirects)
+                        .setAuthenticationEnabled(authenticationEnabled)
+                        .setCircularRedirectsAllowed(circularRedirectsAllowed)
                         .build())
                 .setConnectionReuseStrategy(new DefaultConnectionReuseStrategy())
+                .setKeepAliveStrategy(myStrategy)
+                .setRedirectStrategy(new LaxRedirectStrategy())
+                .setRetryHandler(new DefaultHttpRequestRetryHandler(retryCount, requestSentRetryEnabled))
                 .disableCookieManagement()
                 .disableAuthCaching()
-                .setKeepAliveStrategy(myStrategy)
                 .disableConnectionState()
+                .disableAutomaticRetries()
                 .build());
     }
 

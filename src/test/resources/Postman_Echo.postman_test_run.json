@@ -1,0 +1,1395 @@
+{
+	"id": "0146e4dc-a3b3-4972-aaec-0968102306cd",
+	"name": "Postman Echo",
+	"timestamp": "2024-08-02T21:35:10.922Z",
+	"collection_id": "5266980-55548714-bfe1-4d87-bc97-cd915e82fcf1",
+	"folder_id": 0,
+	"environment_id": "5266980-443be3ff-8a62-4ae4-8dea-10ddc7417e04",
+	"totalPass": 69,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2024-08-02T21:34:58.651Z",
+	"totalFail": 15,
+	"results": [
+		{
+			"id": "ede243e5-78b3-427e-a3c2-be1c552fb55e",
+			"name": "Basic Auth",
+			"url": "http://localhost:8082/nexus-backend/api/basic-auth",
+			"time": 947,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"response code is 200": true,
+				"Body contains authenticated": true
+			},
+			"testPassFailCounts": {
+				"response code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains authenticated": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				947
+			],
+			"allTests": [
+				{
+					"response code is 200": true,
+					"Body contains authenticated": true
+				}
+			]
+		},
+		{
+			"id": "1ae52c41-98de-4c10-808d-9cbea3e0d05d",
+			"name": "OAuth1.0 Verify Signature",
+			"url": "http://localhost:8082/nexus-backend/api/oauth1",
+			"time": 650,
+			"responseCode": {
+				"code": 401,
+				"name": "Unauthorized"
+			},
+			"tests": {
+				"response code is 200": false,
+				"Body contains status pass": false
+			},
+			"testPassFailCounts": {
+				"response code is 200": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Body contains status pass": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				650
+			],
+			"allTests": [
+				{
+					"response code is 200": false,
+					"Body contains status pass": false
+				}
+			]
+		},
+		{
+			"id": "b50da305-15a9-4d13-8189-d3b8c688b71d",
+			"name": "Hawk Auth",
+			"url": "http://localhost:8082/nexus-backend/api/auth/hawk",
+			"time": 131,
+			"responseCode": {
+				"code": 401,
+				"name": "Unauthorized"
+			},
+			"tests": {
+				"Status code is 200": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				131
+			],
+			"allTests": [
+				{
+					"Status code is 200": false
+				}
+			]
+		},
+		{
+			"id": "22a71a75-3abb-4eca-bd99-ed642214e28d",
+			"name": "Set Cookies",
+			"url": "http://localhost:8082/nexus-backend/api/cookies/set?foo1=bar1&foo2=bar2",
+			"time": 249,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 302 or 200": true,
+				"Body contains cookies": true,
+				"Body contains cookie foo1": false,
+				"Body contains cookie foo2": false,
+				"foo1 cookie is set": false,
+				"foo2 cookie is set": false
+			},
+			"testPassFailCounts": {
+				"Status code is 302 or 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains cookies": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains cookie foo1": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Body contains cookie foo2": {
+					"pass": 0,
+					"fail": 1
+				},
+				"foo1 cookie is set": {
+					"pass": 0,
+					"fail": 1
+				},
+				"foo2 cookie is set": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				249
+			],
+			"allTests": [
+				{
+					"Status code is 302 or 200": true,
+					"Body contains cookies": true,
+					"Body contains cookie foo1": false,
+					"Body contains cookie foo2": false,
+					"foo1 cookie is set": false,
+					"foo2 cookie is set": false
+				}
+			]
+		},
+		{
+			"id": "4e3a5f83-cbca-45ca-a6df-4ab759f7041a",
+			"name": "Get Cookies",
+			"url": "http://localhost:8082/nexus-backend/api/cookies",
+			"time": 119,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Body contains cookies": true,
+				"Cookies object is empty": false,
+				"Status code is 200": true
+			},
+			"testPassFailCounts": {
+				"Body contains cookies": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Cookies object is empty": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				119
+			],
+			"allTests": [
+				{
+					"Body contains cookies": true,
+					"Cookies object is empty": false,
+					"Status code is 200": true
+				}
+			]
+		},
+		{
+			"id": "6d4cd094-85ef-47ef-af7d-3c4c9572c72e",
+			"name": "Delete Cookies",
+			"url": "http://localhost:8082/nexus-backend/api/cookies/delete?foo1&foo2",
+			"time": 507,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 302 or 200": true,
+				"Body contains cookies": true,
+				"Body contains cookie foo1": false,
+				"Body contains cookie foo2": false,
+				"foo1 cookie is set": true,
+				"foo2 cookie is set": true
+			},
+			"testPassFailCounts": {
+				"Status code is 302 or 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains cookies": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains cookie foo1": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Body contains cookie foo2": {
+					"pass": 0,
+					"fail": 1
+				},
+				"foo1 cookie is set": {
+					"pass": 1,
+					"fail": 0
+				},
+				"foo2 cookie is set": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				507
+			],
+			"allTests": [
+				{
+					"Status code is 302 or 200": true,
+					"Body contains cookies": true,
+					"Body contains cookie foo1": false,
+					"Body contains cookie foo2": false,
+					"foo1 cookie is set": true,
+					"foo2 cookie is set": true
+				}
+			]
+		},
+		{
+			"id": "60f8f9e2-c294-4ae7-b0f7-df5a29d9b14b",
+			"name": "Request Headers",
+			"url": "http://localhost:8082/nexus-backend/api/headers",
+			"time": 210,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Body contains headers": true,
+				"Header contains host": true,
+				"Header contains test parameter sent as part of request header": true
+			},
+			"testPassFailCounts": {
+				"Body contains headers": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Header contains host": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Header contains test parameter sent as part of request header": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				210
+			],
+			"allTests": [
+				{
+					"Body contains headers": true,
+					"Header contains host": true,
+					"Header contains test parameter sent as part of request header": true
+				}
+			]
+		},
+		{
+			"id": "e7503622-7ae0-4538-a0cb-a9d71dc2df67",
+			"name": "Response Headers",
+			"url": "http://localhost:8082/nexus-backend/api/response-headers?Content-Type=text/html&test=response_headers",
+			"time": 114,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Body contains Content-Type": true,
+				"response headers have key sent as part of request": false
+			},
+			"testPassFailCounts": {
+				"Body contains Content-Type": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response headers have key sent as part of request": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				114
+			],
+			"allTests": [
+				{
+					"Body contains Content-Type": true,
+					"response headers have key sent as part of request": false
+				}
+			]
+		},
+		{
+			"id": "95eb6f4a-c9ba-4420-9c48-f45b1cbcb95a",
+			"name": "GET Request",
+			"url": "http://localhost:8082/nexus-backend/api/get?test=123",
+			"time": 117,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"response is valid JSON": true,
+				"response json contains headers": true,
+				"response json contains args": true,
+				"response json contains url": true,
+				"args key contains argument passed as url parameter": true,
+				"args passed via request url params has value \"123\"": true
+			},
+			"testPassFailCounts": {
+				"response is valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response json contains headers": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response json contains args": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response json contains url": {
+					"pass": 1,
+					"fail": 0
+				},
+				"args key contains argument passed as url parameter": {
+					"pass": 1,
+					"fail": 0
+				},
+				"args passed via request url params has value \"123\"": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				117
+			],
+			"allTests": [
+				{
+					"response is valid JSON": true,
+					"response json contains headers": true,
+					"response json contains args": true,
+					"response json contains url": true,
+					"args key contains argument passed as url parameter": true,
+					"args passed via request url params has value \"123\"": true
+				}
+			]
+		},
+		{
+			"id": "970d7b83-76f7-4697-8faf-8572501e48c7",
+			"name": "POST Raw Text",
+			"url": "http://localhost:8082/nexus-backend/api/post",
+			"time": 120,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"response is valid JSON": true,
+				"response has post data": true,
+				"response matches the data posted": true,
+				"content-type equals text/plain": true
+			},
+			"testPassFailCounts": {
+				"response is valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response has post data": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response matches the data posted": {
+					"pass": 1,
+					"fail": 0
+				},
+				"content-type equals text/plain": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				120
+			],
+			"allTests": [
+				{
+					"response is valid JSON": true,
+					"response has post data": true,
+					"response matches the data posted": true,
+					"content-type equals text/plain": true
+				}
+			]
+		},
+		{
+			"id": "eb1aa446-d144-4dad-b6ce-50d29d150e71",
+			"name": "POST Form Data",
+			"url": "http://localhost:8082/nexus-backend/api/post",
+			"time": 120,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"response is valid JSON": true,
+				"response has post data": true,
+				"response matches the data posted": true
+			},
+			"testPassFailCounts": {
+				"response is valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response has post data": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response matches the data posted": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				120
+			],
+			"allTests": [
+				{
+					"response is valid JSON": true,
+					"response has post data": true,
+					"response matches the data posted": true
+				}
+			]
+		},
+		{
+			"id": "9c6de124-95bf-4a26-a3ed-16c70ae54c86",
+			"name": "PUT Request",
+			"url": "http://localhost:8082/nexus-backend/api/put",
+			"time": 121,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"response is valid JSON": true,
+				"response has PUT data": true,
+				"response matches the data sent in request": true
+			},
+			"testPassFailCounts": {
+				"response is valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response has PUT data": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response matches the data sent in request": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				121
+			],
+			"allTests": [
+				{
+					"response is valid JSON": true,
+					"response has PUT data": true,
+					"response matches the data sent in request": true
+				}
+			]
+		},
+		{
+			"id": "9103ca4e-8334-49b0-a26a-9c8eaa1eef5f",
+			"name": "PATCH Request",
+			"url": "http://localhost:8082/nexus-backend/api/patch",
+			"time": 115,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"response is valid JSON": true,
+				"response has PUT data": true,
+				"response matches the data sent in request": true
+			},
+			"testPassFailCounts": {
+				"response is valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response has PUT data": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response matches the data sent in request": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				115
+			],
+			"allTests": [
+				{
+					"response is valid JSON": true,
+					"response has PUT data": true,
+					"response matches the data sent in request": true
+				}
+			]
+		},
+		{
+			"id": "f4956418-9028-45c9-92ee-d4a6d26839bb",
+			"name": "DELETE Request",
+			"url": "http://localhost:8082/nexus-backend/api/delete",
+			"time": 116,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"response is valid JSON": true,
+				"response has PUT data": true,
+				"response matches the data sent in request": true
+			},
+			"testPassFailCounts": {
+				"response is valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response has PUT data": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response matches the data sent in request": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				116
+			],
+			"allTests": [
+				{
+					"response is valid JSON": true,
+					"response has PUT data": true,
+					"response matches the data sent in request": true
+				}
+			]
+		},
+		{
+			"id": "c19fbecb-faa3-40ab-a765-fdf24784ac7b",
+			"name": "Response Status Code",
+			"url": "http://localhost:8082/nexus-backend/api/status/200",
+			"time": 116,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status equals 200": true,
+				"Body contains status": true
+			},
+			"testPassFailCounts": {
+				"Status equals 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains status": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				116
+			],
+			"allTests": [
+				{
+					"Status equals 200": true,
+					"Body contains status": true
+				}
+			]
+		},
+		{
+			"id": "8219d594-d835-4e41-860d-48a7e4eb756b",
+			"name": "Streamed Response",
+			"url": "http://localhost:8082/nexus-backend/api/stream/10",
+			"time": 116,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"response code is 200": true,
+				"response is sent in chunks": true
+			},
+			"testPassFailCounts": {
+				"response code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response is sent in chunks": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				116
+			],
+			"allTests": [
+				{
+					"response code is 200": true,
+					"response is sent in chunks": true
+				}
+			]
+		},
+		{
+			"id": "720f6ce1-db91-4d7e-9eee-5b8e34cf9eed",
+			"name": "Delay Response",
+			"url": "http://localhost:8082/nexus-backend/api/delay/3",
+			"time": 3118,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"response body has key delay": true,
+				"response code is 200": true
+			},
+			"testPassFailCounts": {
+				"response body has key delay": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3118
+			],
+			"allTests": [
+				{
+					"response body has key delay": true,
+					"response code is 200": true
+				}
+			]
+		},
+		{
+			"id": "3e77c741-a2c3-41c5-8ec7-78f403d40142",
+			"name": "Get UTF8 Encoded Response",
+			"url": "http://localhost:8082/nexus-backend/api/encoding/utf8",
+			"time": 222,
+			"responseCode": {
+				"code": 503,
+				"name": "Service Unavailable"
+			},
+			"tests": {
+				"response code is 200": false
+			},
+			"testPassFailCounts": {
+				"response code is 200": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				222
+			],
+			"allTests": [
+				{
+					"response code is 200": false
+				}
+			]
+		},
+		{
+			"id": "5e68b328-f4fc-460e-9972-cf00026a7d3e",
+			"name": "GZip Compressed Response",
+			"url": "http://localhost:8082/nexus-backend/api/gzip",
+			"time": 122,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Body contains gzipped": true,
+				"Body contains headers": true,
+				"Body contains method": true,
+				"response code is 200": true
+			},
+			"testPassFailCounts": {
+				"Body contains gzipped": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains headers": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains method": {
+					"pass": 1,
+					"fail": 0
+				},
+				"response code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				122
+			],
+			"allTests": [
+				{
+					"Body contains gzipped": true,
+					"Body contains headers": true,
+					"Body contains method": true,
+					"response code is 200": true
+				}
+			]
+		},
+		{
+			"id": "4495857c-182d-4fdf-95cd-282ba6a2b204",
+			"name": "Deflate Compressed Response",
+			"url": "http://localhost:8082/nexus-backend/api/deflate",
+			"time": 119,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"response code is 200": true,
+				"Body contains deflated": true,
+				"Body contains headers": true,
+				"Body contains method": true
+			},
+			"testPassFailCounts": {
+				"response code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains deflated": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains headers": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Body contains method": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				119
+			],
+			"allTests": [
+				{
+					"response code is 200": true,
+					"Body contains deflated": true,
+					"Body contains headers": true,
+					"Body contains method": true
+				}
+			]
+		},
+		{
+			"id": "50aaf38a-9c68-4b57-907a-ab50432c5319",
+			"name": "IP address in JSON format",
+			"url": "http://localhost:8082/nexus-backend/api/ip",
+			"time": 112,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Valid response structure": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Valid response structure": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				112
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Valid response structure": true
+				}
+			]
+		},
+		{
+			"id": "8d2fdd63-ef4d-412e-a61c-177895648460",
+			"name": "Current UTC time",
+			"url": "http://localhost:8082/nexus-backend/api/time/now",
+			"time": 117,
+			"responseCode": {
+				"code": 503,
+				"name": "Service Unavailable"
+			},
+			"tests": {
+				"Status code is 200": false,
+				"Time is in a valid format": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Time is in a valid format": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				117
+			],
+			"allTests": [
+				{
+					"Status code is 200": false,
+					"Time is in a valid format": false
+				}
+			]
+		},
+		{
+			"id": "cea020b3-f123-47bf-ad2a-6b77871fb909",
+			"name": "Timestamp validity",
+			"url": "http://localhost:8082/nexus-backend/api/time/valid?timestamp=2016-10-10",
+			"time": 120,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Timestamp is valid": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Timestamp is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				120
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Timestamp is valid": true
+				}
+			]
+		},
+		{
+			"id": "53929109-6ed6-4876-a53a-2408f0706d3e",
+			"name": "Format timestamp",
+			"url": "http://localhost:8082/nexus-backend/api/time/format?timestamp=2016-10-10&format=mm",
+			"time": 114,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Formatted result is valid": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Formatted result is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				114
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Formatted result is valid": true
+				}
+			]
+		},
+		{
+			"id": "2a916d1b-1d4d-4141-8752-1784b598fac7",
+			"name": "Extract timestamp unit",
+			"url": "http://localhost:8082/nexus-backend/api/time/unit?timestamp=2016-10-10&unit=day",
+			"time": 118,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Returned unit is valid": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Returned unit is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				118
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Returned unit is valid": true
+				}
+			]
+		},
+		{
+			"id": "57c30b3e-9d8d-4e06-8b6d-6ee5195e3c83",
+			"name": "Time addition",
+			"url": "http://localhost:8082/nexus-backend/api/time/add?timestamp=2016-10-10&years=100",
+			"time": 116,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				116
+			],
+			"allTests": [
+				{
+					"Status code is 200": true
+				}
+			]
+		},
+		{
+			"id": "ac979179-08ae-43bf-ae66-94be4107347d",
+			"name": "Time subtraction",
+			"url": "http://localhost:8082/nexus-backend/api/time/subtract?timestamp=2016-10-10&years=100",
+			"time": 115,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				115
+			],
+			"allTests": [
+				{
+					"Status code is 200": true
+				}
+			]
+		},
+		{
+			"id": "e3531abb-b3ff-48d5-8a23-8b1047a241a4",
+			"name": "Start of time",
+			"url": "http://localhost:8082/nexus-backend/api/time/start?timestamp=2016-10-10&unit=month",
+			"time": 114,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				114
+			],
+			"allTests": [
+				{
+					"Status code is 200": true
+				}
+			]
+		},
+		{
+			"id": "6b5fca75-5fc6-4187-957f-1bdc429e3eea",
+			"name": "Object representation",
+			"url": "http://localhost:8082/nexus-backend/api/time/start?timestamp=2016-10-10&unit=month",
+			"time": 125,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				125
+			],
+			"allTests": [
+				{
+					"Status code is 200": true
+				}
+			]
+		},
+		{
+			"id": "ea211f39-8fc1-4a7b-88de-4c5128549d02",
+			"name": "Before comparisons",
+			"url": "http://localhost:8082/nexus-backend/api/time/before?timestamp=2016-10-10&target=2017-10-10",
+			"time": 114,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Comparsion was correct": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Comparsion was correct": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				114
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Comparsion was correct": true
+				}
+			]
+		},
+		{
+			"id": "46924470-4791-41da-b207-95f56b66fa3f",
+			"name": "After comparisons",
+			"url": "http://localhost:8082/nexus-backend/api/time/after?timestamp=2016-10-10&target=2017-10-10",
+			"time": 114,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Comparsion was correct": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Comparsion was correct": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				114
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Comparsion was correct": true
+				}
+			]
+		},
+		{
+			"id": "100939a6-f006-4921-811c-c9ece72f0bf6",
+			"name": "Between timestamps",
+			"url": "http://localhost:8082/nexus-backend/api/time/between?timestamp=2016-10-10&start=2017-10-10&end=2019-10-10",
+			"time": 117,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Comparsion was correct": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Comparsion was correct": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				117
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Comparsion was correct": false
+				}
+			]
+		},
+		{
+			"id": "4250cac7-9e32-4a88-8011-77a9fb9d0a76",
+			"name": "Leap year check",
+			"url": "http://localhost:8082/nexus-backend/api/time/leap?timestamp=2016-10-10",
+			"time": 113,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Comparsion was correct": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Comparsion was correct": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				113
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Comparsion was correct": true
+				}
+			]
+		},
+		{
+			"id": "2f2581d8-3603-4180-92b2-196425b9f15e",
+			"name": "Transform collection from format v1 to v2",
+			"url": "http://localhost:8082/nexus-backend/api/transform/collection?from=1&to=2",
+			"time": 133,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				133
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "90a5188a-36e7-4fe1-8501-2f5edbb4e865",
+			"name": "Transform collection from format v2 to v1",
+			"url": "http://localhost:8082/nexus-backend/api/transform/collection?from=2&to=1",
+			"time": 120,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				120
+			],
+			"allTests": [
+				{}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 9211,
+	"collection": {
+		"requests": [
+			{
+				"id": "ede243e5-78b3-427e-a3c2-be1c552fb55e",
+				"method": "GET"
+			},
+			{
+				"id": "1ae52c41-98de-4c10-808d-9cbea3e0d05d",
+				"method": "GET"
+			},
+			{
+				"id": "b50da305-15a9-4d13-8189-d3b8c688b71d",
+				"method": "GET"
+			},
+			{
+				"id": "22a71a75-3abb-4eca-bd99-ed642214e28d",
+				"method": "GET"
+			},
+			{
+				"id": "4e3a5f83-cbca-45ca-a6df-4ab759f7041a",
+				"method": "GET"
+			},
+			{
+				"id": "6d4cd094-85ef-47ef-af7d-3c4c9572c72e",
+				"method": "GET"
+			},
+			{
+				"id": "60f8f9e2-c294-4ae7-b0f7-df5a29d9b14b",
+				"method": "GET"
+			},
+			{
+				"id": "e7503622-7ae0-4538-a0cb-a9d71dc2df67",
+				"method": "GET"
+			},
+			{
+				"id": "95eb6f4a-c9ba-4420-9c48-f45b1cbcb95a",
+				"method": "GET"
+			},
+			{
+				"id": "970d7b83-76f7-4697-8faf-8572501e48c7",
+				"method": "POST"
+			},
+			{
+				"id": "eb1aa446-d144-4dad-b6ce-50d29d150e71",
+				"method": "POST"
+			},
+			{
+				"id": "9c6de124-95bf-4a26-a3ed-16c70ae54c86",
+				"method": "PUT"
+			},
+			{
+				"id": "9103ca4e-8334-49b0-a26a-9c8eaa1eef5f",
+				"method": "PATCH"
+			},
+			{
+				"id": "f4956418-9028-45c9-92ee-d4a6d26839bb",
+				"method": "DELETE"
+			},
+			{
+				"id": "c19fbecb-faa3-40ab-a765-fdf24784ac7b",
+				"method": "GET"
+			},
+			{
+				"id": "8219d594-d835-4e41-860d-48a7e4eb756b",
+				"method": "GET"
+			},
+			{
+				"id": "720f6ce1-db91-4d7e-9eee-5b8e34cf9eed",
+				"method": "GET"
+			},
+			{
+				"id": "3e77c741-a2c3-41c5-8ec7-78f403d40142",
+				"method": "GET"
+			},
+			{
+				"id": "5e68b328-f4fc-460e-9972-cf00026a7d3e",
+				"method": "GET"
+			},
+			{
+				"id": "4495857c-182d-4fdf-95cd-282ba6a2b204",
+				"method": "GET"
+			},
+			{
+				"id": "50aaf38a-9c68-4b57-907a-ab50432c5319",
+				"method": "GET"
+			},
+			{
+				"id": "8d2fdd63-ef4d-412e-a61c-177895648460",
+				"method": "GET"
+			},
+			{
+				"id": "cea020b3-f123-47bf-ad2a-6b77871fb909",
+				"method": "GET"
+			},
+			{
+				"id": "53929109-6ed6-4876-a53a-2408f0706d3e",
+				"method": "GET"
+			},
+			{
+				"id": "2a916d1b-1d4d-4141-8752-1784b598fac7",
+				"method": "GET"
+			},
+			{
+				"id": "57c30b3e-9d8d-4e06-8b6d-6ee5195e3c83",
+				"method": "GET"
+			},
+			{
+				"id": "ac979179-08ae-43bf-ae66-94be4107347d",
+				"method": "GET"
+			},
+			{
+				"id": "e3531abb-b3ff-48d5-8a23-8b1047a241a4",
+				"method": "GET"
+			},
+			{
+				"id": "6b5fca75-5fc6-4187-957f-1bdc429e3eea",
+				"method": "GET"
+			},
+			{
+				"id": "ea211f39-8fc1-4a7b-88de-4c5128549d02",
+				"method": "GET"
+			},
+			{
+				"id": "46924470-4791-41da-b207-95f56b66fa3f",
+				"method": "GET"
+			},
+			{
+				"id": "100939a6-f006-4921-811c-c9ece72f0bf6",
+				"method": "GET"
+			},
+			{
+				"id": "4250cac7-9e32-4a88-8011-77a9fb9d0a76",
+				"method": "GET"
+			},
+			{
+				"id": "2f2581d8-3603-4180-92b2-196425b9f15e",
+				"method": "POST"
+			},
+			{
+				"id": "90a5188a-36e7-4fe1-8501-2f5edbb4e865",
+				"method": "POST"
+			}
+		]
+	}
+}

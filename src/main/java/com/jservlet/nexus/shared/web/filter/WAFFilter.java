@@ -261,7 +261,9 @@ public class WAFFilter implements Filter {
     }
 
     private static boolean isMultipart(HttpServletRequest request) {
-        if (!"POST".equalsIgnoreCase(request.getMethod()) && !"PUT".equalsIgnoreCase(request.getMethod())) {
+        if (!"POST".equalsIgnoreCase(request.getMethod()) &&
+            !"PUT".equalsIgnoreCase(request.getMethod()) &&
+            !"PATCH".equalsIgnoreCase(request.getMethod())) {
             return false;
         }
         String contentType = request.getContentType();

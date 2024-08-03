@@ -182,7 +182,9 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     @Order(1)
     public FilterRegistrationBean forwardedInfoFilter() {
         FilterRegistrationBean registrationBean = new FilterRegistrationBean();
-        registrationBean.setFilter(new ForwardedHeaderFilter());
+        ForwardedHeaderFilter filter = new ForwardedHeaderFilter();
+        filter.setRemoveOnly(true);
+        registrationBean.setFilter(filter);
         registrationBean.setOrder(1);
         return registrationBean;
     }

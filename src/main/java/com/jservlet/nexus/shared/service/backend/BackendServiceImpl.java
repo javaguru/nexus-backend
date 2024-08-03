@@ -99,7 +99,7 @@ public class BackendServiceImpl implements BackendService {
     private boolean truncated;
 
     @Value("${nexus.backend.header.user-agent:JavaNexus}")
-    private String userAgent;
+    private String userAgent = "JavaNexus";
 
 
     @Value("${nexus.backend.exception.http500:true}")
@@ -162,6 +162,7 @@ public class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.add("User-Agent", userAgent);
             return doRequest(url, HttpMethod.POST, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -196,6 +197,7 @@ public class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.add("User-Agent", userAgent);
             return doRequest(url, HttpMethod.PUT, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -246,6 +248,7 @@ public class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.add("User-Agent", userAgent);
             return doRequest(url, HttpMethod.PATCH, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -311,24 +314,27 @@ public class BackendServiceImpl implements BackendService {
     private String getBackendURL(String url) throws NexusIllegalUrlException {
         if (ObjectUtils.isEmpty(url)) throw new NexusIllegalUrlException("The parameter 'url' should not be empty!");
         if (!url.startsWith("/")) url = "/" + url;
-        return backendURL + url;
+        final String finalURL = backendURL + url.replaceAll("#", "%23"); // special case sharp character!
+        logger.debug("BackendURL: {}", finalURL);
+        return finalURL;
     }
 
     @SuppressWarnings("unchecked")
     private <T> T handleResponse(ResponseEntity<T> exchange) {
         T responseBody = exchange.getBody();
+        HttpStatus httpStatus = exchange.getStatusCode();
         if (logger.isDebugEnabled()) {
-            logger.debug("Headers response: {}", exchange.getHeaders());
+            HttpHeaders httpHeaders = exchange.getHeaders();
+            logger.debug("Headers response: {}", httpHeaders);
             if (responseBody != null) {
-                logger.debug("The response is: {} {}", exchange.getStatusCode(), LogFormatUtils.formatValue(responseBody, truncated));
+                logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, truncated));
             } else {
-                logger.debug("The response is empty with HttpState: {}", exchange.getStatusCode());
+                logger.debug("The response is empty with HttpState: {}", httpStatus);
             }
         }
-        if (responseBody == null) return (T) exchange.getStatusCode();
-        if (isHandleHttpState(exchange.getStatusCode()))
-            return (T) new EntityError<>(exchange.getBody(), exchange.getStatusCode());
-        return exchange.getBody();
+        if (responseBody == null) return (T) httpStatus;
+        if (isHandleHttpState(httpStatus)) return (T) new EntityError<>(responseBody, httpStatus);
+        return responseBody;
     }
 
     private <T> T handleResponseError(String url, HttpStatusCodeException e) throws NexusResourceNotFoundException, NexusHttpException {
@@ -366,7 +372,7 @@ public class BackendServiceImpl implements BackendService {
         if (headers == null || removeHeaders) {
             headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON); // mandatory forced!
-            headers.add("User-Agent", userAgent != null ? userAgent : "JavaNexus");  // mandatory forced, some RestApi filter the User-Agent!
+            headers.add("User-Agent", userAgent);  // mandatory forced, some RestApi filter the User-Agent!
         }
 
         // Some RestApi can filter the Host header! (localhost)
