@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -314,7 +315,8 @@ public class BackendServiceImpl implements BackendService {
     private String getBackendURL(String url) throws NexusIllegalUrlException {
         if (ObjectUtils.isEmpty(url)) throw new NexusIllegalUrlException("The parameter 'url' should not be empty!");
         if (!url.startsWith("/")) url = "/" + url;
-        final String finalURL = backendURL + url.replaceAll("#", "%23"); // special case sharp character!
+        // Re-encoding HttpUrl, Special Characters are re-interpreted (encode Sharp # --> %23)
+        final String finalURL = UriComponentsBuilder.fromHttpUrl(backendURL + url).encode().build().toString();
         logger.debug("BackendURL: {}", finalURL);
         return finalURL;
     }

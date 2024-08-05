@@ -48,12 +48,13 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.jservlet.nexus.config.web.WebConstants.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /*
  * The Mock Controller VM Options: -Denvironment=development
@@ -94,7 +95,7 @@ public class MockController extends ApiBase {
     })
     @GetMapping(path = "/v1/dataBytes")//, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE
     public ResponseEntity<?> getBytes() {
-        return new ResponseEntity<>("GET_BYTES".getBytes(StandardCharsets.UTF_8), HttpStatus.OK);
+        return new ResponseEntity<>("GET_BYTES".getBytes(UTF_8), HttpStatus.OK);
     }
 
     @Operation(summary = "Get a data", description = "Get a data")
@@ -268,8 +269,8 @@ public class MockController extends ApiBase {
         // Switch url /v1/proxy --> /v1/redirect
         String queryString = request.getQueryString();
         String url = request.getRequestURL().toString().replaceAll("/proxy", "/redirect");
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url).replaceQuery(queryString);
-        RequestEntity<String> req = new RequestEntity<>(body, extractHeaders(request), HttpMethod.POST, builder.build().toUri());
+        URI uri = UriComponentsBuilder.fromUriString(url).replaceQuery(queryString).build().toUri();
+        RequestEntity<String> req = new RequestEntity<>(body, extractHeaders(request), HttpMethod.POST, uri);
         try {
             ResponseEntity<byte[]> responseEntity = new RestTemplate().exchange(req, byte[].class);
             return new ResponseEntity<>(responseEntity.getBody(), filterHeaders(responseEntity.getHeaders()), responseEntity.getStatusCode());
@@ -286,8 +287,8 @@ public class MockController extends ApiBase {
                                       HttpServletRequest request) {
         // Switch url /v1/redirect --> /v1/echo
         String url = request.getRequestURL().toString().replaceAll("/redirect", "/echo");
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
-        return new RestTemplate().exchange(builder.build().toUri(), method,
+        String finalUrl = UriComponentsBuilder.fromUriString(url).build().toString();
+        return new RestTemplate().exchange(finalUrl, method,
                 new HttpEntity<>(body, extractHeaders(request)), byte[].class); // All is Bytes!
 
     }
