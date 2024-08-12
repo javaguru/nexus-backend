@@ -39,6 +39,7 @@ import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.web.context.ServletContextAware;
 import org.springframework.web.cors.CorsConfiguration;
@@ -84,6 +85,16 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     @Autowired
     public void setEnv(Environment env) {
         this.env = env;
+    }
+
+    /**
+     * Force the defaultContentType by application/json;charset=UTF-8
+     *
+     * @param configurer The current ContentNegotiationConfigurer
+     */
+    @Override
+    public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+        configurer.defaultContentType(MediaType.APPLICATION_JSON);
     }
 
     @Override

@@ -23,7 +23,7 @@ import com.jservlet.nexus.shared.exceptions.NexusIllegalUrlException;
 import com.jservlet.nexus.shared.exceptions.NexusResourceNotFoundException;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendService.ResponseType;
-import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.*;
+import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.EntityError;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.slf4j.Logger;
@@ -33,7 +33,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
@@ -77,7 +76,7 @@ public class ApiBackend extends ApiBase {
             Object obj = backendService.doRequest(getUrl(request), method, responseType, body, getAllHeaders(request));
             // Manage an EntityError!
             if (obj instanceof EntityError)
-                return new ResponseEntity<>(((EntityError<?>) obj).getBody(), ((EntityError<?>) obj).getStatus());
+                return new ResponseEntity<>(((EntityError<?>) obj).getBody(), ((EntityError<?>) obj).getHeaders(), ((EntityError<?>) obj).getStatus());
             return obj;
         } catch (NexusResourceNotFoundException e) {
             // Re-encapsulate Not Found Exception in a ResponseEntity!

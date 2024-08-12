@@ -264,12 +264,11 @@ public class MockController extends ApiBase {
     @ApiResponses(value = {
             @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = byte[].class))}),
     })
-    @PostMapping(value = "/v1/proxy", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE) //
+    @PostMapping(value = "/v1/proxy", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<byte[]> redirect(@RequestBody(required = false) String body, HttpServletRequest request) throws URISyntaxException {
         // Switch url /v1/proxy --> /v1/redirect
-        String queryString = request.getQueryString();
         String url = request.getRequestURL().toString().replaceAll("/proxy", "/redirect");
-        URI uri = UriComponentsBuilder.fromUriString(url).replaceQuery(queryString).build().toUri();
+        URI uri = UriComponentsBuilder.fromHttpUrl(url).build().toUri();
         RequestEntity<String> req = new RequestEntity<>(body, extractHeaders(request), HttpMethod.POST, uri);
         try {
             ResponseEntity<byte[]> responseEntity = new RestTemplate().exchange(req, byte[].class);
@@ -287,7 +286,7 @@ public class MockController extends ApiBase {
                                       HttpServletRequest request) {
         // Switch url /v1/redirect --> /v1/echo
         String url = request.getRequestURL().toString().replaceAll("/redirect", "/echo");
-        String finalUrl = UriComponentsBuilder.fromUriString(url).build().toString();
+        String finalUrl = UriComponentsBuilder.fromHttpUrl(url).build().toString();
         return new RestTemplate().exchange(finalUrl, method,
                 new HttpEntity<>(body, extractHeaders(request)), byte[].class); // All is Bytes!
 

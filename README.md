@@ -64,36 +64,37 @@ Nexus-Backend Service
  **Settings keys settings.properties**
 
 
-| **Keys**                                     | **Default value**            | **Example value**               | **Descriptions**                                |
-|----------------------------------------------|:-----------------------------|:--------------------------------|:------------------------------------------------|
-| **nexus.backend.url**                        | https://postman-echo.com     | https://nexus6.jservlet.com/api | The API Backend Server targeted                 |   
-| **nexus.backend.uri.alive**                  | /get                         | /health/info                    | The endpoint alive Backend Server               |   
-| nexus.backend.http.response.truncated        | false                        | true                            | Truncated the Json output in the logs           |   
-| **WAF**                                      |                              |                                 |                                                 |
-| nexus.api.backend.filter.waf.reactive.mode   | STRICT                       | PASSIVE                         | Default Strict HttpFirewall + Json RequestBody  |
-| nexus.api.backend.filter.waf.deepscan.cookie | false                        | true                            | Activated Deep Scan Cookie                      |
-| **Headers**                                  |                              |                                 |                                                 |
-| nexus.backend.header.remove                  | false                        | true                            | Remove all Headers                              |   
-| nexus.backend.header.host.remove             | false                        | false                           | Remove just host Header                         |   
-| nexus.backend.header.origin.remove           | false                        | false                           | Remove just origin Header                       |   
-| nexus.backend.header.cookie                  | -                            | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX  | Set a Cookie Request Header                     |   
-| nexus.backend.header.bearer                  | -                            | eyJhbGciO                       | Activated Bearer Authorization request          |   
-| nexus.backend.header.user-agent              | JavaNexus                    | Apache HttpClient/4.5           | User Agent header                               |
-| nexus.backend.header.authorization.username  | -                            | XUsername                       | Activated Basic Authorization request           |   
-| nexus.backend.header.authorization.password  | -                            | XPassword                       | "                                               |
-| **Mapper**                                   |                              |                                 |                                                 |
-| nexus.backend.mapper.indentOutput            | true                         | false                           | Indent Output Json                              |   
-| nexus.backend.mapper.serializer.date         | yyyy-MM-dd'T'HH:mm:ss.SSS'Z' | yyyy-MM-dd'T'HH:mm:ssZZ         | Date Pattern Zulu Time: .SSS'Z', X or ZZ +00:00 |   
-| nexus.backend.mapper.serializer.timezone     | -                            | Europe/Paris                    | Locale TimeZone by Default                      |   
-| nexus.backend.mapper.date.timezone           | Zulu                         | Europe/Paris                    | Locale Zulu by Default                          |   
-| nexus.backend.mapper.date.withColon          | true                         | true                            | Locale with Colon in TimeZone                   |   
-| **Exceptions**                               |                              |                                 |                                                 |
-| nexus.backend.exception.http500              | false                        | true                            | Activated Object mapper on a Http error 500     |   
-| nexus.backend.exception.http400              | false                        | true                            | Activated Object mapper on a Http error 400     |   
-| nexus.backend.exception.http401              | false                        | true                            | Activated Object mapper on a Http error 401     |   
-| nexus.backend.exception.http405              | false                        | true                            | Activated Object mapper on a Http error 405     |   
-| **Debug**                                    |                              |                                 |                                                 |
-| nexus.spring.web.security.debug              | false                        | true                            | Debug the Spring FilterChain                    |
+| **Keys**                                         | **Default value**            | **Example value**               | **Descriptions**                                |
+|--------------------------------------------------|:-----------------------------|:--------------------------------|:------------------------------------------------|
+| **nexus.backend.url**                            | https://postman-echo.com     | https://nexus6.jservlet.com/api | The API Backend Server targeted                 |   
+| **nexus.backend.uri.alive**                      | /get                         | /health/info                    | The endpoint alive Backend Server               |   
+| nexus.backend.http.response.truncated            | false                        | true                            | Truncated the Json output in the logs           |   
+| nexus.backend.http.response.truncated.maxLength  | 1000                         | 100                             | MaxLength truncated                             |   
+| **WAF**                                          |                              |                                 |                                                 |
+| nexus.api.backend.filter.waf.reactive.mode       | STRICT                       | PASSIVE                         | Default Strict HttpFirewall + Json RequestBody  |
+| nexus.api.backend.filter.waf.deepscan.cookie     | false                        | true                            | Activated Deep Scan Cookie                      |
+| **Headers**                                      |                              |                                 |                                                 |
+| nexus.backend.header.remove                      | false                        | true                            | Remove all Headers                              |   
+| nexus.backend.header.host.remove                 | false                        | false                           | Remove just host Header                         |   
+| nexus.backend.header.origin.remove               | false                        | false                           | Remove just origin Header                       |   
+| nexus.backend.header.cookie                      | -                            | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX  | Set a Cookie Request Header                     |   
+| nexus.backend.header.bearer                      | -                            | eyJhbGciO                       | Activated Bearer Authorization request          |   
+| nexus.backend.header.user-agent                  | JavaNexus                    | Apache HttpClient/4.5           | User Agent header                               |
+| nexus.backend.header.authorization.username      | -                            | XUsername                       | Activated Basic Authorization request           |   
+| nexus.backend.header.authorization.password      | -                            | XPassword                       | "                                               |
+| **Mapper**                                       |                              |                                 |                                                 |
+| nexus.backend.mapper.indentOutput                | true                         | false                           | Indent Output Json                              |   
+| nexus.backend.mapper.serializer.date             | yyyy-MM-dd'T'HH:mm:ss.SSS'Z' | yyyy-MM-dd'T'HH:mm:ssZZ         | Date Pattern Zulu Time: .SSS'Z', X or ZZ +00:00 |   
+| nexus.backend.mapper.serializer.timezone         | -                            | Europe/Paris                    | Locale TimeZone by Default                      |   
+| nexus.backend.mapper.date.timezone               | Zulu                         | Europe/Paris                    | Locale Zulu by Default                          |   
+| nexus.backend.mapper.date.withColon              | true                         | true                            | Locale with Colon in TimeZone                   |   
+| **Exceptions**                                   |                              |                                 |                                                 |
+| nexus.backend.exception.http500                  | false                        | true                            | Activated Object mapper on a Http error 500     |   
+| nexus.backend.exception.http400                  | false                        | true                            | Activated Object mapper on a Http error 400     |   
+| nexus.backend.exception.http401                  | false                        | true                            | Activated Object mapper on a Http error 401     |   
+| nexus.backend.exception.http405                  | false                        | true                            | Activated Object mapper on a Http error 405     |   
+| **Debug**                                        |                              |                                 |                                                 |
+| nexus.spring.web.security.debug                  | false                        | true                            | Debug the Spring FilterChain                    |
 
 
 #### Noted the settings.properties can be overridden by a file Path config.properties
