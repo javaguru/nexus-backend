@@ -66,8 +66,10 @@ public class RestApiTest extends TestCase {
             Object objError = backendService.doRequest("/mock/v1/dataXss?param1=<script>alert('info1')</script>",
                     HttpMethod.GET, backendService.createResponseType(Data.class), null, null);
             // Handle an Entity Error!
-            if (objError instanceof EntityError)
+            if (objError instanceof EntityError) {
                 System.out.println(((EntityError<?>) objError).getBody() + " " + ((EntityError<?>) objError).getStatus());
+                System.out.println(((EntityError<?>) objError).getHeaders());
+            }
             else
                 System.out.println(objError);
         } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
