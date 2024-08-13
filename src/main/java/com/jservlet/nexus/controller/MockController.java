@@ -234,7 +234,7 @@ public class MockController extends ApiBase {
     })
     @GetMapping(path = "/v1/dataError400", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getError400() {
-        return new ResponseEntity<>(new ErrorMessage("400", SOURCE,"Bad Request"), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(new ErrorMessage("400", SOURCE,"Bad Request").getError(), HttpStatus.BAD_REQUEST);
     }
 
     @Operation(summary = "Get Error 401", description = "Get Error 401")
@@ -243,7 +243,7 @@ public class MockController extends ApiBase {
     })
     @GetMapping(path = "/v1/dataError401", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getError401() {
-        return new ResponseEntity<>(new ErrorMessage("401", SOURCE,"Unauthorized"), HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(new ErrorMessage("401", SOURCE,"Unauthorized").getError(), HttpStatus.UNAUTHORIZED);
     }
 
     @Operation(summary = "Get Error 500", description = "Get Error 500")
@@ -252,7 +252,7 @@ public class MockController extends ApiBase {
      })
     @GetMapping(path = "/v1/dataError500", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getError500() {
-        return new ResponseEntity<>(new ErrorMessage("500", SOURCE,"Internal Server Error"), HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(new ErrorMessage("500", SOURCE,"Internal Server Error").getError(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     /*
