@@ -60,7 +60,7 @@ public class RestApiTest extends TestCase {
     }
 
     @Test
-    public void testGeEntityError() {
+    public void testGetEntityError() {
         try {
             // get Error Entity
             Object objError = backendService.doRequest("/mock/v1/dataXss?param1=<script>alert('info1')</script>",
@@ -68,7 +68,6 @@ public class RestApiTest extends TestCase {
             // Handle an Entity Error!
             if (objError instanceof EntityError) {
                 System.out.println(((EntityError<?>) objError).getBody() + " " + ((EntityError<?>) objError).getStatus());
-                System.out.println(((EntityError<?>) objError).getHeaders());
             }
             else
                 System.out.println(objError);

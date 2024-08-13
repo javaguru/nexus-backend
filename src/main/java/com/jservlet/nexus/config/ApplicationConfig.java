@@ -323,7 +323,8 @@ public class ApplicationConfig  {
         cm.setMaxTotal(maxConnections);
         cm.setValidateAfterInactivity(validateAfterInactivity * 1000);
         cm.closeIdleConnections(closeIdleConnectionsTimeout, TimeUnit.SECONDS);
-       return new HttpComponentsClientHttpRequestFactory(HttpClientBuilder.create()
+
+        return new HttpComponentsClientHttpRequestFactory(HttpClientBuilder.create()
                 .setUserAgent(userAgent)
                 .setConnectionManager(cm)
                 .setDefaultRequestConfig(RequestConfig.custom()
@@ -342,7 +343,6 @@ public class ApplicationConfig  {
                 .disableCookieManagement()
                 .disableAuthCaching()
                 .disableConnectionState()
-                .disableAutomaticRetries()
                 .build());
     }
 

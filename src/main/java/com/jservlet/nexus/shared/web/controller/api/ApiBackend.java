@@ -76,7 +76,7 @@ public class ApiBackend extends ApiBase {
             Object obj = backendService.doRequest(getUrl(request), method, responseType, body, getAllHeaders(request));
             // Manage an EntityError!
             if (obj instanceof EntityError)
-                return new ResponseEntity<>(((EntityError<?>) obj).getBody(), ((EntityError<?>) obj).getHeaders(), ((EntityError<?>) obj).getStatus());
+                return new ResponseEntity<>(((EntityError<?>) obj).getBody(), ((EntityError<?>) obj).getStatus());
             return obj;
         } catch (NexusResourceNotFoundException e) {
             // Re-encapsulate Not Found Exception in a ResponseEntity!

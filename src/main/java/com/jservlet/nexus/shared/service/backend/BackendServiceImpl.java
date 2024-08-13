@@ -35,7 +35,6 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.annotation.Nonnull;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -339,7 +338,7 @@ public class BackendServiceImpl implements BackendService {
             }
         }
         if (responseBody == null) return (T) httpStatus;
-        if (isHandleHttpState(httpStatus)) return (T) new EntityError<>(responseBody, httpHeaders, httpStatus);
+        if (isHandleHttpState(httpStatus)) return (T) new EntityError<>(responseBody, httpStatus);
         return responseBody;
     }
 
@@ -433,27 +432,17 @@ public class BackendServiceImpl implements BackendService {
         public ParameterizedTypeReference<T> getResponseParameterizedTypeReference() { return parameterizedType; }
     }
 
-    public static class EntityError<T> extends HttpEntity<T> {
+    public static class EntityError<T> {
         private final T body;
-        private final HttpHeaders headers;
         private final HttpStatus status;
 
-        public EntityError(T body, HttpHeaders headers, HttpStatus status) {
-            super(body, headers);
+        public EntityError(T body, HttpStatus status) {
             this.body = body;
-            this.headers = headers;
             this.status = status;
         }
 
-        @Override
         public T getBody() {
             return this.body;
-        }
-
-        @Nonnull
-        @Override
-        public HttpHeaders getHeaders() {
-            return this.headers;
         }
 
         public HttpStatus getStatus() {
