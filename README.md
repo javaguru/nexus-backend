@@ -382,7 +382,9 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.6**, released at 14/07/2024 Clarify Byte Array deserialization.
+* Last version **1.0.8**, released at 14/07/2024 Re-encoding HttpUrl, Special Characters are re-interpreted
+* Version **1.0.7**, released at 03/08/2024 All is Bytes.
+* Version **1.0.6**, released at 14/07/2024 Clarify Byte Array deserialization.
 * Version **1.0.5**, released at 13/07/2024 Optimize build war/jar.
 * Version **1.0.4**, released at 08/07/2024.
 * Version **1.0.3**, released at 23/06/2024 Reinit project.
