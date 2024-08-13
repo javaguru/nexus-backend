@@ -286,9 +286,8 @@ public class MockController extends ApiBase {
                                       HttpServletRequest request) {
         // Switch url /v1/redirect --> /v1/echo
         String url = request.getRequestURL().toString().replaceAll("/redirect", "/echo");
-        String finalUrl = UriComponentsBuilder.fromHttpUrl(url).build().toString();
-        return new RestTemplate().exchange(finalUrl, method,
-                new HttpEntity<>(body, extractHeaders(request)), byte[].class); // All is Bytes!
+        URI uri = UriComponentsBuilder.fromHttpUrl(url).build().toUri();
+        return new RestTemplate().exchange(uri, method, new HttpEntity<>(body, extractHeaders(request)), byte[].class); // All is Bytes!
 
     }
     /* Hidden Echo endpoint */
