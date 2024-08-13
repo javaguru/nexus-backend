@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.exceptions.*;
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -97,6 +97,8 @@ public class BackendServiceImpl implements BackendService {
 
     @Value("${nexus.backend.http.response.truncated:false}")
     private boolean truncated;
+    @Value("${nexus.backend.http.response.truncated.maxLength:1000}")
+    private int maxLengthTruncated;
 
     @Value("${nexus.backend.header.user-agent:JavaNexus}")
     private String userAgent = "JavaNexus";
@@ -162,7 +164,7 @@ public class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.add("User-Agent", userAgent);
+            headers.add(HttpHeaders.USER_AGENT, userAgent);
             return doRequest(url, HttpMethod.POST, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -197,7 +199,7 @@ public class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.add("User-Agent", userAgent);
+            headers.add(HttpHeaders.USER_AGENT, userAgent);
             return doRequest(url, HttpMethod.PUT, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -248,7 +250,7 @@ public class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.add("User-Agent", userAgent);
+            headers.add(HttpHeaders.USER_AGENT, userAgent);
             return doRequest(url, HttpMethod.PATCH, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -273,10 +275,12 @@ public class BackendServiceImpl implements BackendService {
                 return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), responseClass));
             }
         } catch (HttpStatusCodeException e) {
-            // handle specific RestClientResponseException by object
+
             if (isHandleHttpState(e.getStatusCode())) {
                 try {
-                    return handleResponse(new ResponseEntity<>((T) objectMapper.readValue(e.getResponseBodyAsString(), Object.class), e.getStatusCode()));
+                    // WARN RestClientResponseException use now the default Charset UTF-8 vs ISO_8859_1 in Spring < 5.1.18
+                    return handleResponse(new ResponseEntity<>((T) objectMapper.readValue
+                            (e.getResponseBodyAsByteArray(), Object.class), e.getResponseHeaders(), e.getStatusCode()));
                 }
                 catch (Exception jx) {
                     // Unable to parse response body
@@ -314,7 +318,8 @@ public class BackendServiceImpl implements BackendService {
     private String getBackendURL(String url) throws NexusIllegalUrlException {
         if (ObjectUtils.isEmpty(url)) throw new NexusIllegalUrlException("The parameter 'url' should not be empty!");
         if (!url.startsWith("/")) url = "/" + url;
-        final String finalURL = backendURL + url.replaceAll("#", "%23"); // special case sharp character!
+        // Re-encoding HttpUrl, Special Characters are re-interpreted (encode Sharp # --> %23)
+        final String finalURL = UriComponentsBuilder.fromHttpUrl(backendURL + url).encode().build().toString();
         logger.debug("BackendURL: {}", finalURL);
         return finalURL;
     }
@@ -323,11 +328,11 @@ public class BackendServiceImpl implements BackendService {
     private <T> T handleResponse(ResponseEntity<T> exchange) {
         T responseBody = exchange.getBody();
         HttpStatus httpStatus = exchange.getStatusCode();
+        HttpHeaders httpHeaders = exchange.getHeaders();
         if (logger.isDebugEnabled()) {
-            HttpHeaders httpHeaders = exchange.getHeaders();
             logger.debug("Headers response: {}", httpHeaders);
             if (responseBody != null) {
-                logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, truncated));
+                logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, maxLengthTruncated, truncated));
             } else {
                 logger.debug("The response is empty with HttpState: {}", httpStatus);
             }
@@ -346,7 +351,7 @@ public class BackendServiceImpl implements BackendService {
             case INTERNAL_SERVER_ERROR:
                 try {
                     // The default response ErrorMessage!
-                    final ErrorMessage errorMessage = objectMapper.readValue(e.getResponseBodyAsString(), ErrorMessage.class);
+                    final ErrorMessage errorMessage = objectMapper.readValue(e.getResponseBodyAsByteArray(), ErrorMessage.class);
                     logger.info("The request to the backend failed. Reason id '{}: {}' Details: {} ", e.getStatusCode(), e.getStatusText(), errorMessage);
                 } catch (Exception jx) {
                     // Unable to parse response body
@@ -372,53 +377,24 @@ public class BackendServiceImpl implements BackendService {
         if (headers == null || removeHeaders) {
             headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON); // mandatory forced!
-            headers.add("User-Agent", userAgent);  // mandatory forced, some RestApi filter the User-Agent!
+            headers.add(HttpHeaders.USER_AGENT, userAgent);  // mandatory forced, some RestApi filter the User-Agent!
         }
 
         // Some RestApi can filter the Host header! (localhost)
-        if (removeHostHeader) headers.remove("host");
-        if (removeOriginHeader) headers.remove("origin");
+        if (removeHostHeader) headers.remove(HttpHeaders.HOST);
+        if (removeOriginHeader) headers.remove(HttpHeaders.ORIGIN);
 
-        // Apply ID headers.set("X-ID", sessionid);
-        if (!ObjectUtils.isEmpty(username) && !ObjectUtils.isEmpty(password)) createAuthorizationHeaders(headers, username, password);
-        if (!ObjectUtils.isEmpty(cookie)) createCookieHeaders(headers, cookie);
-        if (!ObjectUtils.isEmpty(bearer)) createAuthorizationBearerHeaders(headers, bearer);
+        // Basic Authentication, Bearer Authentication and Cookies
+        if (!ObjectUtils.isEmpty(username) && !ObjectUtils.isEmpty(password))
+            headers.setBasicAuth(HttpHeaders.encodeBasicAuth(username, password, StandardCharsets.ISO_8859_1));
+        if (!ObjectUtils.isEmpty(bearer))
+            headers.setBearerAuth(bearer);
+        if (!ObjectUtils.isEmpty(cookie))
+            headers.add(HttpHeaders.COOKIE, cookie);
+
         logger.debug("Headers requested: {}", headers);
         if (body != null) return new HttpEntity<>(body, headers);
         return new HttpEntity<>(headers);
-    }
-
-    /**
-     * Create http Headers with cookie
-     * @param httpHeaders       HttpHeaders
-     */
-    private static void createCookieHeaders(HttpHeaders httpHeaders, String cookie) {
-        httpHeaders.add("Cookie", cookie);
-    }
-
-    /**
-     * Create http Headers with Basic Authorization header with username/password
-     *
-     * @param httpHeaders   HttpHeaders
-     * @param username      String username
-     * @param password      String password
-     */
-    private static void createAuthorizationHeaders(HttpHeaders httpHeaders, String username, String password) {
-        String auth = username + ":" + password;
-        byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.US_ASCII));
-        String authHeader = "Basic " + new String(encodedAuth);
-        httpHeaders.add("Authorization", authHeader);
-    }
-
-    /**
-     * Create http Headers with Bearer Authorization header with token
-     *
-     * @param httpHeaders   HttpHeaders
-     * @param bearer      String bearer token
-     */
-    private static void createAuthorizationBearerHeaders(HttpHeaders httpHeaders, String bearer) {
-        String authHeader = "Bearer " + bearer;
-        httpHeaders.add("Authorization", authHeader);
     }
 
     @Override
@@ -466,11 +442,11 @@ public class BackendServiceImpl implements BackendService {
         }
 
         public T getBody() {
-            return body;
+            return this.body;
         }
 
         public HttpStatus getStatus() {
-            return status;
+            return this.status;
         }
     }
 

@@ -60,14 +60,15 @@ public class RestApiTest extends TestCase {
     }
 
     @Test
-    public void testGeEntityError() {
+    public void testGetEntityError() {
         try {
             // get Error Entity
             Object objError = backendService.doRequest("/mock/v1/dataXss?param1=<script>alert('info1')</script>",
                     HttpMethod.GET, backendService.createResponseType(Data.class), null, null);
             // Handle an Entity Error!
-            if (objError instanceof EntityError)
+            if (objError instanceof EntityError) {
                 System.out.println(((EntityError<?>) objError).getBody() + " " + ((EntityError<?>) objError).getStatus());
+            }
             else
                 System.out.println(objError);
         } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
@@ -149,8 +150,8 @@ public class RestApiTest extends TestCase {
             headers.add("Content-Type", MediaType.APPLICATION_FORM_URLENCODED_VALUE);
             // get Echo data in ByteArray through the proxy!
             byte[] obj = backendService.doRequest("/mock/v1/proxy", HttpMethod.POST,
-                    backendService.createResponseType(byte[].class), "Hello Proxy!", headers); // WARN mandatory typed byte[].class
-            System.out.println(new String(obj, StandardCharsets.UTF_8));
+                    backendService.createResponseType(byte[].class), "echo=Hello Proxy!", headers); // WARN mandatory typed byte[].class
+            System.out.println(new String(obj, StandardCharsets.ISO_8859_1));
         } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
             System.out.println("Failed to POST Echo Bytes entity/entities on backend: " + e.getMessage());
         } catch (NexusResourceNotFoundException ex) {
@@ -162,8 +163,8 @@ public class RestApiTest extends TestCase {
     public void testGetEchoEntityProxy() {
         try {
             // get Echo data in ByteArray through the proxy!
-            byte[] obj = backendService.doRequest("/mock/v1/echo", HttpMethod.GET,
-                    backendService.createResponseType(byte[].class), "Hello Echo!", null); // WARN mandatory typed byte[].class
+            byte[] obj = backendService.doRequest("/mock/v1/echo?echo=Hello+Proxy!", HttpMethod.GET,
+                    backendService.createResponseType(byte[].class), null, null); // WARN mandatory typed byte[].class
             System.out.println(new String(obj, StandardCharsets.UTF_8));
         } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
             System.out.println("Failed to POST Echo Bytes entity/entities on backend: " + e.getMessage());

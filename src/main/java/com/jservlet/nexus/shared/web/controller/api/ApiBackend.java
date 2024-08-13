@@ -23,7 +23,7 @@ import com.jservlet.nexus.shared.exceptions.NexusIllegalUrlException;
 import com.jservlet.nexus.shared.exceptions.NexusResourceNotFoundException;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendService.ResponseType;
-import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.*;
+import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.EntityError;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.slf4j.Logger;
@@ -33,7 +33,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
@@ -93,7 +92,7 @@ public class ApiBackend extends ApiBase {
                 String.join("&", Arrays.stream(value).distinct().toArray(String[]::new)))); // remove duplicate values!
         url = !parameterMap.isEmpty() ? url + "?" + String.join("&", params) : url;
         logger.debug("Request for: {}", url);
-        return UriComponentsBuilder.fromUriString(url).encode().build().toString();
+        return url;
     }
 
     private static HttpHeaders getAllHeaders(HttpServletRequest request) {
