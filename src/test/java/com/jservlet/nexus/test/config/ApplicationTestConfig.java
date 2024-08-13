@@ -294,6 +294,7 @@ public class ApplicationTestConfig {
         cm.setMaxTotal(maxConnections);
         cm.setValidateAfterInactivity(validateAfterInactivity * 1000);
         cm.closeIdleConnections(closeIdleConnectionsTimeout, TimeUnit.SECONDS);
+
         return new HttpComponentsClientHttpRequestFactory(HttpClientBuilder.create()
                 .setUserAgent(userAgent)
                 .setConnectionManager(cm)
@@ -313,7 +314,6 @@ public class ApplicationTestConfig {
                 .disableCookieManagement()
                 .disableAuthCaching()
                 .disableConnectionState()
-                .disableAutomaticRetries()
                 .build());
     }
 
