@@ -35,6 +35,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
 
 import javax.servlet.http.HttpServletRequest;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -87,12 +89,31 @@ public class ApiBackend extends ApiBase {
     private static String getUrl(HttpServletRequest request) {
         String url = ((String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).replaceAll("api/", "");
         Map<String, String[]> parameterMap = request.getParameterMap();
-        List<String> params = new ArrayList<>();
-        parameterMap.forEach((key, value) -> params.add(key + "=" +
-                String.join("&", Arrays.stream(value).distinct().toArray(String[]::new)))); // remove duplicate values!
-        url = !parameterMap.isEmpty() ? url + "?" + String.join("&", params) : url;
-        logger.debug("Request for: {}", url);
-        return url;
+        final List<String> params = getEncodedParameters(parameterMap);
+        String finalUrl = !params.isEmpty() ? url + "?" + String.join("&", params) : url;
+        logger.debug("Requested Url : {}", finalUrl);
+        return finalUrl;
+    }
+
+    /**
+     * Get encoded parameters
+     *
+     * @param parameterMap Map parameters come a request
+     * @return List<String> Keys and Values encoded
+     */
+    private static List<String> getEncodedParameters(Map<String, String[]> parameterMap) {
+        final List<String> params = new ArrayList<>();
+        parameterMap.forEach((key, value) -> {
+            if (!"null".equals(key)) { // Spring request leftover !?
+                for (String s : value) {
+                    String param = key + "=" + URLEncoder.encode(s, StandardCharsets.UTF_8);
+                    if (!params.contains(param)) { // Unique key = value
+                        params.add(param);
+                    }
+                }
+            }
+        });
+        return params;
     }
 
     private static HttpHeaders getAllHeaders(HttpServletRequest request) {
