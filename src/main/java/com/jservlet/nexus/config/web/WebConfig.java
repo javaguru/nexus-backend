@@ -22,6 +22,7 @@ import com.github.ziplet.filter.compression.CompressingFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.env.OriginTrackedMapPropertySource;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -46,6 +47,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.filter.ForwardedHeaderFilter;
+import org.springframework.web.filter.ShallowEtagHeaderFilter;
 import org.springframework.web.multipart.MultipartResolver;
 import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 import org.springframework.web.servlet.config.annotation.*;
@@ -241,6 +243,15 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         });
     }
 
+    @Bean
+    @Order(4)
+    @ConditionalOnProperty(value="nexus.backend.filter.shallowEtag.enabled", havingValue = "true")
+    public FilterRegistrationBean shallowEtagHeaderFilter() {
+        FilterRegistrationBean registrationBean = new FilterRegistrationBean();
+        registrationBean.setFilter(new ShallowEtagHeaderFilter());
+        registrationBean.setOrder(4);
+        return registrationBean;
+    }
 
     /**
      * The full logs request and response
