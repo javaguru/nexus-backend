@@ -40,14 +40,10 @@ import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.web.context.ServletContextAware;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.filter.CommonsRequestLoggingFilter;
-import org.springframework.web.filter.CorsFilter;
-import org.springframework.web.filter.ForwardedHeaderFilter;
-import org.springframework.web.filter.ShallowEtagHeaderFilter;
+import org.springframework.web.filter.*;
 import org.springframework.web.multipart.MultipartResolver;
 import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 import org.springframework.web.servlet.config.annotation.*;
@@ -89,15 +85,6 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         this.env = env;
     }
 
-    /**
-     * Force the defaultContentType by application/json;charset=UTF-8
-     *
-     * @param configurer The current ContentNegotiationConfigurer
-     */
-    @Override
-    public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
-        configurer.defaultContentType(MediaType.APPLICATION_JSON);
-    }
 
     @Override
     public synchronized void setApplicationContext(@NonNull ApplicationContext ac) {
@@ -188,6 +175,7 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
 
     /**
      * Forwarded Header Filter, see rfc7239
+     * RemoveOnly at true, discard and ignore forwarded headers
      *
      * @return Forwarded Filter Bean
      */
@@ -226,23 +214,22 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     public FilterRegistrationBean corsFilterRegistrationBean() {
         FilterRegistrationBean registrationBean = new FilterRegistrationBean();
         registrationBean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ERROR, DispatcherType.ASYNC);
-        registrationBean.setFilter(corsFilter());
-        registrationBean.setOrder(3);
-        return registrationBean;
-    }
-
-    @Bean
-    public Filter corsFilter() {
-        return new CorsFilter(request -> {
+        registrationBean.setFilter(new CorsFilter(request -> {
             final CorsConfiguration configuration = new CorsConfiguration();
             configuration.addAllowedMethod("*");
             configuration.addAllowedHeader("*");
             configuration.setAllowCredentials(true);
             configuration.addAllowedOriginPattern("*");
             return configuration;
-        });
+        }));
+        registrationBean.setOrder(3);
+        return registrationBean;
     }
 
+    /**
+     * Filter generates an ETag value based on the content on the response and set a Content-length header
+     * @return shallowEtagHeaderFilter
+     */
     @Bean
     @Order(4)
     @ConditionalOnProperty(value="nexus.backend.filter.shallowEtag.enabled", havingValue = "true")

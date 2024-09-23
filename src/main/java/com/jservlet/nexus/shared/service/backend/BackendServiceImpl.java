@@ -33,7 +33,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -264,15 +263,15 @@ public class BackendServiceImpl implements BackendService {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers)
+    public <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers, Object... uriVariables)
             throws NexusResourceNotFoundException, NexusHttpException, NexusIllegalUrlException {
         try {
             ParameterizedTypeReference<T> typeReference = responseType.getResponseParameterizedTypeReference();
             if (typeReference != null) {
-                return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), typeReference));
+                return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), typeReference, uriVariables));
             } else {
                 Class<T> responseClass = responseType.getResponseClass();
-                return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), responseClass));
+                return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), responseClass, uriVariables));
             }
         } catch (HttpStatusCodeException e) {
 

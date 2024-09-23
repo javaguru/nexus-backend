@@ -43,7 +43,6 @@ import java.security.NoSuchAlgorithmException;
  * Activated WebListener by only 'nexus.api.backend.listener.requestid.enabled=true' in the configuration
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnProperty(value = "nexus.api.backend.listener.requestid.enabled")
 public class RequestIdServletRequestListener implements ServletRequestListener {
 

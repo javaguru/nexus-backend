@@ -54,7 +54,6 @@ import java.util.*;
  * Activated WebFilter by only 'nexus.api.backend.filter.httpoverride.enabled=true' in the configuration
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnProperty(value = "nexus.api.backend.filter.httpoverride.enabled")
 public class HTTPMethodOverrideFilter extends OncePerRequestFilter {
 

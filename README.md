@@ -25,7 +25,6 @@ Nexus-Backend Service
  * Implements a **WAF** filter protection against evasion on the Http Json BodyRequest, and log IP address at fault.
  * Implements a **Fingerprint** for each Http header Request, generate a unique trackable Token APP-REQUEST-ID in the access logs.
  * Implements a **Method Override** PUT or PATCH request can be switched in POST or DELETE switched in GET
- * Implements a **Forwarded Header** filter to extract values from "Forwarded" and "X-Forwarded-*" headers, wrap the request and response.
  * Implements a **Shallow Etag Header** filter, force Content-length in the HttpResponse, avoid header Transfer-Encoding: Chunked.
  * Implements a **Compressing** filter gzip for the Http response.
  

@@ -35,8 +35,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
 
 import javax.servlet.http.HttpServletRequest;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -66,16 +64,14 @@ public class ApiBackend extends ApiBase {
     @RequestMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
     public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method, HttpServletRequest request)
             throws NexusHttpException, NexusIllegalUrlException {
-        return responseEntity(Object.class, body, method, request);
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private Object responseEntity(Class<?> objectClass, Object body, HttpMethod method, HttpServletRequest request)
-            throws NexusHttpException, NexusIllegalUrlException {
         try {
-            // create a ResponseType!
-            ResponseType<?> responseType = backendService.createResponseType(objectClass);
-            Object obj = backendService.doRequest(getUrl(request), method, responseType, body, getAllHeaders(request));
+            // The path within the handler mapping and its query
+            String url = ((String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).replaceAll("api/", "");
+            if (request.getQueryString() != null) url = url + "?" + request.getQueryString();
+            logger.debug("Requested Url : {} {}", method, url);
+            // Create a ResponseType!
+            ResponseType<?> responseType = backendService.createResponseType(Object.class);
+            Object obj = backendService.doRequest(url, method, responseType, body, getAllHeaders(request), request.getParameterMap());
             // Manage an EntityError!
             if (obj instanceof EntityError)
                 return new ResponseEntity<>(((EntityError<?>) obj).getBody(), ((EntityError<?>) obj).getStatus());
@@ -84,36 +80,6 @@ public class ApiBackend extends ApiBase {
             // Re-encapsulate Not Found Exception in a ResponseEntity!
             return new ResponseEntity<>(super.getResponseEntity(e.getMessage(), HttpStatus.NOT_FOUND), HttpStatus.NOT_FOUND);
         }
-    }
-
-    private static String getUrl(HttpServletRequest request) {
-        String url = ((String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).replaceAll("api/", "");
-        Map<String, String[]> parameterMap = request.getParameterMap();
-        final List<String> params = getEncodedParameters(parameterMap);
-        String finalUrl = !params.isEmpty() ? url + "?" + String.join("&", params) : url;
-        logger.debug("Requested Url : {}", finalUrl);
-        return finalUrl;
-    }
-
-    /**
-     * Get encoded parameters
-     *
-     * @param parameterMap Map parameters come a request
-     * @return List<String> Keys and Values encoded
-     */
-    private static List<String> getEncodedParameters(Map<String, String[]> parameterMap) {
-        final List<String> params = new ArrayList<>();
-        parameterMap.forEach((key, value) -> {
-            if (!"null".equals(key)) { // Spring request leftover !?
-                for (String s : value) {
-                    String param = key + "=" + URLEncoder.encode(s, StandardCharsets.UTF_8);
-                    if (!params.contains(param)) { // Unique key = value
-                        params.add(param);
-                    }
-                }
-            }
-        });
-        return params;
     }
 
     private static HttpHeaders getAllHeaders(HttpServletRequest request) {

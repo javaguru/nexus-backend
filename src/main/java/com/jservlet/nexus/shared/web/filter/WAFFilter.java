@@ -67,7 +67,6 @@ import static com.jservlet.nexus.shared.web.filter.WAFFilter.Reactive.*;
  * Activated WebFilter by only 'nexus.api.backend.filter.waf.enabled=true' in the configuration
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnProperty(value = "nexus.api.backend.filter.waf.enabled")
 public class WAFFilter implements Filter {
 
