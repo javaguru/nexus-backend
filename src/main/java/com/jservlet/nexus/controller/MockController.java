@@ -33,6 +33,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
@@ -60,6 +61,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * The Mock Controller VM Options: -Denvironment=development
  */
 @Controller
+@ConditionalOnExpression("'${environment}' == 'development'")
 @Tag(name = "Mock", description = "Mock Application")
 @RequestMapping("/mock")
 public class MockController extends ApiBase {
