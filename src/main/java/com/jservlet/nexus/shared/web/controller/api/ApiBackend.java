@@ -71,7 +71,7 @@ public class ApiBackend extends ApiBase {
             logger.debug("Requested Url : {} {}", method, url);
             // Create a ResponseType!
             ResponseType<?> responseType = backendService.createResponseType(Object.class);
-            Object obj = backendService.doRequest(url, method, responseType, body, getAllHeaders(request), request.getParameterMap());
+            Object obj = backendService.doRequest(url, method, responseType, body, getAllHeaders(request));
             // Manage an EntityError!
             if (obj instanceof EntityError)
                 return new ResponseEntity<>(((EntityError<?>) obj).getBody(), ((EntityError<?>) obj).getStatus());

@@ -263,15 +263,15 @@ public class BackendServiceImpl implements BackendService {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers, Object... uriVariables)
+    public <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers)
             throws NexusResourceNotFoundException, NexusHttpException, NexusIllegalUrlException {
         try {
             ParameterizedTypeReference<T> typeReference = responseType.getResponseParameterizedTypeReference();
             if (typeReference != null) {
-                return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), typeReference, uriVariables));
+                return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), typeReference));
             } else {
                 Class<T> responseClass = responseType.getResponseClass();
-                return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), responseClass, uriVariables));
+                return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), responseClass));
             }
         } catch (HttpStatusCodeException e) {
 

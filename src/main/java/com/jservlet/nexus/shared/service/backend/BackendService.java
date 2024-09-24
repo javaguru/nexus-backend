@@ -161,14 +161,13 @@ public interface BackendService {
      * @param responseType   The response type the result should be converted to
      * @param body           The body if exist or null
      * @param headers        The headers
-     * @param uriVariables   The Objects uri variables
      * @return               The parsed response as an instance of type specified using the responseType parameter
      * @throws NexusResourceNotFoundException      When the backend returns a 404
      * @throws NexusHttpException                  When a http request to th backend fails.
      * @throws NexusIllegalUrlException            When a illegal url will be requested.
      */
 
-    <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers, Object... uriVariables)
+    <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers)
             throws NexusResourceNotFoundException, NexusHttpException, NexusIllegalUrlException;
 
     <T> ResponseType<T> createResponseType(Class<T> responseType);
