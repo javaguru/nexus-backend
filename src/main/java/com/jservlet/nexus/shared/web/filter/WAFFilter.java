@@ -27,8 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.log.LogFormatUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -67,7 +65,6 @@ import static com.jservlet.nexus.shared.web.filter.WAFFilter.Reactive.*;
  * Activated WebFilter by only 'nexus.api.backend.filter.waf.enabled=true' in the configuration
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnProperty(value = "nexus.api.backend.filter.waf.enabled")
 public class WAFFilter implements Filter {
 

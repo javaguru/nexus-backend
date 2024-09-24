@@ -179,7 +179,7 @@ public class RestApiTest extends TestCase {
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", MediaType.APPLICATION_FORM_URLENCODED_VALUE); // WARN mandatory!
             // get Echo data in ByteArray through the proxy!
-            byte[] obj = backendService.doRequest("/mock/v1/echo", HttpMethod.POST,
+            byte[] obj = backendService.doRequest("/mock/v1/proxy", HttpMethod.POST,
                     backendService.createResponseType(byte[].class), "Hello Echo!", headers); // WARN mandatory typed byte[].class
             System.out.println(new String(obj, StandardCharsets.UTF_8));
         } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {

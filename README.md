@@ -25,7 +25,7 @@ Nexus-Backend Service
  * Implements a **WAF** filter protection against evasion on the Http Json BodyRequest, and log IP address at fault.
  * Implements a **Fingerprint** for each Http header Request, generate a unique trackable Token APP-REQUEST-ID in the access logs.
  * Implements a **Method Override** PUT or PATCH request can be switched in POST or DELETE switched in GET
- * Implements a **Forwarded Header** filter to extract values from "Forwarded" and "X-Forwarded-*" headers, wrap the request and response.
+ * Implements a **Shallow Etag Header** filter, force Content-length in the HttpResponse, avoid header Transfer-Encoding: Chunked.
  * Implements a **Compressing** filter gzip for the Http response.
  
 
@@ -49,6 +49,7 @@ Nexus-Backend Service
 | nexus.api.backend.filter.waf.enabled          | true              | Activated the WAF Filter Json RequestBody          |   
 | nexus.api.backend.listener.requestid.enabled  | true              | Activated the Fingerprint for each Http Request    |   
 | nexus.api.backend.filter.httpoverride.enabled | false             | Activated the Http Override Method                 | 
+| nexus.backend.filter.shallowEtag.enabled      | false             | Activated the ShallowEtagHeader Filter             | 
 | nexus.backend.tomcat.connector.https.enable   | false             | Activated a Connector TLS/SSL in a Embedded Tomcat | 
 | nexus.backend.tomcat.accesslog.valve.enable   | false             | Activated an Accesslog in a Embedded Tomcat        | 
 
@@ -382,7 +383,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.8**, released at 14/07/2024 Re-encoding HttpUrl, Special Characters are re-interpreted
+* Last version **1.0.9**, released at 24/09/2024 Fix replicate requests ApiBackend.requestEntity
+* Version **1.0.8**, released at 13/08/2024 Re-encoding HttpUrl, Special Characters are re-interpreted
 * Version **1.0.7**, released at 03/08/2024 All is Bytes.
 * Version **1.0.6**, released at 14/07/2024 Clarify Byte Array deserialization.
 * Version **1.0.5**, released at 13/07/2024 Optimize build war/jar.

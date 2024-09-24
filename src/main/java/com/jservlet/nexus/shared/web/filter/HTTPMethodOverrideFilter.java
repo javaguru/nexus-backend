@@ -21,8 +21,6 @@ package com.jservlet.nexus.shared.web.filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -54,7 +52,6 @@ import java.util.*;
  * Activated WebFilter by only 'nexus.api.backend.filter.httpoverride.enabled=true' in the configuration
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnProperty(value = "nexus.api.backend.filter.httpoverride.enabled")
 public class HTTPMethodOverrideFilter extends OncePerRequestFilter {
 

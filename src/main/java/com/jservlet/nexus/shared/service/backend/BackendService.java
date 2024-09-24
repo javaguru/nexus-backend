@@ -166,9 +166,9 @@ public interface BackendService {
      * @throws NexusHttpException                  When a http request to th backend fails.
      * @throws NexusIllegalUrlException            When a illegal url will be requested.
      */
+
     <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers)
             throws NexusResourceNotFoundException, NexusHttpException, NexusIllegalUrlException;
-
 
     <T> ResponseType<T> createResponseType(Class<T> responseType);
 
