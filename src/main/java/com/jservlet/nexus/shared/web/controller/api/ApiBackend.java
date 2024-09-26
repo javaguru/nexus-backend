@@ -68,7 +68,7 @@ public class ApiBackend extends ApiBase {
             // The path within the handler mapping and its query
             String url = ((String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).replaceAll("api/", "");
             if (request.getQueryString() != null) url = url + "?" + request.getQueryString();
-            logger.debug("Requested Url : {} {}", method, url);
+            logger.debug("Requested Url : {} {} args: {} body: {} ", method, url, printParameterMap(request.getParameterMap()), body);
             // Create a ResponseType!
             ResponseType<?> responseType = backendService.createResponseType(Object.class);
             Object obj = backendService.doRequest(url, method, responseType, body, getAllHeaders(request));
@@ -82,6 +82,9 @@ public class ApiBackend extends ApiBase {
         }
     }
 
+    /**
+     * Get all Headers from HttpServletRequest
+     */
     private static HttpHeaders getAllHeaders(HttpServletRequest request) {
         HttpHeaders headers = new HttpHeaders();
         headers.setOrigin(request.getRequestURL().toString());
@@ -91,6 +94,28 @@ public class ApiBackend extends ApiBase {
             headers.add(headerName, request.getHeader(headerName));
         }
         return headers;
+    }
+
+    /**
+     * Print parameterMap in a "Json" object style
+     */
+    private static String printParameterMap(Map<String, String[]> map) {
+        StringBuilder sb = new StringBuilder();
+        Iterator<Map.Entry<String, String[]>> it = map.entrySet().iterator();
+        sb.append("{");
+        while (it.hasNext()) {
+            Map.Entry<String, String[]> entry = it.next();
+            sb.append("\"").append(entry.getKey()).append("\"").append(":");
+            Iterator<String> sbsIt = Arrays.asList(entry.getValue()).iterator();
+            sb.append("[");
+            while (sbsIt.hasNext()) {
+                sb.append("\"").append(sbsIt.next()).append("\"");
+                if (sbsIt.hasNext()) sb.append(",");
+            }
+            sb.append("]");
+            if (it.hasNext()) sb.append(",");
+        }
+        return sb + "}";
     }
 
 }
