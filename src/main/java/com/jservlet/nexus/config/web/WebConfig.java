@@ -22,6 +22,7 @@ import com.github.ziplet.filter.compression.CompressingFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.env.OriginTrackedMapPropertySource;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -173,6 +174,9 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     }
 
 
+    @Value("${nexus.backend.filter.forwardedHeader.removeOnly:true}")
+    private boolean forwardedHeaderRemoveOnly;
+
     /**
      * Forwarded Header Filter, see rfc7239
      * RemoveOnly at true, discard and ignore forwarded headers
@@ -181,10 +185,11 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
      */
     @Bean
     @Order(1)
+    @ConditionalOnProperty(value="nexus.backend.filter.forwardedHeader.enabled", havingValue = "true")
     public FilterRegistrationBean forwardedInfoFilter() {
         FilterRegistrationBean registrationBean = new FilterRegistrationBean();
         ForwardedHeaderFilter filter = new ForwardedHeaderFilter();
-        filter.setRemoveOnly(true);
+        filter.setRemoveOnly(forwardedHeaderRemoveOnly);
         registrationBean.setFilter(filter);
         registrationBean.setOrder(1);
         return registrationBean;
@@ -197,6 +202,7 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
      */
     @Bean
     @Order(2)
+    @ConditionalOnProperty(value="nexus.backend.filter.gzip.enabled", havingValue = "true")
     public FilterRegistrationBean gzipFilter() {
         FilterRegistrationBean registrationBean = new FilterRegistrationBean();
         registrationBean.setFilter(new CompressingFilter());
@@ -211,6 +217,7 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
      */
     @Bean
     @Order(3)
+    @ConditionalOnProperty(value="nexus.backend.filter.cors.enabled", havingValue = "true")
     public FilterRegistrationBean corsFilterRegistrationBean() {
         FilterRegistrationBean registrationBean = new FilterRegistrationBean();
         registrationBean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ERROR, DispatcherType.ASYNC);
@@ -239,6 +246,7 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         registrationBean.setOrder(4);
         return registrationBean;
     }
+
 
     /**
      * The full logs request and response

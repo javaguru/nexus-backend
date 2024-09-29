@@ -108,59 +108,57 @@ public class WAFFilter implements Filter {
             throws IOException, ServletException, RequestRejectedException {
         final HttpServletRequest req = (HttpServletRequest) request;
         final HttpServletResponse resp = (HttpServletResponse) response;
-        if (!isMultipart(req)) { // WARN not multipart!
-            // WAFRequestWrapper
-            WAFRequestWrapper wrappedRequest;
-            try {
-                wrappedRequest = new WAFRequestWrapper(req);
-                if (STRICT == reactiveMode) {
-                    // Check the cookies!
-                    Cookie[] cookies = wrappedRequest.getCookies();
-                    if (cookies !=  null) {
-                        if (cookies.length > 100) throw new RequestRejectedException("Cookie size reach the limit!");
-                        // Deep Scan Cookie and reject if not HttpOnly!
-                        if (isDeepScanCookie) {
-                            for (Cookie cookie : cookies) {
-                                rejectCookie(cookie);
-                            }
+
+        // WAFRequestWrapper
+        WAFRequestWrapper wrappedRequest;
+        try {
+            wrappedRequest = new WAFRequestWrapper(req);
+            if (STRICT == reactiveMode) {
+                // Check the cookies!
+                Cookie[] cookies = wrappedRequest.getCookies();
+                if (cookies !=  null) {
+                    if (cookies.length > 100) throw new RequestRejectedException("Cookie size reach the limit!");
+                    // Deep Scan Cookie and reject if not HttpOnly!
+                    if (isDeepScanCookie) {
+                        for (Cookie cookie : cookies) {
+                            rejectCookie(cookie);
                         }
                     }
-
-                    // Check the Json body!
-                    String body = IOUtils.toString(wrappedRequest.getReader());
-                    if (!StringUtils.isBlank(body)) {
-                        rejectBody(body);
-                    }
                 }
 
-                if (PASSIVE == reactiveMode) {
-                    // Just clean the current parameters, no evasion !
-                    Map<String, String[]> map = cleanerParameterMap(wrappedRequest.getParameterMap()) ;
-                    wrappedRequest.setParameterMap(map);
-
-                    // Just clean the Json body!
-                    String body = IOUtils.toString(wrappedRequest.getReader());
-                    if (!StringUtils.isBlank(body)) {
-                        wrappedRequest.setInputStream(stripWAFPattern(body).getBytes());
-                    }
+                // Check the Json body!
+                String body = IOUtils.toString(wrappedRequest.getReader());
+                if (!StringUtils.isBlank(body)) {
+                    rejectBody(body);
                 }
-
-                // And continue the chain filter with the wrappedRequest!
-                chain.doFilter(wrappedRequest, response);
             }
-            catch (RequestRejectedException ex) {
-                logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                        LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // No truncated in debug mode!
-                        request.getRemoteHost(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
 
-                // Request rejected!
-                resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                resp.setStatus(HttpStatus.BAD_REQUEST.value());
-                resp.getWriter().write(objectMapper.writeValueAsString(
-                        new ErrorMessage("400", "INTERNAL-NEXUS-REST-BACKEND","Request rejected!").getError()));
-             }
+            if (PASSIVE == reactiveMode) {
+                // Just clean the current parameters, no evasion !
+                Map<String, String[]> map = cleanerParameterMap(wrappedRequest.getParameterMap()) ;
+                wrappedRequest.setParameterMap(map);
+
+                // Just clean the Json body!
+                String body = IOUtils.toString(wrappedRequest.getReader());
+                if (!StringUtils.isBlank(body)) {
+                    wrappedRequest.setInputStream(stripWAFPattern(body).getBytes());
+                }
+            }
+
+            // And continue the chain filter with the wrappedRequest!
+            chain.doFilter(wrappedRequest, response);
         }
-        else chain.doFilter(request, response);
+        catch (RequestRejectedException ex) {
+            logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
+                    LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // No truncated in debug mode!
+                    request.getRemoteHost(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
+
+            // Request rejected!
+            resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            resp.setStatus(HttpStatus.BAD_REQUEST.value());
+            resp.getWriter().write(objectMapper.writeValueAsString(
+                    new ErrorMessage("400", "INTERNAL-NEXUS-REST-BACKEND","Request rejected!").getError()));
+         }
     }
 
     public enum Reactive {
@@ -255,16 +253,6 @@ public class WAFFilter implements Filter {
     @Override
     public void destroy() {
         this.filterConfig = null;
-    }
-
-    private static boolean isMultipart(HttpServletRequest request) {
-        if (!"POST".equalsIgnoreCase(request.getMethod()) &&
-            !"PUT".equalsIgnoreCase(request.getMethod()) &&
-            !"PATCH".equalsIgnoreCase(request.getMethod())) {
-            return false;
-        }
-        String contentType = request.getContentType();
-        return (contentType != null && contentType.toLowerCase().startsWith("multipart/"));
     }
 
 }

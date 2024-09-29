@@ -163,7 +163,7 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
     public void testPostXssBackend() throws  NexusCreationException, NexusResourceExistsException {
         String url = "/mock/v1/dataPostXss?param1=test";
         // try also security exception \\<script> or <script> only!
-        Data data = new Data("<script>alert('info1')</script>","info2","info3");
+        Data data = new Data("<script>alert('info1')</script>","info2", 0.0006);
         EntityError<?> error = (EntityError<?>) backendService.post(url, data, ERROR_RESPONSE_TYPE);
         assertNotNull(error);
         MatcherAssert.assertThat(error.getBody().toString(), CoreMatchers.containsString("rejected"));

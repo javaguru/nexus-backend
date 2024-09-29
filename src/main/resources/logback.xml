@@ -77,7 +77,7 @@
         <appender-ref ref="ASYNC"/>
     </logger>
 
-    <!-- RACE Activate the access log in Tomcat Embedded -->
+    <!-- TRACE Activate the access log in Tomcat Embedded -->
     <logger name="com.jservlet.nexus.config.web.tomcat.TomcatCustomContainer" additivity="false" level="TRACE"/>
 
     <!-- WARN set DEBUG to activate the Full access log -->

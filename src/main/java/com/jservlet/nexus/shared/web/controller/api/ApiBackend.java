@@ -30,15 +30,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.io.AbstractResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.*;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+import org.springframework.util.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartRequest;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.util.WebUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.*;
 
 /**
- * Rest control ApiBackend, replicate all HTTP requests to the Backend Server...
+ * Rest control ApiBackend, replicate all HttpRequests to the Backend Server.
+ * Provides a full support for MultiPart HttpRequests and Parameters inside a form with Content-Type: multipart/form-data.
+ * <p>
+ * All HttpRequests methods:
+ * Get,
+ * Post,
+ * Post Multipart File,
+ * Put,
+ * Put Multipart File,
+ * Patch,
+ * Patch Multipart File,
+ * Delete
  * <p>
  * Activated by only 'nexus.api.backend.enabled=true' in the configuration
  */
@@ -64,24 +88,41 @@ public class ApiBackend extends ApiBase {
     @RequestMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
     public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method, HttpServletRequest request)
             throws NexusHttpException, NexusIllegalUrlException {
+        // MultiValueMap store the MultiPartFiles and the Parameters Map
+        MultiValueMap<String, Object> map = null;
         try {
             // The path within the handler mapping and its query
             String url = ((String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).replaceAll("api/", "");
             if (request.getQueryString() != null) url = url + "?" + request.getQueryString();
-            logger.debug("Requested Url : {} {}", method, url);
+
+            // Get the MultipartRequest from the miscellaneous Web utilities NativeRequest!
+            MultipartRequest multipartRequest = WebUtils.getNativeRequest(request, MultipartRequest.class);
+            map = processMapResources(multipartRequest, request.getParameterMap());
+
+            logger.debug("Requested Url: {} '{}' args: {}, body: {}, files: {}",
+                    method, url, printParameterMap(request.getParameterMap()), body, map.entrySet());
+
             // Create a ResponseType!
             ResponseType<?> responseType = backendService.createResponseType(Object.class);
-            Object obj = backendService.doRequest(url, method, responseType, body, getAllHeaders(request));
+            Object obj = backendService.doRequest(url, method, responseType, !map.isEmpty() ? map : body, getAllHeaders(request));
+
             // Manage an EntityError!
             if (obj instanceof EntityError)
                 return new ResponseEntity<>(((EntityError<?>) obj).getBody(), ((EntityError<?>) obj).getStatus());
+
             return obj;
         } catch (NexusResourceNotFoundException e) {
-            // Re-encapsulate Not Found Exception in a ResponseEntity!
+            // Re-encapsulate the Not Found Exception in a ResponseEntity!
             return new ResponseEntity<>(super.getResponseEntity(e.getMessage(), HttpStatus.NOT_FOUND), HttpStatus.NOT_FOUND);
+        } finally {
+            // Clean all the Backend Resources inside the MultiValueMap
+            if (map != null && !map.isEmpty()) cleanResources(map);
         }
     }
 
+    /**
+     * Get all Headers from the HttpServletRequest
+     */
     private static HttpHeaders getAllHeaders(HttpServletRequest request) {
         HttpHeaders headers = new HttpHeaders();
         headers.setOrigin(request.getRequestURL().toString());
@@ -91,6 +132,163 @@ public class ApiBackend extends ApiBase {
             headers.add(headerName, request.getHeader(headerName));
         }
         return headers;
+    }
+
+    /**
+     * Print the parameterMap in a "Json" object style
+     */
+    private static String printParameterMap(Map<String, String[]> map) {
+        StringBuilder sb = new StringBuilder();
+        Iterator<Map.Entry<String, String[]>> it = map.entrySet().iterator();
+        sb.append("{");
+        while (it.hasNext()) {
+            Map.Entry<String, String[]> entry = it.next();
+            sb.append("\"").append(entry.getKey()).append("\"").append(":");
+            Iterator<String> sIt = Arrays.asList(entry.getValue()).iterator();
+            sb.append("[");
+            while (sIt.hasNext()) {
+                sb.append("\"").append(sIt.next()).append("\"");
+                if (sIt.hasNext()) sb.append(",");
+            }
+            sb.append("]");
+            if (it.hasNext()) sb.append(",");
+        }
+        return sb + "}";
+    }
+
+    /**
+     * Prepare a LinkedMultiValueMap from a MultipartRequest, convert a MultipartFile to a Backend Resource.
+     * And inject the parameterMap inside the LinkedMultiValueMap from a multipart HttpRequest.
+     */
+    private static MultiValueMap<String, Object> processMapResources(MultipartRequest multipartRequest, Map<String, String[]> mapParams) {
+        MultiValueMap<String, Object> linkedMap = new LinkedMultiValueMap<>();
+        if (multipartRequest != null) {
+            MultiValueMap<String, MultipartFile> multiFileMap = multipartRequest.getMultiFileMap(); // MultiValue
+            for (Map.Entry<String, List<MultipartFile>> entry : multiFileMap.entrySet()) {
+                List<MultipartFile> files = entry.getValue();
+                for (MultipartFile file : files) {
+                    try {
+                        Resource resource = new BackendResource(file);
+                        linkedMap.add(entry.getKey(), resource);
+                    } catch (IOException io) {
+                        logger.error("Multipart to Resource file: '{}' Error: {}", file.getOriginalFilename(), io.getMessage());
+                    }
+                }
+            }
+            // Inject all the parameterMap now!
+            for (String key : mapParams.keySet()) {
+                linkedMap.addAll(key, Arrays.asList(mapParams.get(key))); // MultiValue
+            }
+        }
+        return linkedMap;
+    }
+
+    /**
+     * Clean all the BackendResource already sent to the BackendService
+     */
+    private void cleanResources(MultiValueMap<String, Object> map) {
+        for (Map.Entry<String, List<Object>> entry : map.entrySet()) {
+            List<Object> objects = entry.getValue(); // MultiValue
+            for (Object obj : objects) {
+                if (obj instanceof BackendResource) {
+                    BackendResource resource = (BackendResource) obj;
+                    if (resource.getFile().delete()) logger.debug("Resource deleted: {} '{}'", entry.getKey(), resource.getFilename());
+                }
+            }
+        }
+    }
+
+    /**
+     * Build a new BackendResource because the MultipartFile Resource will be deleted before the end of Request.
+     * The BackendResource can convert a MultipartFile to a temporary Resource, ready to be sent!
+     */
+    static class BackendResource extends AbstractResource {
+
+        private final File fileUpload;
+        private final String originalFilename;
+
+        public BackendResource(MultipartFile multipartFile) throws IOException {
+            Assert.notNull(multipartFile, "MultipartFile must not be null");
+            // Create a temporary file in java.io.tmpdir and delete on exit if it exists!
+            fileUpload = File.createTempFile(System.currentTimeMillis() + "_nexus_", ".tmp");
+            fileUpload.deleteOnExit();
+            logger.debug("Create temp File: {}", fileUpload.getAbsolutePath());
+
+            // Get original Filename
+            originalFilename = multipartFile.getOriginalFilename();
+
+            // Consume the input Stream and transfer it to a new local file
+            multipartFile.transferTo(fileUpload);
+        }
+
+        /**
+         * This implementation always returns {@code true}.
+         */
+        @Override
+        public boolean exists() {
+            return fileUpload.exists();
+        }
+
+        /**
+         * This implementation always returns {@code false}.
+         */
+        @Override
+        public boolean isOpen() {
+            return false;
+        }
+
+        @Override
+        public long contentLength() {
+            return this.fileUpload.length();
+        }
+
+        @Override
+        public @NonNull URL getURL() throws IOException {
+            return this.fileUpload.toPath().toUri().toURL();
+        }
+
+        @Override
+        public @NonNull File getFile() {
+            return this.fileUpload;
+        }
+
+        @Override
+        public @NonNull boolean isFile() {
+            return true;
+        }
+
+        @Override
+        public String getFilename() {
+            return this.originalFilename;
+        }
+
+        /**
+         * This implementation throws IllegalStateException if attempting to
+         * read the underlying stream multiple times.
+         */
+        @Override
+        public @NonNull InputStream getInputStream() throws IOException, IllegalStateException {
+            return new FileInputStream(fileUpload);
+        }
+
+        /**
+         * This implementation returns a description that has the Multipart name.
+         */
+        @Override
+        public @NonNull String getDescription() {
+            return "BackendResource [" + this.originalFilename + "]";
+        }
+
+        @Override
+        public boolean equals(@Nullable Object other) {
+             return (this == other || (other instanceof BackendResource &&
+                    this.fileUpload.equals(((BackendResource) other).fileUpload)));
+        }
+
+        @Override
+        public int hashCode() {
+            return this.fileUpload.hashCode();
+        }
     }
 
 }

@@ -383,7 +383,7 @@ public class BackendServiceImpl implements BackendService {
 
         // Basic Authentication, Bearer Authentication and Cookies
         if (!ObjectUtils.isEmpty(username) && !ObjectUtils.isEmpty(password))
-            headers.setBasicAuth(HttpHeaders.encodeBasicAuth(username, password, StandardCharsets.ISO_8859_1));
+            headers.setBasicAuth(HttpHeaders.encodeBasicAuth(username, password, StandardCharsets.UTF_8));
         if (!ObjectUtils.isEmpty(bearer))
             headers.setBearerAuth(bearer);
         if (!ObjectUtils.isEmpty(cookie))

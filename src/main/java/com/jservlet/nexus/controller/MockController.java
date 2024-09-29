@@ -18,6 +18,7 @@
 
 package com.jservlet.nexus.controller;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.ErrorMessage;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
@@ -33,6 +34,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
@@ -60,6 +62,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * The Mock Controller VM Options: -Denvironment=development
  */
 @Controller
+@ConditionalOnExpression("'${environment}' == 'development'")
 @Tag(name = "Mock", description = "Mock Application")
 @RequestMapping("/mock")
 public class MockController extends ApiBase {
@@ -104,7 +107,7 @@ public class MockController extends ApiBase {
     })
     @GetMapping(path = "/v1/data", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> get() {
-        return new ResponseEntity<>(new Data("info1","info2","info3"), HttpStatus.OK);
+        return new ResponseEntity<>(new Data("info1","info2", 10.00), HttpStatus.OK);
     }
 
     @Operation(summary = "Post a data", description = "Post a data")
@@ -131,7 +134,7 @@ public class MockController extends ApiBase {
     })
     @GetMapping(path = "/v1/dataXss", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getXss(@RequestParam String param1) {
-        return new ResponseEntity<>(new Data(param1,"info2","info3", new Date()), HttpStatus.OK);
+        return new ResponseEntity<>(new Data(param1,"info2",10.05, new Date()), HttpStatus.OK);
     }
 
     @Operation(summary = "Post data Xss", description = "Post data Xss")
@@ -151,8 +154,8 @@ public class MockController extends ApiBase {
     @GetMapping(path = "/v1/dataList", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getList() {
         List<Data> dataList = new ArrayList<>();
-        dataList.add(new Data("info1","info2","info3"));
-        dataList.add(new Data("info4","info5","info6"));
+        dataList.add(new Data("info1","info2",10.00));
+        dataList.add(new Data("info4","info5",10.05));
         return new ResponseEntity<>(dataList, HttpStatus.OK);
     }
 
@@ -163,8 +166,8 @@ public class MockController extends ApiBase {
     @PostMapping(path = "/v1/dataList", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> postDataList() {
         List<Data> dataList = new ArrayList<>();
-        dataList.add(new Data("info1","info2","info3"));
-        dataList.add(new Data("info4","info5","info6"));
+        dataList.add(new Data("info1","info2",10.00));
+        dataList.add(new Data("info4","info5",0.0006));
         return new ResponseEntity<>(dataList, HttpStatus.OK);
     }
 
@@ -323,18 +326,20 @@ public class MockController extends ApiBase {
         @Parameter(name = "data2", description = "data2 field")
         public String data2;
         @Parameter(name = "data3", description = "data3 field")
-        public String data3;
+        public double data3;
+
         @Parameter(name = "data4", description = "Date field")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         public Date data4;
 
         public Data() {
         }
-        public Data(String data1, String data2, String data3) {
+        public Data(String data1, String data2, double data3) {
             this.data1 = data1;
             this.data2 = data2;
             this.data3 = data3;
         }
-        public Data(String data1, String data2, String data3, Date data4) {
+        public Data(String data1, String data2, double data3, Date data4) {
             this.data1 = data1;
             this.data2 = data2;
             this.data3 = data3;
