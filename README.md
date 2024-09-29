@@ -19,15 +19,18 @@ Nexus-Backend Service
 
 ### Ability to Secure all RestApi Request to a Backend Server
 
- * Implements a **BackendService**, ability to request typed response Object class or ParameterizedTypeReference, requested on all HTTP protocols to a RestApi Backend Server.
+ * Implements a **BackendService**, ability to request typed response Object class or ParameterizedTypeReference, requested on all HTTP methods to a RestApi Backend Server.
  * Implements an **EntityError** Json object on the HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
  * Implements a **HttpFirewall** filter protection against evasion, rejected any suspicious Requests, Headers, Parameters, and log IP address at fault.
  * Implements a **WAF** filter protection against evasion on the Http Json BodyRequest, and log IP address at fault.
  * Implements a **Fingerprint** for each Http header Request, generate a unique trackable Token APP-REQUEST-ID in the access logs.
- * Implements a **Method Override** PUT or PATCH request can be switched in POST or DELETE switched in GET
+ * Implements a **Method Override** PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override
+ * Implements a **Forwarded Header** filter, set removeOnly at true by default, remove "Forwarded" and "X-Forwarded-*" headers.
  * Implements a **Shallow Etag Header** filter, force Content-length in the HttpResponse, avoid header Transfer-Encoding: Chunked.
- * Implements a **Compressing** filter gzip for the Http response.
- 
+ * Implements a **Compressing** filter Gzip compression for the Http Responses.
+ * Implements a **FormContent** filter, parses form data for Http PUT, PATCH, and DELETE requests and exposes it as Servlet request parameters.
+ * Implements a **CharacterEncoding** filter, UTF-8 default encoding for requests.
+
 
 ### Specials config Http Headers
 
@@ -46,24 +49,43 @@ Nexus-Backend Service
 | **Keys**                                      | **Default value** | **Descriptions**                                   |
 |-----------------------------------------------|:------------------|:---------------------------------------------------|
 | nexus.api.backend.enabled                     | true              | Activated the Nexus-Backend Service                |   
-| nexus.api.backend.filter.waf.enabled          | true              | Activated the WAF Filter Json RequestBody          |   
+| nexus.api.backend.filter.waf.enabled          | true              | Activated the WAF filter Json RequestBody          |   
 | nexus.api.backend.listener.requestid.enabled  | true              | Activated the Fingerprint for each Http Request    |   
 | nexus.api.backend.filter.httpoverride.enabled | false             | Activated the Http Override Method                 | 
-| nexus.backend.filter.shallowEtag.enabled      | false             | Activated the ShallowEtagHeader Filter             | 
+| nexus.backend.filter.forwardedHeader.enabled  | true              | Activated the ForwardedHeader filter               |   
+| nexus.backend.filter.gzip.enabled             | true              | Activated the Gzip compression filter              |   
+| nexus.backend.filter.cors.enabled             | true              | Activated the Cors filter                          |   
+| nexus.backend.filter.shallowEtag.enabled      | false             | Activated the ShallowEtagHeader filter             | 
+| spring.mvc.formcontent.filter.enabled         | true              | Activated the FormContent parameterMap Support     |   
 | nexus.backend.tomcat.connector.https.enable   | false             | Activated a Connector TLS/SSL in a Embedded Tomcat | 
 | nexus.backend.tomcat.accesslog.valve.enable   | false             | Activated an Accesslog in a Embedded Tomcat        | 
-
 
 #### Noted the Spring config location can be overridden
 
 * -Dspring.config.location=/your/config/dir/
 * -Dspring.config.name=spring.properties
- 
+
+
+### The Nexus-Backend provides a full support MultipartRequest and Parameters inside a form HttpRequest
+
+#### MultipartConfig
+
+**SpringBoot keys application.properties**
+
+| **Keys**                                     | **Default value** | **Example value** | **Descriptions**    |
+|----------------------------------------------|:------------------|:------------------|:--------------------|
+| spring.servlet.multipart.enabled             | true              | true              | Enabled multipart   |   
+| spring.servlet.multipart.file-size-threshold | 10MB              | 25MB              | File size threshold |   
+| spring.servlet.multipart.max-file-size       | 15MB              | 150MB             | Max file size       |   
+| spring.servlet.multipart.max-request-size    | 15MB              | 150MB             | Max request size    |   
+
+**Noted** All the HttpRequests with a Content-Type multipart/form-data will be managed by a temporary BackendResource.
+This BackendResource can convert a MultipartFile to a temporary Resource, ready to be sent to the Backend Server. 
+
 
 ### The Nexus-Backend Url Server and miscellaneous options can be configured by the following keys Settings
 
  **Settings keys settings.properties**
-
 
 | **Keys**                                         | **Default value**            | **Example value**               | **Descriptions**                                |
 |--------------------------------------------------|:-----------------------------|:--------------------------------|:------------------------------------------------|
@@ -383,7 +405,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.9**, released at 24/09/2024 Fix replicate requests ApiBackend.requestEntity
+* Last version **1.0.10**, released at 29/09/2024 Add full support MultipartRequest content type multipart/form-data 
+* Version **1.0.9**, released at 24/09/2024 Fix replicate requests ApiBackend.requestEntity
 * Version **1.0.8**, released at 13/08/2024 Re-encoding HttpUrl, Special Characters are re-interpreted
 * Version **1.0.7**, released at 03/08/2024 All is Bytes.
 * Version **1.0.6**, released at 14/07/2024 Clarify Byte Array deserialization.
