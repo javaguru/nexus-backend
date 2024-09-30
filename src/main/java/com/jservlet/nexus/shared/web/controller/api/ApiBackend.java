@@ -24,6 +24,7 @@ import com.jservlet.nexus.shared.exceptions.NexusResourceNotFoundException;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendService.ResponseType;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.EntityError;
+import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.ErrorMessage;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.slf4j.Logger;
@@ -48,21 +49,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
  * Rest control ApiBackend, replicate all HttpRequests to the Backend Server.
  * Provides a full support for MultiPart HttpRequests and Parameters inside a form with Content-Type: multipart/form-data.
  * <p>
- * All HttpRequests methods:
- * Get,
- * Post,
- * Post Multipart File,
- * Put,
- * Put Multipart File,
- * Patch,
- * Patch Multipart File,
- * Delete
+ * All HttpRequests methods and protocols: Get, Post, Post Multipart File, Put, Put Multipart File, Patch, Patch Multipart File, Delete
  * <p>
  * Activated by only 'nexus.api.backend.enabled=true' in the configuration
  */
@@ -74,7 +69,7 @@ public class ApiBackend extends ApiBase {
 
     private static final Logger logger = LoggerFactory.getLogger(ApiBackend.class);
 
-    private static final String SOURCE = "NEXUS-REST-API-BACKEND";
+    private static final String SOURCE = "REST-API-NEXUS-BACKEND";
 
     public ApiBackend() { super(SOURCE); }
 
@@ -99,8 +94,11 @@ public class ApiBackend extends ApiBase {
             MultipartRequest multipartRequest = WebUtils.getNativeRequest(request, MultipartRequest.class);
             map = processMapResources(multipartRequest, request.getParameterMap());
 
-            logger.debug("Requested Url: {} '{}' args: {}, body: {}, files: {}",
-                    method, url, printParameterMap(request.getParameterMap()), body, map.entrySet());
+            // Optimize logs writing, logs take time!
+            if (logger.isDebugEnabled()) {
+                logger.debug("Requested Url: {} '{}' args: '{}', form: '{}', body: '{}', files: '{}'",
+                        method, url, printQueryString(request.getQueryString()), printParameterMap(request.getParameterMap()), body, map.entrySet());
+            }
 
             // Create a ResponseType!
             ResponseType<?> responseType = backendService.createResponseType(Object.class);
@@ -112,8 +110,8 @@ public class ApiBackend extends ApiBase {
 
             return obj;
         } catch (NexusResourceNotFoundException e) {
-            // Re-encapsulate the Not Found Exception in a ResponseEntity!
-            return new ResponseEntity<>(super.getResponseEntity(e.getMessage(), HttpStatus.NOT_FOUND), HttpStatus.NOT_FOUND);
+            // Return an error Message NOT_FOUND
+            return new ResponseEntity<>(new ErrorMessage("404", SOURCE, e.getMessage()).getError(), HttpStatus.NOT_FOUND);
         } finally {
             // Clean all the Backend Resources inside the MultiValueMap
             if (map != null && !map.isEmpty()) cleanResources(map);
@@ -138,6 +136,7 @@ public class ApiBackend extends ApiBase {
      * Print the parameterMap in a "Json" object style
      */
     private static String printParameterMap(Map<String, String[]> map) {
+        if (map == null || map.isEmpty()) return "{}";
         StringBuilder sb = new StringBuilder();
         Iterator<Map.Entry<String, String[]>> it = map.entrySet().iterator();
         sb.append("{");
@@ -157,6 +156,53 @@ public class ApiBackend extends ApiBase {
     }
 
     /**
+     * Print the raw queryString decoded
+     */
+    private static String printRawQueryString(String queryString) {
+        return URLDecoder.decode(queryString, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Print the queryString decoded
+     */
+    private static String printQueryString(String queryString) {
+        if (queryString == null || queryString.isEmpty()) return "{}";
+        Map<String, String[]> map = new LinkedHashMap<>();
+        StringTokenizer st = new StringTokenizer(queryString, "&");
+        while (st.hasMoreTokens()) {
+            String token = st.nextToken();
+            int idx = token.indexOf("=");
+            if (idx != -1) {
+                String key = idx > 0 ? token.substring(0, idx) : "";
+                String value = (idx > 0 && token.length() > idx + 1) || (token.indexOf('=') == token.length()-1) || (token.indexOf('=') == 0) ?
+                        token.substring(idx + 1) : token.substring(idx);
+                String[] values;
+                if (map.get(key) != null) {
+                    values = appendInArray(map.get(key), URLDecoder.decode(value, StandardCharsets.UTF_8));
+                } else {
+                    if (!value.isEmpty()){
+                        values = new String[] { URLDecoder.decode(value, StandardCharsets.UTF_8) };
+                    } else {
+                        values = new String[0];
+                    }
+                }
+                if (!key.isEmpty()) map.put(key, values);
+            } // none!
+        }
+        return printParameterMap(map);
+    }
+
+    /**
+     * Append an element inside an Array
+     */
+    private static <T> T[] appendInArray(T[] array, T element) {
+        final int len = array.length;
+        array = Arrays.copyOf(array, len + 1);
+        array[len] = element;
+        return array;
+    }
+
+   /**
      * Prepare a LinkedMultiValueMap from a MultipartRequest, convert a MultipartFile to a Backend Resource.
      * And inject the parameterMap inside the LinkedMultiValueMap from a multipart HttpRequest.
      */
@@ -192,7 +238,12 @@ public class ApiBackend extends ApiBase {
             for (Object obj : objects) {
                 if (obj instanceof BackendResource) {
                     BackendResource resource = (BackendResource) obj;
-                    if (resource.getFile().delete()) logger.debug("Resource deleted: {} '{}'", entry.getKey(), resource.getFilename());
+                    if (resource.getFile().delete()) {
+                        if (logger.isDebugEnabled())
+                            logger.debug("Resource deleted: {} file: '{}'", entry.getKey(), resource.getFilename());
+                    } else {
+                        logger.warn("Resource not deleted: {} file: '{}'", entry.getKey(), resource.getFilename());
+                    }
                 }
             }
         }

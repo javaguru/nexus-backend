@@ -40,14 +40,15 @@ public class GlobalDefaultExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalDefaultExceptionHandler.class);
 
+    private static final String EXTERNAL_SOURCE = "EXTERNAL-ERROR";
+    private static final String INTERNAL_SOURCE = "INTERNAL-ERROR";
+    private static final String GLOBAL_SOURCE = "GLOBAL-ERROR";
+
     @ExceptionHandler(value = { RestClientException.class })
     public ResponseEntity<?> handleResourceAccessException(HttpServletRequest request, RestClientException e) {
         logger.error("Intercepted RestClientException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
-        return new ResponseEntity<>(
-                new ErrorMessage("503", "EXTERNAL-NEXUS-REST-BACKEND", e.getMessage()).getError(),
-                SERVICE_UNAVAILABLE
-        );
+        return new ResponseEntity<>(new ErrorMessage("503", EXTERNAL_SOURCE, e.getMessage()).getError(), SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(value = { HttpMessageNotReadableException.class })
@@ -58,16 +59,11 @@ public class GlobalDefaultExceptionHandler {
     }
 
     @ExceptionHandler(value = { RequestRejectedException.class })
-    //@ResponseStatus(value = HttpStatus.BAD_REQUEST) // Don't specify any reason, otherwise the view is not used!
     public ResponseEntity<?> handleRejectedException(HttpServletRequest request, RequestRejectedException e) {
         // Log security, the WAFFilter return a request not readable anymore
         logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
-        return new ResponseEntity<>(
-                new ErrorMessage("400", "INTERNAL-NEXUS-REST-BACKEND","Request rejected!").getError(),
-                BAD_REQUEST
-        );
-        //return new ResponseEntity<>(BAD_REQUEST); // 400
+        return new ResponseEntity<>(new ErrorMessage("400", INTERNAL_SOURCE,"Request rejected!").getError(), BAD_REQUEST);
     }
 
     /*
@@ -77,9 +73,6 @@ public class GlobalDefaultExceptionHandler {
     public ResponseEntity<?> handleResourceAccessException(HttpServletRequest request, Exception e) {
         logger.error("Intercepted Exception: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
-        return new ResponseEntity<>(
-                new ErrorMessage("500", "ERROR-NEXUS-REST-BACKEND", e.getMessage()).getError(),
-                INTERNAL_SERVER_ERROR
-        );
+        return new ResponseEntity<>(new ErrorMessage("500", GLOBAL_SOURCE, e.getMessage()).getError(), INTERNAL_SERVER_ERROR);
     }
 }
