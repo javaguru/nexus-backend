@@ -24,7 +24,6 @@ import com.jservlet.nexus.shared.exceptions.NexusResourceNotFoundException;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendService.ResponseType;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.EntityError;
-import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.ErrorMessage;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.slf4j.Logger;
@@ -94,9 +93,9 @@ public class ApiBackend extends ApiBase {
             MultipartRequest multipartRequest = WebUtils.getNativeRequest(request, MultipartRequest.class);
             map = processMapResources(multipartRequest, request.getParameterMap());
 
-            // Optimize logs writing, logs take time!
+            // Optimize logs writing, log methods can take time!
             if (logger.isDebugEnabled()) {
-                logger.debug("Requested Url: {} '{}' args: '{}', form: '{}', body: '{}', files: '{}'",
+                logger.debug("Requested Url: {} '{}' args: {}, form: {}, body: {}, files: {}",
                         method, url, printQueryString(request.getQueryString()), printParameterMap(request.getParameterMap()), body, map.entrySet());
             }
 
@@ -111,7 +110,7 @@ public class ApiBackend extends ApiBase {
             return obj;
         } catch (NexusResourceNotFoundException e) {
             // Return an error Message NOT_FOUND
-            return new ResponseEntity<>(new ErrorMessage("404", SOURCE, e.getMessage()).getError(), HttpStatus.NOT_FOUND);
+            return super.getResponseEntity("404", "ERROR", e, HttpStatus.NOT_FOUND);
         } finally {
             // Clean all the Backend Resources inside the MultiValueMap
             if (map != null && !map.isEmpty()) cleanResources(map);
@@ -174,8 +173,8 @@ public class ApiBackend extends ApiBase {
             int idx = token.indexOf("=");
             if (idx != -1) {
                 String key = idx > 0 ? token.substring(0, idx) : "";
-                String value = (idx > 0 && token.length() > idx + 1) || (token.indexOf('=') == token.length()-1) || (token.indexOf('=') == 0) ?
-                        token.substring(idx + 1) : token.substring(idx);
+                String value = (idx > 0 && token.length() > idx + 1) || (token.indexOf('=') == token.length()-1) || (token.indexOf('=') == 0)
+                        ? token.substring(idx + 1) : token.substring(idx);
                 String[] values;
                 if (map.get(key) != null) {
                     values = appendInArray(map.get(key), URLDecoder.decode(value, StandardCharsets.UTF_8));
@@ -240,9 +239,9 @@ public class ApiBackend extends ApiBase {
                     BackendResource resource = (BackendResource) obj;
                     if (resource.getFile().delete()) {
                         if (logger.isDebugEnabled())
-                            logger.debug("Resource deleted: {} file: '{}'", entry.getKey(), resource.getFilename());
+                            logger.debug("Resource deleted: '{}' file: '{}'", entry.getKey(), resource.getFilename());
                     } else {
-                        logger.warn("Resource not deleted: {} file: '{}'", entry.getKey(), resource.getFilename());
+                        logger.warn("Resource not deleted: '{}' file: '{}'", entry.getKey(), resource.getFilename());
                     }
                 }
             }

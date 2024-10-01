@@ -150,8 +150,8 @@ public class RestApiTest extends TestCase {
             headers.add("Content-Type", MediaType.APPLICATION_FORM_URLENCODED_VALUE);
             // get Echo data in ByteArray through the proxy!
             byte[] obj = backendService.doRequest("/mock/v1/proxy", HttpMethod.POST,
-                    backendService.createResponseType(byte[].class), "echo=Hello Proxy!", headers); // WARN mandatory typed byte[].class
-            System.out.println(new String(obj, StandardCharsets.ISO_8859_1));
+                    backendService.createResponseType(byte[].class), "echo=Hello Proxy! Héhè hàhâ ", headers); // WARN mandatory typed byte[].class
+            System.out.println(new String(obj, StandardCharsets.UTF_8));
         } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
             System.out.println("Failed to POST Echo Bytes entity/entities on backend: " + e.getMessage());
         } catch (NexusResourceNotFoundException ex) {

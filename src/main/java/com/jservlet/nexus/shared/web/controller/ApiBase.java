@@ -18,6 +18,7 @@
 
 package com.jservlet.nexus.shared.web.controller;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -38,11 +39,22 @@ public abstract class ApiBase {
             throw (AccessDeniedException) e;
         }
         String cause = e.getCause() != null ? e.getCause().getMessage() : "NA";
-        Message message = getMessageObject(e.getMessage(), cause);
+        Message message = getMessageObject(code, "ERROR");
         message.setMessage(e.getMessage());
         message.setCause(cause);
-        message.setCode(code);
         return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    protected final ResponseEntity<?> getResponseEntity(String code, String level, String msg, HttpStatus httpStatus) {
+        Message message = getMessageObject(code, level);
+        message.setMessage(msg);
+        return new ResponseEntity<>(message, httpStatus);
+    }
+
+    protected final ResponseEntity<?> getResponseEntity(String code, String level, Exception e, HttpStatus httpStatus) {
+        Message message = getMessageObject(code, level);
+        message.setMessage(e.getMessage());
+        return new ResponseEntity<>(message, httpStatus);
     }
 
     protected final ResponseEntity<?> getResponseEntity(String code, String level, HttpStatus httpStatus) {
@@ -61,6 +73,7 @@ public abstract class ApiBase {
         return new Message(code, level, this.source);
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     static class Message implements Serializable {
 
         private static final long serialVersionUID = -5490061086438597077L;
@@ -71,6 +84,7 @@ public abstract class ApiBase {
         private String message;
         private String cause;
 
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
         private Map<String, String> parameters = new HashMap<>();
 
         public Message(String code, String level, String source) {

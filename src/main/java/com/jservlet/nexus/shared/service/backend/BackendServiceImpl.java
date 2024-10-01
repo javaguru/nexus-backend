@@ -382,14 +382,15 @@ public class BackendServiceImpl implements BackendService {
         if (removeOriginHeader) headers.remove(HttpHeaders.ORIGIN);
 
         // Basic Authentication, Bearer Authentication and Cookies
+        // WARN BasicAuth Not UTF-8! see https://datatracker.ietf.org/doc/html/rfc7617#page-14
         if (!ObjectUtils.isEmpty(username) && !ObjectUtils.isEmpty(password))
-            headers.setBasicAuth(HttpHeaders.encodeBasicAuth(username, password, StandardCharsets.UTF_8));
+            headers.setBasicAuth(HttpHeaders.encodeBasicAuth(username, password, StandardCharsets.ISO_8859_1));
         if (!ObjectUtils.isEmpty(bearer))
             headers.setBearerAuth(bearer);
         if (!ObjectUtils.isEmpty(cookie))
             headers.add(HttpHeaders.COOKIE, cookie);
 
-        logger.debug("Headers requested: {}", headers);
+        logger.debug("Requested Headers: {}", headers);
         if (body != null) return new HttpEntity<>(body, headers);
         return new HttpEntity<>(headers);
     }
