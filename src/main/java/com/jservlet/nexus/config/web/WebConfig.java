@@ -92,13 +92,11 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         logger.info("SpringBoot set ApplicationContext -> ac: ['{}']", ac.getId());
         WebConfig.context = ac;
 
-        if (logger.isInfoEnabled()) {
-            Map<String, Object> map = getApplicationProperties(env);
-            // Debug also log system out!
-            logger.info("*** SpringBoot ApplicationProperties ***");
-            for (Map.Entry<String, Object> entry : map.entrySet()) {
-                logger.info("{} = {}", entry.getKey(), entry.getValue());
-            }
+        Map<String, Object> map = getApplicationProperties(env);
+        // Debug also log system out!
+        logger.info("*** SpringBoot ApplicationProperties ***");
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            logger.info("{} = {}", entry.getKey(), entry.getValue());
         }
     }
 
