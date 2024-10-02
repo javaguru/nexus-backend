@@ -40,7 +40,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.regex.Pattern;
 
 import static com.jservlet.nexus.shared.web.filter.WAFFilter.Reactive.*;
 
@@ -112,6 +111,7 @@ public class WAFFilter implements Filter {
         // WAFRequestWrapper come from with a FirewalledRequest!
         WAFRequestWrapper wrappedRequest;
         try {
+            // WARN The Request ParameterNames/Values are validated by the WebHttpFirewall!
             wrappedRequest = new WAFRequestWrapper(req);
             if (STRICT == reactiveMode) {
                 // Check the cookies!
@@ -141,7 +141,7 @@ public class WAFFilter implements Filter {
                 // Just clean the Json body!
                 String body = IOUtils.toString(wrappedRequest.getReader());
                 if (!StringUtils.isBlank(body)) {
-                    wrappedRequest.setInputStream(stripWAFPattern(body).getBytes());
+                    wrappedRequest.setInputStream(WAFUtils.stripWAFPattern(body, wafPredicate.getWafPatterns()).getBytes());
                 }
             }
 
@@ -187,23 +187,6 @@ public class WAFFilter implements Filter {
         }
     }
 
-    private String stripWAFPattern(String value) {
-        if (value == null) return null;
-        // matcher xssPattern replaceAll ?
-        for (Pattern pattern : wafPredicate.getWafPatterns())
-            value = pattern.matcher(value).replaceAll("");
-        return value;
-    }
-
-    private boolean isWAFPattern(String value) {
-        if (value == null) return false;
-        // matcher xssPattern find ?
-        for (Pattern pattern : wafPredicate.getWafPatterns())
-            if (pattern.matcher(value).find())
-                return true;
-        return false;
-    }
-
     /**
      * Just clean the current parameters, no evasion !
      * @return Map  Parameters
@@ -216,24 +199,12 @@ public class WAFFilter implements Filter {
             int len = values.length;
             String[] encodedValues = new String[len];
             for (int i = 0; i < len; i++)
-                encodedValues[i] = stripWAFPattern(values[i]);
+                encodedValues[i] = WAFUtils.stripWAFPattern(values[i], wafPredicate.getWafPatterns());
             parameters.put(key, encodedValues);
         }
         return parameters;
     }
 
-    private void rejectParameterNames(String name) {
-        if (!wafPredicate.getWAFParameterNames().test(name)) {
-            throw new RequestRejectedException(
-                    "The request was rejected because the Parameter name \"" + name + "\" is not allowed.");
-        }
-    }
-    private void rejectParameterValues(String value) {
-        if (!wafPredicate.getWAFParameterNames().test(value)) {
-            throw new RequestRejectedException(
-                    "The request was rejected because the Parameter value \"" + value + "\" is not allowed.");
-        }
-    }
     private void rejectBody(String body) {
         if (!wafPredicate.getWAFParameterValues().test(body)) {
             throw new RequestRejectedException(

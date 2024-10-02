@@ -112,7 +112,7 @@ public class ApplicationConfig  {
     @Value("${nexus.backend.mapper.date.withColon:true}")
     private boolean withColonInTimeZone;
 
-    @Value("${nexus.backend.mapper.indentOutput:true}")
+    @Value("${nexus.backend.mapper.indentOutput:false}")
     private boolean indentOutput;
 
 

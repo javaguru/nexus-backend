@@ -52,8 +52,8 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.TreeMap;
 /*
  * Web Mvc Configuration
  */
@@ -110,24 +110,19 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
 
     /* Stuff, get loaded Application Properties */
     private static Map<String, Object> getApplicationProperties(Environment env) {
-        Map<String, Object> map = new TreeMap<>(); // alpha order!
+        Map<String, Object> map = new LinkedHashMap<>(); // keep order!
         if (env instanceof ConfigurableEnvironment) {
             for (PropertySource<?> propertySource : ((ConfigurableEnvironment) env).getPropertySources()) {
-                // propertySource instanceof EnumerablePropertySource
+                // WARN all tracked springboot config file *.properties!
                 if (propertySource instanceof OriginTrackedMapPropertySource) {
-                    if ("Config resource 'class path resource [application.properties]' via location 'optional:classpath:/'"
-                            .equals(propertySource.getName())) {
-                        for (String key : ((EnumerablePropertySource) propertySource).getPropertyNames()) {
-                            map.put(key, propertySource.getProperty(key));
-                        }
-                        break;
+                    for (String key : ((EnumerablePropertySource) propertySource).getPropertyNames()) {
+                        map.put(key, propertySource.getProperty(key));
                     }
                 }
             }
         }
         return map;
     }
-
 
 
     @Override

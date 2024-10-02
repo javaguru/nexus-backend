@@ -111,7 +111,7 @@ This BackendResource can convert a MultipartFile to a temporary Resource, ready 
 | nexus.backend.header.authorization.username      | -                            | XUsername                       | Activated Basic Authorization request           |   
 | nexus.backend.header.authorization.password      | -                            | XPassword                       | "                                               |
 | **Mapper**                                       |                              |                                 |                                                 |
-| nexus.backend.mapper.indentOutput                | true                         | false                           | Indent Output Json                              |   
+| nexus.backend.mapper.indentOutput                | false                        | true                            | Indent Output Json                              |   
 | nexus.backend.mapper.serializer.date             | yyyy-MM-dd'T'HH:mm:ss.SSS'Z' | yyyy-MM-dd'T'HH:mm:ssZZ         | Date Pattern Zulu Time: .SSS'Z', X or ZZ +00:00 |   
 | nexus.backend.mapper.serializer.timezone         | -                            | Europe/Paris                    | Locale TimeZone by Default                      |   
 | nexus.backend.mapper.date.timezone               | Zulu                         | Europe/Paris                    | Locale Zulu by Default                          |   
