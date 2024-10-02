@@ -18,7 +18,7 @@
 
 package com.jservlet.nexus.controller;
 
-import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.ErrorMessage;
+import com.jservlet.nexus.shared.web.controller.ApiBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -36,26 +36,28 @@ import static org.springframework.http.HttpStatus.*;
  * Global DefaultExceptionHandler
  */
 @ControllerAdvice
-public class GlobalDefaultExceptionHandler {
+public class GlobalDefaultExceptionHandler extends ApiBase {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalDefaultExceptionHandler.class);
 
-    private static final String EXTERNAL_SOURCE = "EXTERNAL-ERROR";
-    private static final String INTERNAL_SOURCE = "INTERNAL-ERROR";
     private static final String GLOBAL_SOURCE = "GLOBAL-ERROR";
+
+    public GlobalDefaultExceptionHandler() {
+        super(GLOBAL_SOURCE);
+    }
 
     @ExceptionHandler(value = { RestClientException.class })
     public ResponseEntity<?> handleResourceAccessException(HttpServletRequest request, RestClientException e) {
         logger.error("Intercepted RestClientException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
-        return new ResponseEntity<>(new ErrorMessage("503", EXTERNAL_SOURCE, e.getMessage()).getError(), SERVICE_UNAVAILABLE);
+        return super.getResponseEntity("503", "ERROR", e, SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(value = { HttpMessageNotReadableException.class })
     public ResponseEntity<?> handleNotReadableException(HttpServletRequest request, HttpMessageNotReadableException e) {
         logger.error("Intercepted HttpMessageNotReadableException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
-        return new ResponseEntity<>(METHOD_NOT_ALLOWED);// 405 or 406 NOT_ACCEPTABLE !?
+        return super.getResponseEntity(METHOD_NOT_ALLOWED);// 405 or 406 NOT_ACCEPTABLE !?
     }
 
     @ExceptionHandler(value = { RequestRejectedException.class })
@@ -63,7 +65,7 @@ public class GlobalDefaultExceptionHandler {
         // Log security, the WAFFilter return a request not readable anymore
         logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
-        return new ResponseEntity<>(new ErrorMessage("400", INTERNAL_SOURCE,"Request rejected!").getError(), BAD_REQUEST);
+        return super.getResponseEntity("400", "ERROR", "Request rejected!", BAD_REQUEST);
     }
 
     /*
@@ -73,6 +75,6 @@ public class GlobalDefaultExceptionHandler {
     public ResponseEntity<?> handleResourceAccessException(HttpServletRequest request, Exception e) {
         logger.error("Intercepted Exception: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
-        return new ResponseEntity<>(new ErrorMessage("500", GLOBAL_SOURCE, e.getMessage()).getError(), INTERNAL_SERVER_ERROR);
+        return super.getResponseEntity("500", "ERROR", e.getMessage(), INTERNAL_SERVER_ERROR);
     }
 }

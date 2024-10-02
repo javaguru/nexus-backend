@@ -42,7 +42,7 @@ import javax.servlet.http.HttpServletResponse;
  * And the StrictHttpFirewall can accept a list Predicates to parse the request Headers (include Cookie) and
  * Key/Value Parameter Map.
  * <br><br>
- * For parsing a Json RequestBody see the class com.webfg.service.waf.WAFFilter
+ * For parsing a Json RequestBody see the class com.jservlet.nexus.shared.web.filter.WAFFilter
  */
 public final class WebHttpFirewall extends StrictHttpFirewall {
 

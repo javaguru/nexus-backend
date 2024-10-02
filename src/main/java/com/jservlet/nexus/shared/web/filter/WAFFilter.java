@@ -100,7 +100,7 @@ public class WAFFilter implements Filter {
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         this.filterConfig = filterConfig;
-        logger.info("Starting " + filterConfig.getFilterName());
+        logger.info("Starting {}", filterConfig.getFilterName());
     }
 
     @Override
@@ -109,7 +109,7 @@ public class WAFFilter implements Filter {
         final HttpServletRequest req = (HttpServletRequest) request;
         final HttpServletResponse resp = (HttpServletResponse) response;
 
-        // WAFRequestWrapper
+        // WAFRequestWrapper come from with a FirewalledRequest!
         WAFRequestWrapper wrappedRequest;
         try {
             wrappedRequest = new WAFRequestWrapper(req);
@@ -153,11 +153,18 @@ public class WAFFilter implements Filter {
                     LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // No truncated in debug mode!
                     request.getRemoteHost(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
 
-            // Request rejected!
+            // Request rejected! WARN Default ISO-8859-1 !? Force writeValueAsBytes in UTF-8!
             resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
             resp.setStatus(HttpStatus.BAD_REQUEST.value());
-            resp.getWriter().write(objectMapper.writeValueAsString(
+            resp.getOutputStream().write(objectMapper.writeValueAsBytes(
                     new ErrorMessage("400", "INTERNAL-NEXUS-REST-BACKEND","Request rejected!").getError()));
+
+            // Forces any content in the buffer to be written to the client.
+            // A call to this method automatically commits the response, meaning the status code and headers will be written.
+            resp.flushBuffer();
+
+            resp.getOutputStream().flush();
+            resp.getOutputStream().close();
          }
     }
 

@@ -4,9 +4,14 @@ Nexus-Backend Service
 
 ## An Advanced and Secure RestApi Backend Service Gateway 
 
+**The Nexus-Backend Service acts as an intermediary between a Client application and a Backend REST API service.
+It forwards Requests from the client to the Backend Service and returns the Responses back to the client.**
+
 **Inside a Servlet Container a Rest Controller ApiBackend and its BackendService, Secure and Replicate all the HTTP Requests to a RestApi Backend Server.**
 
 **Tomcat Servlet Containers under Servlet version 4.x**
+
+**Examples forwarded requests through the Nexus-Backend Service:**
 
 | Clients               | RestApi Nexus-Backend Service                      | Backend Server Services                         |
 |-----------------------|:---------------------------------------------------|:------------------------------------------------|
@@ -405,7 +410,9 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.10**, released at 29/09/2024 Add full support MultipartRequest content type multipart/form-data 
+* Last version **1.0.12**, released at 02/10/2024 Fix ApiBase error Message super.getResponseEntity
+* Version **1.0.11**, released at 30/09/2024 Does not encode the URI template! 
+* Version **1.0.10**, released at 29/09/2024 Add full support MultipartRequest content type multipart/form-data 
 * Version **1.0.9**, released at 24/09/2024 Fix replicate requests ApiBackend.requestEntity
 * Version **1.0.8**, released at 13/08/2024 Re-encoding HttpUrl, Special Characters are re-interpreted
 * Version **1.0.7**, released at 03/08/2024 All is Bytes.
