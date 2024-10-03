@@ -19,7 +19,7 @@
 package com.jservlet.nexus.shared.web.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.ErrorMessage;
+import com.jservlet.nexus.shared.web.controller.ApiBase;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -65,11 +65,13 @@ import static com.jservlet.nexus.shared.web.filter.WAFFilter.Reactive.*;
  */
 @Component
 @ConditionalOnProperty(value = "nexus.api.backend.filter.waf.enabled")
-public class WAFFilter implements Filter {
+public class WAFFilter extends ApiBase implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(WAFFilter.class);
 
     FilterConfig filterConfig = null;
+
+    private static final String SOURCE = "INTERNAL-REST-NEXUS-BACKEND";
 
     /**
      * Default STRICT mode, PASSIVE or UNSAFE!
@@ -92,6 +94,7 @@ public class WAFFilter implements Filter {
 
     @Autowired
     public WAFFilter(WAFPredicate wafPredicate, ObjectMapper objectMapper) {
+        super(SOURCE);
         this.wafPredicate = wafPredicate;
         this.objectMapper = objectMapper;
     }
@@ -157,7 +160,7 @@ public class WAFFilter implements Filter {
             resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
             resp.setStatus(HttpStatus.BAD_REQUEST.value());
             resp.getOutputStream().write(objectMapper.writeValueAsBytes(
-                    new ErrorMessage("400", "INTERNAL-NEXUS-REST-BACKEND","Request rejected!").getError()));
+                    new Message("400", "ERROR", SOURCE, "Request rejected!")));
 
             // Forces any content in the buffer to be written to the client.
             // A call to this method automatically commits the response, meaning the status code and headers will be written.

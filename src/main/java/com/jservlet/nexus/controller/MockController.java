@@ -20,7 +20,6 @@ package com.jservlet.nexus.controller;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.ErrorMessage;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
@@ -73,7 +72,7 @@ public class MockController extends ApiBase {
 
     private Environment env;
 
-    private static final String SOURCE = "MOCK-NEXUS-REST-BACKEND";
+    private static final String SOURCE = "MOCK-REST-NEXUS-BACKEND";
 
     private static final String fileName = "logo-marianne.svg";
     private static final String fileTest = System.getProperty("java.io.tmpdir") + fileName;
@@ -233,29 +232,29 @@ public class MockController extends ApiBase {
 
     @Operation(summary = "Get Error 400", description = "Get Error 400")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = $400, description = REQ_NOT_CORRECTLY, content = {@Content(schema = @Schema(implementation = ErrorMessage.class))}),
+            @ApiResponse(responseCode = $400, description = REQ_NOT_CORRECTLY, content = {@Content(schema = @Schema(implementation = ResponseEntity.class))}),
     })
     @GetMapping(path = "/v1/dataError400", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getError400() {
-        return new ResponseEntity<>(new ErrorMessage("400", SOURCE,"Bad Request").getError(), HttpStatus.BAD_REQUEST);
+        return super.getResponseEntity("400", "ERROR", "Bad Request", HttpStatus.BAD_REQUEST);
     }
 
     @Operation(summary = "Get Error 401", description = "Get Error 401")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = $401, description = USER_NOT_AUTH, content = {@Content(schema = @Schema(implementation = ErrorMessage.class))}),
+            @ApiResponse(responseCode = $401, description = USER_NOT_AUTH, content = {@Content(schema = @Schema(implementation = Message.class))}),
     })
     @GetMapping(path = "/v1/dataError401", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getError401() {
-        return new ResponseEntity<>(new ErrorMessage("401", SOURCE,"Unauthorized").getError(), HttpStatus.UNAUTHORIZED);
+        return super.getResponseEntity("401", "ERROR", "Unauthorized", HttpStatus.UNAUTHORIZED);
     }
 
     @Operation(summary = "Get Error 500", description = "Get Error 500")
      @ApiResponses(value = {
-              @ApiResponse(responseCode = $500, description = INTERNAL_SERVER, content = {@Content(schema = @Schema(implementation = ErrorMessage.class))}),
+              @ApiResponse(responseCode = $500, description = INTERNAL_SERVER, content = {@Content(schema = @Schema(implementation = Message.class))}),
      })
     @GetMapping(path = "/v1/dataError500", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getError500() {
-        return new ResponseEntity<>(new ErrorMessage("500", SOURCE,"Internal Server Error").getError(), HttpStatus.INTERNAL_SERVER_ERROR);
+        return super.getResponseEntity("500", "ERROR", "Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     /*

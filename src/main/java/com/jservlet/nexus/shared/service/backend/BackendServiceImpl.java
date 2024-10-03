@@ -448,7 +448,7 @@ public class BackendServiceImpl implements BackendService {
         }
     }
 
-    public static class ErrorMessage {
+    private static class ErrorMessage {
 
         @JsonProperty(required = true)
         private Message error;
@@ -457,81 +457,20 @@ public class BackendServiceImpl implements BackendService {
             this.error = new Message(code, "ERROR", source, message);
         }
 
-        public Message getError() { return this.error; }
-
-        public void setError(Message error) { this.error = error; }
-
         public String toString() { return "ErrorMessage{error=" + this.error + "}"; }
     }
 
-    public static class Message {
-        private String code;
-        private String level;
-        private String source;
-        private String message;
-        @JsonInclude(JsonInclude.Include.NON_EMPTY)
-        private Map<String, String> parameters = new HashMap<>();
+    private static class Message {
+        public final String code;
+        public final String level;
+        public final String source;
+        public final String message;
 
         public Message(String code, String level, String source, String message) {
             this.code = code;
             this.level = level;
             this.source = source;
             this.message = message;
-        }
-
-        public String getCode() {
-            return code;
-        }
-
-        public void setCode(String code) {
-            this.code = code;
-        }
-
-        public String getLevel() {
-            return level;
-        }
-
-        public void setLevel(String level) {
-            this.level = level;
-        }
-
-        public String getSource() {
-            return source;
-        }
-
-        public void setSource(String source) {
-            this.source = source;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
-        public Map<String, String> getParameters() {
-            return parameters;
-        }
-
-        public void setParameters(Map<String, String> parameters) {
-            this.parameters = parameters;
-        }
-
-        public void setParameter(String text) {
-            this.parameters.put(text, "");
-        }
-
-        @Override
-        public String toString() {
-            return "Message{" +
-                    "code='" + code + '\'' +
-                    ", level='" + level + '\'' +
-                    ", source='" + source + '\'' +
-                    ", message='" + message + '\'' +
-                    ", parameters=" + parameters +
-                    '}';
         }
     }
 

@@ -63,7 +63,7 @@ public class ApplicationTestConfig {
     public BackendService backendService(@Value("${nexus.backend.url}") String backendUrl,
                                          RestOperations restOperations,
                                          ObjectMapper objectMapper) {
-        final BackendService backendService = new BackendServiceImpl();
+        final BackendServiceImpl backendService = new BackendServiceImpl();
         backendService.setBackendURL(backendUrl);
         backendService.setRestOperations(restOperations);
         backendService.setObjectMapper(objectMapper);

@@ -90,7 +90,7 @@ public class ApplicationConfig  {
     public BackendService backendService(@Value("${nexus.backend.url}") String backendUrl,
                                          RestOperations restOperations,
                                          ObjectMapper objectMapper) {
-        final BackendService backendService = new BackendServiceImpl();
+        final BackendServiceImpl backendService = new BackendServiceImpl();
         backendService.setBackendURL(backendUrl);
         backendService.setRestOperations(restOperations);
         backendService.setObjectMapper(objectMapper);
@@ -193,8 +193,7 @@ public class ApplicationConfig  {
         restTemplate.setUriTemplateHandler(uriFactory);
 
         // Json + Json wildcard and MediaType.ALL now!
-        mappingJackson2HttpMessageConverter.setSupportedMediaTypes(
-                Arrays.asList(MediaType.APPLICATION_JSON, new MediaType("application", "*+json"), MediaType.ALL));
+        mappingJackson2HttpMessageConverter.setSupportedMediaTypes(List.of(MediaType.ALL));
 
         // List HttpMessage Converters
         restTemplate.setMessageConverters(Arrays.asList(
