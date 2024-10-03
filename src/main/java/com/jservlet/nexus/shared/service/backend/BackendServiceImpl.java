@@ -453,8 +453,8 @@ public class BackendServiceImpl implements BackendService {
         @JsonProperty(required = true)
         private Message error;
 
-        public ErrorMessage(String code, String source, String text) {
-            this.error = new Message(code, "ERROR", source, text);
+        public ErrorMessage(String code, String source, String message) {
+            this.error = new Message(code, "ERROR", source, message);
         }
 
         public Message getError() { return this.error; }
@@ -468,15 +468,15 @@ public class BackendServiceImpl implements BackendService {
         private String code;
         private String level;
         private String source;
-        private String text;
+        private String message;
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
         private Map<String, String> parameters = new HashMap<>();
 
-        public Message(String code, String level, String source, String text) {
+        public Message(String code, String level, String source, String message) {
             this.code = code;
             this.level = level;
             this.source = source;
-            this.text = text;
+            this.message = message;
         }
 
         public String getCode() {
@@ -503,12 +503,12 @@ public class BackendServiceImpl implements BackendService {
             this.source = source;
         }
 
-        public String getText() {
-            return text;
+        public String getMessage() {
+            return message;
         }
 
-        public void setText(String text) {
-            this.text = text;
+        public void setMessage(String message) {
+            this.message = message;
         }
 
         public Map<String, String> getParameters() {
@@ -529,7 +529,7 @@ public class BackendServiceImpl implements BackendService {
                     "code='" + code + '\'' +
                     ", level='" + level + '\'' +
                     ", source='" + source + '\'' +
-                    ", text='" + text + '\'' +
+                    ", message='" + message + '\'' +
                     ", parameters=" + parameters +
                     '}';
         }
