@@ -82,7 +82,7 @@
         <mainClass>com.jservlet.nexus.config.Application</mainClass>
 
         <!-- Update the last Tomcat 9.x.x version with springboot starter-parent-->
-        <tomcat.version>9.0.90</tomcat.version>
+        <tomcat.version>9.0.95</tomcat.version>
 
         <!-- Dependency version -->
         <spring-boot.version>2.7.18</spring-boot.version>
