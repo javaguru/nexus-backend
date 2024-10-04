@@ -19,7 +19,7 @@
 package com.jservlet.nexus.shared.exceptions;
 
 /**
- * Thrown when a method is called which use the current logged in user.
+ * Thrown when a method is called which use the current logged user.
  */
 public class NexusNotAuthorizedException extends Exception {
 

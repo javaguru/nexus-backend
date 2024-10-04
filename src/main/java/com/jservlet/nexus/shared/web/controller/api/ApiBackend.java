@@ -79,6 +79,17 @@ public class ApiBackend extends ApiBase {
         this.backendService = backendService;
     }
 
+    /**
+     * Request an Entity Object and return a Response Entity or other...
+     * WARN Request Multipart/mixed will be rejected by WAF Filter
+     *
+     * @param body                          String representing the RequestBody Object, just transfer the body
+     * @param method                        HttpMethod GET, POST, PUT, PATCH or DELETE
+     * @param request                       The current HttpServletRequest
+     * @return Object                       Return a ResponseEntity
+     * @throws NexusHttpException           Exception when a http request to the backend fails
+     * @throws NexusIllegalUrlException     Exception when an illegal url will be requested
+     */
     @RequestMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
     public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method, HttpServletRequest request)
             throws NexusHttpException, NexusIllegalUrlException {
@@ -201,7 +212,7 @@ public class ApiBackend extends ApiBase {
         return array;
     }
 
-   /**
+    /**
      * Prepare a LinkedMultiValueMap from a MultipartRequest, convert a MultipartFile to a Backend Resource.
      * And inject the parameterMap inside the LinkedMultiValueMap from a multipart HttpRequest.
      */
@@ -259,16 +270,16 @@ public class ApiBackend extends ApiBase {
 
         public BackendResource(MultipartFile multipartFile) throws IOException {
             Assert.notNull(multipartFile, "MultipartFile must not be null");
-            // Create a temporary file in java.io.tmpdir and delete on exit if it exists!
+            // Create a temporary file in java.io.tmpdir
             fileUpload = File.createTempFile(System.currentTimeMillis() + "_nexus_", ".tmp");
-            fileUpload.deleteOnExit();
-            logger.debug("Create temp File: {}", fileUpload.getAbsolutePath());
 
             // Get original Filename
             originalFilename = multipartFile.getOriginalFilename();
 
             // Consume the input Stream and transfer it to a new local file
             multipartFile.transferTo(fileUpload);
+
+            logger.debug("BackendResource created: {}", fileUpload.getAbsolutePath());
         }
 
         /**

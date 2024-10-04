@@ -19,7 +19,7 @@
 package com.jservlet.nexus.shared.exceptions;
 
 /**
- * Thrown when a illegal url will be requested.
+ * Thrown when an illegal url will be requested.
  */
 public class NexusIllegalUrlException extends Exception {
 
