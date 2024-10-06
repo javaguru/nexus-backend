@@ -144,8 +144,8 @@ and on specific Methods **GET, POST, PUT, PATCH** and Ant Path pattern:
 | nexus.backend.api-backend-resource.matchers.matchers2.pattern | /api/streaming/** | 
 | nexus.backend.api-backend-resource.matchers.matchers3.method  | POST              |
 | nexus.backend.api-backend-resource.matchers.matchers3.pattern | /api/streaming/** | 
-| nexus.backend.api-backend-resource.matchers.matchers3.method  | Others Methods    |   
-| nexus.backend.api-backend-resource.matchers.matchers3.pattern | Others Pattern    |   
+| nexus.backend.api-backend-resource.matchers.matchersX.method  | X Others Methods  |   
+| nexus.backend.api-backend-resource.matchers.matchersX.pattern | X Others Pattern  |   
 
 **Http Responses** are considerate as **Resources**, the Http header **"Accept-Ranges: bytes"** is injected and allow you to use
 the Http header **'Range:bytes=1-100'** in the request and grabbed only range of Bytes desired. <br>

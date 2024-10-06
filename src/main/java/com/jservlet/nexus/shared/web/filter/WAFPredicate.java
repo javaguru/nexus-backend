@@ -42,7 +42,7 @@ public class WAFPredicate {
         return x.test(param) && s.test(param) && c.test(param) && f.test(param) && l.test(param);
     };
     final private Predicate<String> WAFParameterValues = (param) -> {
-        if (param.length() > 1000000) return true;
+        if (param.length() > 10000) return true;
         return x.test(param) && s.test(param) && c.test(param) && f.test(param) && l.test(param);
     };
     final private Predicate<String> WAFHeaderNames = (header) -> {
@@ -50,7 +50,7 @@ public class WAFPredicate {
         return x.test(header) && s.test(header) && c.test(header);
     };
     final private Predicate<String> WAFHeaderValues = (header) -> {
-        if (header.length() > 25000) return true;
+        if (header.length() > 7000) return true;
         return x.test(header) && s.test(header) && c.test(header);
     };
     final private Predicate<String> WAFHostnames = (names) -> {

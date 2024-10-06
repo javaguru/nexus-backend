@@ -86,14 +86,6 @@ public class WAFUtils {
         return true;
     }
 
-    public static String stripWAFPattern(String value, List<Pattern> patterns) {
-        if (value == null) return null;
-        // matcher xssPattern replaceAll ?
-        for (Pattern pattern : patterns)
-            value = pattern.matcher(value).replaceAll("");
-        return value;
-    }
-
     public static void main(String[] args) {
         String test = "image/avif,image/webp,image/apng,image/svg+xml;q=0.8";
         System.out.println(isWAFPattern(test, xssPattern));

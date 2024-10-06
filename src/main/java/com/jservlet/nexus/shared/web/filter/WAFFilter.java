@@ -38,8 +38,10 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 import static com.jservlet.nexus.shared.web.filter.WAFFilter.Reactive.*;
 
@@ -144,7 +146,7 @@ public class WAFFilter extends ApiBase implements Filter {
                 // Just clean the Json body!
                 String body = IOUtils.toString(wrappedRequest.getReader());
                 if (!StringUtils.isBlank(body)) {
-                    wrappedRequest.setInputStream(WAFUtils.stripWAFPattern(body, wafPredicate.getWafPatterns()).getBytes());
+                    wrappedRequest.setInputStream(stripWAFPattern(body, wafPredicate.getWafPatterns()).getBytes());
                 }
             }
 
@@ -202,10 +204,21 @@ public class WAFFilter extends ApiBase implements Filter {
             int len = values.length;
             String[] encodedValues = new String[len];
             for (int i = 0; i < len; i++)
-                encodedValues[i] = WAFUtils.stripWAFPattern(values[i], wafPredicate.getWafPatterns());
+                encodedValues[i] = stripWAFPattern(values[i], wafPredicate.getWafPatterns());
             parameters.put(key, encodedValues);
         }
         return parameters;
+    }
+
+    public static String stripWAFPattern(String value, List<Pattern> patterns) {
+        if (value == null) return null;
+        if (value.length() > 10000) { // Prevent RegExp Denial of Service - ReDoS!
+            throw new RequestRejectedException("Input value is too long!");
+        }
+        // matcher xssPattern replaceAll ?
+        for (Pattern pattern : patterns)
+            value = pattern.matcher(value).replaceAll(""); // Cut!
+        return value;
     }
 
     private void rejectBody(String body) {
