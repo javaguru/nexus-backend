@@ -121,8 +121,8 @@ public class ApiBackend extends ApiBase {
     }
 
     /**
-     * Prepare matchers Methods and Ant paths pattern dedicated only for the Resources (see settings.properties) <br>
-       */
+     * Prepare matchers Methods and Ant paths pattern dedicated only for the Resources
+     */
     @PostConstruct
     private void postConstruct() {
         List<RequestMatcher> requestMatchers = new ArrayList<>();
@@ -171,7 +171,7 @@ public class ApiBackend extends ApiBase {
 
     /**
      * Manage a Request Json Entity Object and a Request Map parameters. <br>
-     * Or a MultipartRequest encapsulated a List of BackendResource  Json Entity Object and a Request Map parameters <br>
+     * Or a MultipartRequest encapsulated a List of BackendResource and a Request Map parameters, and form Json Entity Object <br>
      * And return a Response Entity Object or a ByteArray Resource file or any others content in ByteArray...
      *
      * @param body                          String representing the RequestBody Object, just transfer the RequestBody

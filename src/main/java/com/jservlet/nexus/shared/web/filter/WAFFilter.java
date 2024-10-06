@@ -210,7 +210,7 @@ public class WAFFilter extends ApiBase implements Filter {
         return parameters;
     }
 
-    public static String stripWAFPattern(String value, List<Pattern> patterns) {
+    private static String stripWAFPattern(String value, List<Pattern> patterns) {
         if (value == null) return null;
         if (value.length() > 10000) { // Prevent RegExp Denial of Service - ReDoS!
             throw new RequestRejectedException("Input value is too long!");
