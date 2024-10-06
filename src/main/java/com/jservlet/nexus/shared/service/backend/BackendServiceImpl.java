@@ -18,7 +18,6 @@
 
 package com.jservlet.nexus.shared.service.backend;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.exceptions.*;
@@ -34,6 +33,7 @@ import org.springframework.util.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -46,7 +46,7 @@ import java.util.*;
  * <p>
  * BackendServiceImpl#setBackendURL
  * <ul>
- *     <li>nexus.backend.url: set the URL to access the backend</li>
+ *     <li>nexus.backend.url: set the URL to access to the backend</li>
  * </ul>
  */
 @Service
@@ -329,7 +329,19 @@ public class BackendServiceImpl implements BackendService {
         if (logger.isDebugEnabled()) {
             logger.debug("Headers response: {}", httpHeaders);
             if (responseBody != null) {
-                logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, maxLengthTruncated, truncated));
+                if (responseBody instanceof Resource) {
+                    Resource resource = (Resource) responseBody;
+                    String body = null;
+                    try {
+                        body = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+                    } catch (IOException e) {
+                        logger.error("Resource not readable: {}", e.getMessage());
+                    } finally {
+                        logger.debug("The response is: {} {} {}", httpStatus, resource.getDescription(), LogFormatUtils.formatValue(body, maxLengthTruncated, truncated));
+                    }
+                } else {
+                    logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, maxLengthTruncated, truncated));
+                }
             } else {
                 logger.debug("The response is empty with HttpState: {}", httpStatus);
             }
@@ -448,90 +460,28 @@ public class BackendServiceImpl implements BackendService {
         }
     }
 
-    public static class ErrorMessage {
-
+    private static class ErrorMessage {
         @JsonProperty(required = true)
         private Message error;
 
-        public ErrorMessage(String code, String source, String text) {
-            this.error = new Message(code, "ERROR", source, text);
+        public ErrorMessage(String code, String source, String message) {
+            this.error = new Message(code, "ERROR", source, message);
         }
-
-        public Message getError() { return this.error; }
-
-        public void setError(Message error) { this.error = error; }
 
         public String toString() { return "ErrorMessage{error=" + this.error + "}"; }
     }
 
-    public static class Message {
-        private String code;
-        private String level;
-        private String source;
-        private String text;
-        @JsonInclude(JsonInclude.Include.NON_EMPTY)
-        private Map<String, String> parameters = new HashMap<>();
+    private static class Message {
+        public final String code;
+        public final String level;
+        public final String source;
+        public final String message;
 
-        public Message(String code, String level, String source, String text) {
+        public Message(String code, String level, String source, String message) {
             this.code = code;
             this.level = level;
             this.source = source;
-            this.text = text;
-        }
-
-        public String getCode() {
-            return code;
-        }
-
-        public void setCode(String code) {
-            this.code = code;
-        }
-
-        public String getLevel() {
-            return level;
-        }
-
-        public void setLevel(String level) {
-            this.level = level;
-        }
-
-        public String getSource() {
-            return source;
-        }
-
-        public void setSource(String source) {
-            this.source = source;
-        }
-
-        public String getText() {
-            return text;
-        }
-
-        public void setText(String text) {
-            this.text = text;
-        }
-
-        public Map<String, String> getParameters() {
-            return parameters;
-        }
-
-        public void setParameters(Map<String, String> parameters) {
-            this.parameters = parameters;
-        }
-
-        public void setParameter(String text) {
-            this.parameters.put(text, "");
-        }
-
-        @Override
-        public String toString() {
-            return "Message{" +
-                    "code='" + code + '\'' +
-                    ", level='" + level + '\'' +
-                    ", source='" + source + '\'' +
-                    ", text='" + text + '\'' +
-                    ", parameters=" + parameters +
-                    '}';
+            this.message = message;
         }
     }
 

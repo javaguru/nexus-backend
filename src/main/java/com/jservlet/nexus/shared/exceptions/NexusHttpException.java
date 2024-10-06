@@ -19,7 +19,7 @@
 package com.jservlet.nexus.shared.exceptions;
 
 /**
- * Thrown when a http request to th backend fails.
+ * Thrown when a http request to the backend fails.
  */
 public class NexusHttpException extends Exception {
 

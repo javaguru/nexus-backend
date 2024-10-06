@@ -69,12 +69,12 @@ public abstract class ApiBase {
         return new ResponseEntity<>(httpStatus);
     }
 
-    private Message getMessageObject(String code, String level) {
+    protected Message getMessageObject(String code, String level) {
         return new Message(code, level, this.source);
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    static class Message implements Serializable {
+    protected static class Message implements Serializable {
 
         private static final long serialVersionUID = -5490061086438597077L;
 
@@ -91,6 +91,13 @@ public abstract class ApiBase {
             this.code = code;
             this.level = level;
             this.source = source;
+        }
+
+        public Message(String code, String level, String source, String message) {
+            this.code = code;
+            this.level = level;
+            this.source = source;
+            this.message = message;
         }
 
         public String getCode() {

@@ -30,6 +30,7 @@ import com.jservlet.nexus.config.web.tomcat.ssl.TomcatConnectorConfig;
 import com.jservlet.nexus.shared.config.annotation.ConfigProperties;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl;
+import com.jservlet.nexus.shared.web.controller.api.ApiBackend;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.RegistryBuilder;
@@ -44,16 +45,14 @@ import org.apache.http.ssl.PrivateKeyDetails;
 import org.apache.http.ssl.PrivateKeyStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.converter.ByteArrayHttpMessageConverter;
-import org.springframework.http.converter.FormHttpMessageConverter;
-import org.springframework.http.converter.ResourceHttpMessageConverter;
-import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.http.converter.*;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestOperations;
@@ -61,8 +60,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import javax.net.ssl.SSLContext;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.Socket;
@@ -84,13 +82,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
         WebSecurityConfig.class,
         TomcatConnectorConfig.class
 })
+@EnableConfigurationProperties(ApiBackend.ResourceMatchersConfig.class)
 public class ApplicationConfig  {
 
     @Bean
     public BackendService backendService(@Value("${nexus.backend.url}") String backendUrl,
                                          RestOperations restOperations,
                                          ObjectMapper objectMapper) {
-        final BackendService backendService = new BackendServiceImpl();
+        final BackendServiceImpl backendService = new BackendServiceImpl();
         backendService.setBackendURL(backendUrl);
         backendService.setRestOperations(restOperations);
         backendService.setObjectMapper(objectMapper);
@@ -112,7 +111,7 @@ public class ApplicationConfig  {
     @Value("${nexus.backend.mapper.date.withColon:true}")
     private boolean withColonInTimeZone;
 
-    @Value("${nexus.backend.mapper.indentOutput:true}")
+    @Value("${nexus.backend.mapper.indentOutput:false}")
     private boolean indentOutput;
 
 
@@ -192,16 +191,15 @@ public class ApplicationConfig  {
         uriFactory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
         restTemplate.setUriTemplateHandler(uriFactory);
 
-        // Json + Json wildcard and MediaType.ALL now!
-        mappingJackson2HttpMessageConverter.setSupportedMediaTypes(
-                Arrays.asList(MediaType.APPLICATION_JSON, new MediaType("application", "*+json"), MediaType.ALL));
+        // MediaType.ALL now! Json + Json wildcard, pdf, gif etc...
+        mappingJackson2HttpMessageConverter.setSupportedMediaTypes(List.of(MediaType.ALL));
 
         // List HttpMessage Converters
         restTemplate.setMessageConverters(Arrays.asList(
                 new StringHttpMessageConverter(UTF_8), // String
                 new FormHttpMessageConverter(),        // Form data to/from a MultiValueMap<String, String>
                 new ByteArrayHttpMessageConverter(),   // byte[]
-                //new ResourceHttpMessageConverter(),  // Resource // WARN or let the ResourceHttpRequestHandler create for us!
+                new ResourceHttpMessageConverter(),    // Resource // WARN or let the ResourceHttpRequestHandler create for us!
                 mappingJackson2HttpMessageConverter    // JSON
         ));
         return restTemplate;

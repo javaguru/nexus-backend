@@ -19,6 +19,7 @@
 package com.jservlet.nexus.controller;
 
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.*;
+import com.jservlet.nexus.shared.web.controller.ApiBase;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,12 +43,15 @@ import java.util.Map;
  */
 @Hidden
 @Controller
-public class DefaultErrorController implements ErrorController { // Thank Phillip!
+public class DefaultErrorController extends ApiBase implements ErrorController { // Thank Phillip!
 
     private final ErrorAttributes errorAttributes;
 
+    private static final String SOURCE = "ERROR-REST-NEXUS-BACKEND";
+
     @Autowired
     public DefaultErrorController(ErrorAttributes errorAttributes) {
+        super(SOURCE);
         Assert.notNull(errorAttributes, "ErrorAttributes must not be null");
         this.errorAttributes = errorAttributes;
     }
@@ -57,9 +61,7 @@ public class DefaultErrorController implements ErrorController { // Thank Philli
     public ResponseEntity<?> error(HttpServletRequest request) {
         Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
         final HttpStatus status = getStatus(request);
-        return new ResponseEntity<>(new ErrorMessage(
-               String.valueOf(status.value()), "ERROR-NEXUS-REST-BACKEND", String.valueOf(body.get("message"))).getError()
-                , status);
+        return super.getResponseEntity(String.valueOf(status.value()), "ERROR", String.valueOf(body.get("message")), status);
     }
 
     private boolean getTraceParameter(HttpServletRequest request) {
@@ -69,8 +71,7 @@ public class DefaultErrorController implements ErrorController { // Thank Philli
 
     private Map<String, Object> getErrorAttributes(HttpServletRequest request, boolean includeStackTrace) {
         WebRequest webRequest = new ServletWebRequest(request);
-        ErrorAttributeOptions options = ErrorAttributeOptions
-                .defaults();
+        ErrorAttributeOptions options = ErrorAttributeOptions.defaults();
         if (includeStackTrace) {
             options.including(ErrorAttributeOptions.Include.STACK_TRACE);
         }

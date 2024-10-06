@@ -4,16 +4,27 @@ Nexus-Backend Service
 
 ## An Advanced and Secure RestApi Backend Service Gateway 
 
-**The Nexus-Backend Service acts as an intermediary between a Client application and a Backend REST API service.
-It forwards Requests from the client to the Backend Service and returns the Responses back to the client.**
+**The Nexus-Backend Service** acts as an intermediary between a **REST Client application** and a **Backend REST API service**.
+It forwards Requests from the client to the **Backend Service** and returns the Responses back to the client.
+The Nexus-Backend integrate a HttpFirewall and **WAF Filter** for a protection against evasion on the **Http Request Headers,
+Request Map parameters and Json BodyRequest.**
 
-**Inside a Servlet Container a Rest Controller ApiBackend and its BackendService, Secure and Replicate all the HTTP Requests to a RestApi Backend Server.**
+**Inside a Servlet Container a Rest Controller ApiBackend and its BackendService, Secure and Replicate all the HTTP
+Requests to a RestApi Backend Server.**
+
+**All HttpRequests methods supported:** Get, Post, Post Multipart File, Put, Put Multipart File, Patch, Patch Multipart File, Delete.
+
+* Full support **Request Json Entity Object**: application/json, application/x-www-form-urlencoded
+* Full support **MultipartRequest Resources and Map parameters**, and embedded form **Json Entity Object**: multipart/form-data
+* Full support **Response in Json Entity Object**: application/json
+* Full support **Response in ByteArray Resource file**: application/octet-stream
+* Full support **Streaming Http Response Json Entity Object**: application/octet-stream, accept header Range bytes
 
 **Tomcat Servlet Containers under Servlet version 4.x**
 
-**Examples forwarded requests through the Nexus-Backend Service:**
+**Examples forwarded requests and responses through the Nexus-Backend Service:**
 
-| Clients               | RestApi Nexus-Backend Service                      | Backend Server Services                         |
+| REST Clients          | RestApi Nexus-Backend Service                      | Backend Server Services                         |
 |-----------------------|:---------------------------------------------------|:------------------------------------------------|
 | Ajax / XMLHttpRequest | http://localhost:8082/nexus-backend/api/**         | https://secure.jservlet.com:9092/api/v1/service |   
 | HttpClient            | https://front.jservlet.com:80/nexus-backend/api/** | https://secure.jservlet.com:9092/api/v1/service |   
@@ -39,10 +50,10 @@ It forwards Requests from the client to the Backend Service and returns the Resp
 
 ### Specials config Http Headers
 
- * **HTTP headers:** reset all Headers or remove host header.
- * **Basic Authentication:** set any security ACL.
- * **Bearer Authorization:** set any security Bearer Token.
- * **Cookie:** set any security session Cookie.
+ * **HTTP headers:** reset all Headers, remove host or origin header.
+ * **Basic Authentication:** set any security ACL **Access Control List**
+ * **Bearer Authorization:** set any security **Bearer Token**.
+ * **Cookie:** set any **security session Cookie**.
  * **CORS:** Bypass locally all **CORS Security** (Cross-origin resource sharing) from a Navigator, 
   not restricted to accessing resources from the same origin through what is known as same-origin policy.
 
@@ -71,23 +82,6 @@ It forwards Requests from the client to the Backend Service and returns the Resp
 * -Dspring.config.name=spring.properties
 
 
-### The Nexus-Backend provides a full support MultipartRequest and Parameters inside a form HttpRequest
-
-#### MultipartConfig
-
-**SpringBoot keys application.properties**
-
-| **Keys**                                     | **Default value** | **Example value** | **Descriptions**    |
-|----------------------------------------------|:------------------|:------------------|:--------------------|
-| spring.servlet.multipart.enabled             | true              | true              | Enabled multipart   |   
-| spring.servlet.multipart.file-size-threshold | 10MB              | 25MB              | File size threshold |   
-| spring.servlet.multipart.max-file-size       | 15MB              | 150MB             | Max file size       |   
-| spring.servlet.multipart.max-request-size    | 15MB              | 150MB             | Max request size    |   
-
-**Noted** All the HttpRequests with a Content-Type multipart/form-data will be managed by a temporary BackendResource.
-This BackendResource can convert a MultipartFile to a temporary Resource, ready to be sent to the Backend Server. 
-
-
 ### The Nexus-Backend Url Server and miscellaneous options can be configured by the following keys Settings
 
  **Settings keys settings.properties**
@@ -111,7 +105,7 @@ This BackendResource can convert a MultipartFile to a temporary Resource, ready 
 | nexus.backend.header.authorization.username      | -                            | XUsername                       | Activated Basic Authorization request           |   
 | nexus.backend.header.authorization.password      | -                            | XPassword                       | "                                               |
 | **Mapper**                                       |                              |                                 |                                                 |
-| nexus.backend.mapper.indentOutput                | true                         | false                           | Indent Output Json                              |   
+| nexus.backend.mapper.indentOutput                | false                        | true                            | Indent Output Json                              |   
 | nexus.backend.mapper.serializer.date             | yyyy-MM-dd'T'HH:mm:ss.SSS'Z' | yyyy-MM-dd'T'HH:mm:ssZZ         | Date Pattern Zulu Time: .SSS'Z', X or ZZ +00:00 |   
 | nexus.backend.mapper.serializer.timezone         | -                            | Europe/Paris                    | Locale TimeZone by Default                      |   
 | nexus.backend.mapper.date.timezone               | Zulu                         | Europe/Paris                    | Locale Zulu by Default                          |   
@@ -130,6 +124,59 @@ This BackendResource can convert a MultipartFile to a temporary Resource, ready 
 * **${user.home}**/conf-global/config.properties
 * **${user.home}**/conf/config.properties
 * **${user.home}**/cfg/**${servletContextPath}**/config.properties
+
+### The ApiBackend Configuration Json Entity Object or a ByteArray Resource
+
+**ApiBackend ResponseType** can be now a **ByteArray Resource.** 
+
+**Download** any content in a **ByteArray** included **JSON, PDF, Gif, PNG, TEXT, HTML!**
+
+The **ResourceMatchers** Config can be configured on specific ByteArray Resources path
+and on specific Methods **GET, POST, PUT, PATCH** and Ant Path pattern: 
+
+**Settings keys settings.properties**
+
+| **Keys Methods** and **Keys Path pattern**                    | **Default value** |
+|---------------------------------------------------------------|:------------------|
+| nexus.backend.api-backend-resource.matchers.matchers1.method  | GET               |
+| nexus.backend.api-backend-resource.matchers.matchers1.pattern | /api/encoding/**  |    
+| nexus.backend.api-backend-resource.matchers.matchers2.method  | GET               |
+| nexus.backend.api-backend-resource.matchers.matchers2.pattern | /api/streaming/** | 
+| nexus.backend.api-backend-resource.matchers.matchers3.method  | POST              |
+| nexus.backend.api-backend-resource.matchers.matchers3.pattern | /api/streaming/** | 
+| nexus.backend.api-backend-resource.matchers.matchers3.method  | Others Methods    |   
+| nexus.backend.api-backend-resource.matchers.matchers3.pattern | Others Pattern    |   
+
+**Http Responses** are considerate as **Resources**, the Http header **"Accept-Ranges: bytes"** is injected and allow you to use
+the Http header **'Range:bytes=1-100'** in the request and grabbed only range of Bytes desired. <br>
+And the Http Responses didn't come back with a HttpHeader **"Transfer-Encoding: chunked"** cause the header **Content-Length**.
+
+**Noted:** For configure **all the Responses** in **Resource** put an empty Method and use the path pattern=/api/**
+
+| **Keys Methods** and **Keys Path pattern**                    | **Default value** |
+|---------------------------------------------------------------|:------------------|
+| nexus.backend.api-backend-resource.matchers.matchers1.method  |                   |
+| nexus.backend.api-backend-resource.matchers.matchers1.pattern | /api/**           |
+
+**Noted bis:** For remove the Http header **"Transfer-Encoding: chunked"** the header Content-Length need to be calculated.
+enable the **ShallowEtagHeader Filter** in the configuration for force to calculate the header **Content-Length**
+for all the **Response Json Entity Object**, no more HttpHeader **"Transfer-Encoding: chunked"**.
+
+### The Nexus-Backend provides a full support MultipartRequest and Map parameters inside a form-data HttpRequest
+
+#### MultipartConfig
+
+**SpringBoot keys application.properties**
+
+| **Keys**                                     | **Default value** | **Example value** | **Descriptions**    |
+|----------------------------------------------|:------------------|:------------------|:--------------------|
+| spring.servlet.multipart.enabled             | true              | true              | Enabled multipart   |   
+| spring.servlet.multipart.file-size-threshold | 10MB              | 25MB              | File size threshold |   
+| spring.servlet.multipart.max-file-size       | 15MB              | 150MB             | Max file size       |   
+| spring.servlet.multipart.max-request-size    | 15MB              | 150MB             | Max request size    |   
+
+**Noted** All the HttpRequests with a **Content-Type multipart/form-data** will be managed by a temporary **BackendResource**.
+This BackendResource can convert a **MultipartFile** to a temporary **Resource**, ready to be sent to the **Backend Server**.
 
 
 ### The BackendService HttpFactory Client Configuration
@@ -264,9 +311,9 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.tomcat.accesslog.throwOnFailure | true                                                                                                                                       | Throw on failure       |   
 | nexus.backend.tomcat.accesslog.maxDay         | -1                                                                                                                                         | Max day file retention |   
 
-**Noted** the Full access logs are available with the CommonsRequestLoggingFilter, included the RequestBody.
+**Noted** the Full access logs are available with the **CommonsRequestLoggingFilter**, included the **RequestBody**.
 
-Already initialized, activated by setting the logback.xml at level="DEBUG".
+Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
 
 ## Build Nexus-Backend
@@ -336,7 +383,7 @@ This API implementation is used for the communication to a backend server.
 It provides methods for all supported http protocols on the backend side. 
 Normally, it communicates to an API interface Backend.
 
-### Available HTTP protocols:
+### Available HTTP methods:
  
  * Get
  * Post
@@ -410,7 +457,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.12**, released at 02/10/2024 Fix ApiBase error Message super.getResponseEntity
+* Last version **1.0.13**, released at 06/10/2024 Full support Response in ByteArray Resource and Streaming Http Response Range Bytes 
+* Version **1.0.12**, released at 02/10/2024 Fix ApiBase error Message super.getResponseEntity
 * Version **1.0.11**, released at 30/09/2024 Does not encode the URI template! 
 * Version **1.0.10**, released at 29/09/2024 Add full support MultipartRequest content type multipart/form-data 
 * Version **1.0.9**, released at 24/09/2024 Fix replicate requests ApiBackend.requestEntity
@@ -428,7 +476,7 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 If you need help using Nexus-Backend Service feel free to drop an email or create an issue in GitHub.com (preferred).
 
 ## Contributions
-To help Nexus-Backend / ApiBackend / BackendService development you are encouraged to
+To help **Nexus-Backend / ApiBackend / BackendService** development you are encouraged to
 * Provide suggestion/feedback/Issue
 * pull requests for new features
 * Star :star2: the project

@@ -7,7 +7,7 @@
     <groupId>com.jservlet.nexus.backend</groupId>
     <artifactId>nexus-backend</artifactId>
     <packaging>${packaging}</packaging>
-    <version>1.0.12</version>
+    <version>1.0.13</version>
 
     <name>nexus-backend</name>
     <description>The Java Nexus BackendService, an advanced and secure Rest Backend Gateway</description>
@@ -82,7 +82,7 @@
         <mainClass>com.jservlet.nexus.config.Application</mainClass>
 
         <!-- Update the last Tomcat 9.x.x version with springboot starter-parent-->
-        <tomcat.version>9.0.90</tomcat.version>
+        <tomcat.version>9.0.95</tomcat.version>
 
         <!-- Dependency version -->
         <spring-boot.version>2.7.18</spring-boot.version>
@@ -537,6 +537,13 @@
             <version>1.3.14</version>
         </dependency>
 
+        <!-- Configuration processor -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <version>${spring-boot.version}</version>
+        </dependency>
+
         <!-- Spring Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -559,6 +566,8 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
         </dependency>
+
+
 
         <!-- Security -->
         <dependency>
