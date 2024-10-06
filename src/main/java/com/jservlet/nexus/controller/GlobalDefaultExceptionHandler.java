@@ -54,7 +54,7 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
         // ByeArray Resource request could not be completed due to a conflict with the current state of the target resource!
         if (Objects.requireNonNull(e.getMessage()).startsWith("Error while extracting response for type [class java.lang.Object] and content type")) {
-            String msg = "No ResourceMatchers configured. Open the Method and Uri : " + request.getMethod() + " '" + request.getServletPath() + "' and  as ByteArray Resource!";
+            String msg = "No ResourceMatchers configured. Open the Method and Uri : " + request.getMethod() + " '" + request.getServletPath() + "' as ByteArray Resource!";
             return super.getResponseEntity("409", "ERROR", msg, CONFLICT);
         }
         return super.getResponseEntity("503", "ERROR", "Remote Service Unavailable" + e.getMessage(), SERVICE_UNAVAILABLE);
