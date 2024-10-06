@@ -30,6 +30,8 @@ import org.springframework.web.client.RestClientException;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.util.Objects;
+
 import static org.springframework.http.HttpStatus.*;
 
 /**
@@ -40,7 +42,7 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalDefaultExceptionHandler.class);
 
-    private static final String GLOBAL_SOURCE = "GLOBAL-ERROR";
+    private static final String GLOBAL_SOURCE = "GLOBAL-ERROR-NEXUS-BACKEND";
 
     public GlobalDefaultExceptionHandler() {
         super(GLOBAL_SOURCE);
@@ -50,7 +52,12 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
     public ResponseEntity<?> handleResourceAccessException(HttpServletRequest request, RestClientException e) {
         logger.error("Intercepted RestClientException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
-        return super.getResponseEntity("503", "ERROR", e, SERVICE_UNAVAILABLE);
+        // ByeArray Resource request could not be completed due to a conflict with the current state of the target resource!
+        if (Objects.requireNonNull(e.getMessage()).startsWith("Error while extracting response for type [class java.lang.Object] and content type")) {
+            String msg = "No ResourceMatchers configured. Open the Method and Uri : " + request.getMethod() + " '" + request.getServletPath() + "' and  as ByteArray Resource!";
+            return super.getResponseEntity("409", "ERROR", msg, CONFLICT);
+        }
+        return super.getResponseEntity("503", "ERROR", "Remote Service Unavailable" + e.getMessage(), SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(value = { HttpMessageNotReadableException.class })
@@ -75,6 +82,6 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
     public ResponseEntity<?> handleResourceAccessException(HttpServletRequest request, Exception e) {
         logger.error("Intercepted Exception: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
-        return super.getResponseEntity("500", "ERROR", e.getMessage(), INTERNAL_SERVER_ERROR);
+        return getResponseEntity("500",  e);
     }
 }

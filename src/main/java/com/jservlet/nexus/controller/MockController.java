@@ -91,7 +91,7 @@ public class MockController extends ApiBase {
         return "development".equals(env.getProperty(ENV_VAR)) ? "mock" : "error/error403";
     }
 
-    @Operation(summary = "Get Binary data", description = "Get Binary data")
+    @Operation(summary = "Get ByteArray data", description = "Get ByteArray data")
     @ApiResponses(value = {
             @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = byte[].class))}),
     })

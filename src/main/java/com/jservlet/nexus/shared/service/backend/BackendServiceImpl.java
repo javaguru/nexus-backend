@@ -18,7 +18,6 @@
 
 package com.jservlet.nexus.shared.service.backend;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.exceptions.*;
@@ -34,6 +33,7 @@ import org.springframework.util.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -46,7 +46,7 @@ import java.util.*;
  * <p>
  * BackendServiceImpl#setBackendURL
  * <ul>
- *     <li>nexus.backend.url: set the URL to access the backend</li>
+ *     <li>nexus.backend.url: set the URL to access to the backend</li>
  * </ul>
  */
 @Service
@@ -329,7 +329,19 @@ public class BackendServiceImpl implements BackendService {
         if (logger.isDebugEnabled()) {
             logger.debug("Headers response: {}", httpHeaders);
             if (responseBody != null) {
-                logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, maxLengthTruncated, truncated));
+                if (responseBody instanceof Resource) {
+                    Resource resource = (Resource) responseBody;
+                    String body = null;
+                    try {
+                        body = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+                    } catch (IOException e) {
+                        logger.error("Resource not readable: {}", e.getMessage());
+                    } finally {
+                        logger.debug("The response is: {} {} {}", httpStatus, resource.getDescription(), LogFormatUtils.formatValue(body, maxLengthTruncated, truncated));
+                    }
+                } else {
+                    logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, maxLengthTruncated, truncated));
+                }
             } else {
                 logger.debug("The response is empty with HttpState: {}", httpStatus);
             }
@@ -449,7 +461,6 @@ public class BackendServiceImpl implements BackendService {
     }
 
     private static class ErrorMessage {
-
         @JsonProperty(required = true)
         private Message error;
 
