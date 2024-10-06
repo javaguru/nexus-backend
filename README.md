@@ -60,7 +60,7 @@ Requests to a RestApi Backend Server.**
 
 ### The Nexus Backend application can be configured by the following keys SpringBoot and Settings properties
 
- **SpringBoot keys application.properties**
+ **SpringBoot keys application.properties:**
 
 | **Keys**                                      | **Default value** | **Descriptions**                                   |
 |-----------------------------------------------|:------------------|:---------------------------------------------------|
@@ -84,7 +84,7 @@ Requests to a RestApi Backend Server.**
 
 ### The Nexus-Backend Url Server and miscellaneous options can be configured by the following keys Settings
 
- **Settings keys settings.properties**
+ **Settings keys settings.properties:**
 
 | **Keys**                                         | **Default value**            | **Example value**               | **Descriptions**                                |
 |--------------------------------------------------|:-----------------------------|:--------------------------------|:------------------------------------------------|
@@ -134,7 +134,7 @@ Requests to a RestApi Backend Server.**
 The **ResourceMatchers** Config can be configured on specific ByteArray Resources path
 and on specific Methods **GET, POST, PUT, PATCH** and Ant Path pattern: 
 
-**Settings keys settings.properties**
+**Settings keys settings.properties:**
 
 | **Keys Methods** and **Keys Path pattern**                    | **Default value** |
 |---------------------------------------------------------------|:------------------|
@@ -148,7 +148,7 @@ and on specific Methods **GET, POST, PUT, PATCH** and Ant Path pattern:
 | nexus.backend.api-backend-resource.matchers.matchersX.pattern | X Others Pattern  |   
 
 **Http Responses** are considerate as **Resources**, the Http header **"Accept-Ranges: bytes"** is injected and allow you to use
-the Http header **'Range:bytes=1-100'** in the request and grabbed only range of Bytes desired. <br>
+the Http header **'Range: bytes=1-100'** in the request and grabbed only range of Bytes desired. <br>
 And the Http Responses didn't come back with a HttpHeader **"Transfer-Encoding: chunked"** cause the header **Content-Length**.
 
 **Noted:** For configure **all the Responses** in **Resource** put an empty Method and use the path pattern=/api/**
@@ -166,7 +166,7 @@ for all the **Response Json Entity Object**, no more HttpHeader **"Transfer-Enco
 
 #### MultipartConfig
 
-**SpringBoot keys application.properties**
+**SpringBoot keys application.properties:**
 
 | **Keys**                                     | **Default value** | **Example value** | **Descriptions**    |
 |----------------------------------------------|:------------------|:------------------|:--------------------|
@@ -181,7 +181,7 @@ This BackendResource can convert a **MultipartFile** to a temporary **Resource**
 
 ### The BackendService HttpFactory Client Configuration
 
- **Settings keys settings.properties**
+ **Settings keys settings.properties:**
 
 | **Keys**                                            | **Default value** | **Example value** | **Descriptions**               |
 |-----------------------------------------------------|:------------------|:------------------|:-------------------------------|
@@ -216,7 +216,7 @@ by the **Apache Coyote http11 processor** (see coyote Error parsing HTTP request
 
 All the Http request with **Cookies, Headers, Parameters and RequestBody** will be filtered and the suspicious **IP address** in fault will be logged.
 
- **Settings keys settings.properties**
+ **Settings keys settings.properties:**
  
 | **Keys**                                                   | **Default value**                      | **Descriptions**                      |
 |------------------------------------------------------------|:---------------------------------------|:--------------------------------------|
@@ -233,26 +233,26 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.security.allowUrlEncodedParagraphSeparator   | false                                  | Allow url encoded Paragraph Separator |                       
 | nexus.backend.security.allowUrlEncodedLineSeparator        | false                                  | Allow url encoded Line Separator      |                           
 
+**The WAF Utilities Predicates checked for potential evasion:**
+
+* XSS script injection
+* SQL injection
+* Google injection
+* Command injection
+* File injection
+* Link injection
+ 
 **Implements a WAF Predicate for potential evasion by Headers:**
 
- * HeaderNames / HeaderValues
- * ParameterNames / ParameterValues
+ * Header Names / Header Values
+ * Parameter Names / Parameter Values
  * Hostnames
 
 **And check for Buffer Overflow evasion by the Length:**
 
- * Parameter Names/Values
- * Header Names/Values
- * Hostnames
-
-**The WAF Utilities Predicates checked for potential evasion:**
-
- * XSS script injection
- * SQL injection
- * Google injection
- * Command injection
- * File injection
- * Link injection
+ * Parameter Names 255 characters max. / Values 10.000  characters max.
+ * Header Names 255 characters max. / Values 7.000 characters max.
+ * Hostnames 255 characters max.
 
  **The WAF Reactive mode configuration:**
 
@@ -263,7 +263,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
 ### Activated the Mutual Authentication or mTLS connection on the HttpFactory Client
 
- **Settings keys settings.properties** *nexus.backend.client.ssl.mtls.enable* at **true** for activated the mTLS connection
+ **Settings keys settings.properties:** *nexus.backend.client.ssl.mtls.enable* at **true** for activated the mTLS connection
 
 | **Keys**                                    | **Default value**      | **Descriptions**          |
 |---------------------------------------------|:-----------------------|:--------------------------|
@@ -277,7 +277,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
 ### Activated Tomcat Catalina Connector TLS/SSL on a wildcard domain Certificate
 
- **Settings keys settings.properties**
+ **Settings keys settings.properties:**
 
  **SpringBoot key** *nexus.backend.tomcat.connector.https.enable* at **true** for activated the TLS/SSL protocol
 
@@ -295,7 +295,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
 ### Activated Tomcat Catalina Extended AccessLog Valve
 
- **Settings keys settings.properties**
+ **Settings keys settings.properties:**
 
  **StringBoot key** *nexus.backend.tomcat.accesslog.valve.enable* at **true** for activated the Accesslogs
 
