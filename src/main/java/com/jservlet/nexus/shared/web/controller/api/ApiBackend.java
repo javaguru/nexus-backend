@@ -129,9 +129,13 @@ public class ApiBackend extends ApiBase {
         Map<String, ResourceMatchersConfig.Matcher> map = matchersConfig.getMatchers();
         for (Map.Entry<String, ResourceMatchersConfig.Matcher> entry : map.entrySet()) {
             requestMatchers.add(new AntPathRequestMatcher(entry.getValue().getPattern(), entry.getValue().getMethod()));
+            logger.info("Config ResourceMatchers: {} '{}'", entry.getValue().getMethod(), entry.getValue().getPattern());
         }
         // Mandatory, not an empty RequestMatcher!
-        if (requestMatchers.isEmpty()) requestMatchers.add(new AntPathRequestMatcher("*/**", null));
+        if (requestMatchers.isEmpty()) {
+            requestMatchers.add(new AntPathRequestMatcher("*/**", null));
+            logger.warn("Config ResourceMatchers: No ByteArray Resource specified!");
+        }
         orRequestMatcher = new OrRequestMatcher(requestMatchers);
     }
 
