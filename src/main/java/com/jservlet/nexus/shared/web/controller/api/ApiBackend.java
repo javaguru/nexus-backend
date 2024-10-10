@@ -24,6 +24,7 @@ import com.jservlet.nexus.shared.exceptions.NexusResourceNotFoundException;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendService.ResponseType;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.EntityError;
+import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.EntityBackend;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.slf4j.Logger;
@@ -82,9 +83,9 @@ import java.util.*;
  *      etc...
  * <p>
  * <p>
- *      The Http Responses are considerate as Resources, the Http header "Accept-Ranges: bytes" is injected and allow you to use
- *      the Http header 'Range:bytes=1-100' in the request and grabbed only range of Bytes desired. <br>
- *      And the Http Responses didn't come back with a HttpHeader "Transfer-Encoding: chunked" cause the header Content-Length.
+ *      The Http Responses can be considerate as Resources, the Http header "Accept-Ranges: bytes" is injected and allow you to use
+ *      the Http header 'Range:bytes=-1000' in the request and by example grabbed the last 1000 bytes (or a range of Bytes). <br>
+ *      And the Http Responses will come back without a "Transfer-Encoding: chunked" HttpHeader cause now the header Content-Length.
  *      <br><br>
  *      For configure all the Responses in Resource put eh Method empty and use the path pattern=/api/** <br>
  *      nexus.backend.api-backend-resource.matchers.matchers1.method= <br>
@@ -176,7 +177,7 @@ public class ApiBackend extends ApiBase {
     /**
      * Manage a Request Json Entity Object and a Request Map parameters. <br>
      * Or a MultipartRequest encapsulated a List of BackendResource and a Request Map parameters, and form Json Entity Object <br>
-     * And return a Response Entity Object or a ByteArray Resource file or any others content in ByteArray...
+     * And return a ResponseEntity Json Entity Object or a ByteArray Resource file or any others content in ByteArray...
      *
      * @param body                          String representing the RequestBody Object, just transfer the RequestBody
      * @param method                        HttpMethod GET, POST, PUT, PATCH or DELETE
@@ -185,13 +186,13 @@ public class ApiBackend extends ApiBase {
      * @throws NexusHttpException           Exception when a http request to the backend fails
      * @throws NexusIllegalUrlException     Exception when an illegal url will be requested
      */
-    @RequestMapping(value = "/**", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/**")
     public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method, HttpServletRequest request)
             throws NexusHttpException, NexusIllegalUrlException {
         // MultiValueMap store the MultiPartFiles and the Parameters Map
         MultiValueMap<String, Object> map = null;
         try {
-            // The path within the handler mapping and its query
+            // Any path within handler mapping without "api/" and with its query
             String url = ((String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).replaceAll("api/", "");
             if (request.getQueryString() != null) url = url + "?" + request.getQueryString();
 
@@ -205,7 +206,7 @@ public class ApiBackend extends ApiBase {
                         method, url, printQueryString(request.getQueryString()), printParameterMap(request.getParameterMap()), body, map.entrySet());
             }
 
-            // Create a ResponseType Object or Resource
+            // Create a ResponseType Object or Resource by RequestMatcher
             ResponseType<?> responseType;
             if (!orRequestMatcher.matches(request)) {
                 responseType = backendService.createResponseType(Object.class);
@@ -213,14 +214,25 @@ public class ApiBackend extends ApiBase {
                 responseType = backendService.createResponseType(Resource.class);
             }
 
-            // Return a Json Entity Object or any Resource
+            // Return a Generics EntityError or a Generics EntityBackend
             Object obj = backendService.doRequest(url, method, responseType, !map.isEmpty() ? map : body, getAllHeaders(request));
 
-            // Manage an EntityError!
-            if (obj instanceof EntityError)
-                return new ResponseEntity<>(((EntityError<?>) obj).getBody(), ((EntityError<?>) obj).getStatus());
+            // Manage a Generics EntityError embedded a Json Entity Object!
+            if (obj instanceof EntityError) {
+                EntityError<?> entityError = (EntityError<?>) obj;
+                final HttpHeaders newHeaders = getBackendHeaders(entityError.getHttpHeaders());
+                return new ResponseEntity<>(entityError, newHeaders, entityError.getStatus());
+            }
 
-            return obj;
+            // Manage a Generics EntityBackend embedded a Json Entity Object or a Resource!
+            EntityBackend<?> entityBackend = (EntityBackend<?>) obj;
+            final HttpHeaders newHeaders = getBackendHeaders(entityBackend.getHttpHeaders());
+            if (entityBackend.getBody() instanceof Resource) {
+                Resource resource = (Resource) entityBackend.getBody();
+                return new ResponseEntity<>(resource, newHeaders, entityBackend.getStatus());
+            } else {
+                return new ResponseEntity<>(entityBackend.getBody(), newHeaders, entityBackend.getStatus());
+            }
         } catch (NexusResourceNotFoundException e) {
             // Return an error Message NOT_FOUND
             return super.getResponseEntity("404", "ERROR", e, HttpStatus.NOT_FOUND);
@@ -242,6 +254,24 @@ public class ApiBackend extends ApiBase {
             headers.add(headerName, request.getHeader(headerName));
         }
         return headers;
+    }
+
+    /**
+     * Transfer some headers from the Backend RestOperations
+     */
+    private static HttpHeaders getBackendHeaders(HttpHeaders readHeaders) {
+        HttpHeaders newHeaders = new HttpHeaders();
+        if (readHeaders == null || readHeaders.isEmpty()) return newHeaders;
+        // Original CONTENT_TYPE for a Resource and its character set if it exists
+        if (readHeaders.getFirst(HttpHeaders.CONTENT_TYPE) != null) {
+            newHeaders.set(HttpHeaders.CONTENT_TYPE, readHeaders.getFirst(HttpHeaders.CONTENT_TYPE));
+        } else {// ByteArray by default!
+            newHeaders.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        }
+        // Others useful HttpHeaders SERVER, ETAG, Original DATE Backend Server (!?)
+        // Not CONTENT_LENGTH, CONTENT_RANGE or TRANSFER_ENCODING. Cause already sent in their own Context.
+        // case SET_COOKIE need a Store !?
+        return newHeaders;
     }
 
     /**

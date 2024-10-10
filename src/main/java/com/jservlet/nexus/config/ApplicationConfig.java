@@ -89,7 +89,7 @@ public class ApplicationConfig  {
     public BackendService backendService(@Value("${nexus.backend.url}") String backendUrl,
                                          RestOperations restOperations,
                                          ObjectMapper objectMapper) {
-        final BackendServiceImpl backendService = new BackendServiceImpl();
+        final BackendServiceImpl backendService = new BackendServiceImpl(true); // return a Generics Object!
         backendService.setBackendURL(backendUrl);
         backendService.setRestOperations(restOperations);
         backendService.setObjectMapper(objectMapper);
@@ -182,9 +182,10 @@ public class ApplicationConfig  {
     }
 
     @Bean
-    public RestOperations backendRestOperations(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) throws Exception {
+    public RestOperations backendRestOperations(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter,
+                                                ClientHttpRequestFactory httpRequestFactory) throws Exception {
 
-        RestTemplate restTemplate = new RestTemplate(httpRequestFactory());
+        RestTemplate restTemplate = new RestTemplate(httpRequestFactory);
 
         // Does not encode the URI template, prevent to re-encode again the Uri with percent encoded in %25
         DefaultUriBuilderFactory uriFactory = new DefaultUriBuilderFactory();
