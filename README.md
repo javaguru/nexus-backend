@@ -144,8 +144,6 @@ and on specific Methods **GET, POST, PUT, PATCH** and Ant Path pattern:
 | nexus.backend.api-backend-resource.matchers.2.pattern         | /api/streaming/**      | text/html;charset=utf-8   |
 | nexus.backend.api-backend-resource.matchers.3.method          | GET                    |                           |
 | nexus.backend.api-backend-resource.matchers.3.pattern         | /api/time/now          | text/html;charset=utf-8   |
-| nexus.backend.api-backend-resource.matchers.4.method          | GET                    |                           |
-| nexus.backend.api-backend-resource.matchers.4.pattern         | /api/response-headers  | text/plain;charset=utf-8  |
 | nexus.backend.api-backend-resource.matchers.{name}[X].method  | Methods                |                           |  
 | nexus.backend.api-backend-resource.matchers.{name}[X].pattern | Patterns               |                           | 
 
