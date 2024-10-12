@@ -136,16 +136,16 @@ and on specific Methods **GET, POST, PUT, PATCH** and Ant Path pattern:
 
 **Settings keys settings.properties:**
 
-| **Keys Methods** and **Keys Path pattern**                    | **Default value**      | **Content-Type**          |
-|---------------------------------------------------------------|:-----------------------|:--------------------------|
-| nexus.backend.api-backend-resource.matchers.1.method          | GET                    |                           |
-| nexus.backend.api-backend-resource.matchers.1.pattern         | /api/encoding/**       | application/octet-stream  |   
-| nexus.backend.api-backend-resource.matchers.2.method          | GET                    |                           |
-| nexus.backend.api-backend-resource.matchers.2.pattern         | /api/streaming/**      | text/html;charset=utf-8   |
-| nexus.backend.api-backend-resource.matchers.3.method          | GET                    |                           |
-| nexus.backend.api-backend-resource.matchers.3.pattern         | /api/time/now          | text/html;charset=utf-8   |
-| nexus.backend.api-backend-resource.matchers.{name}[X].method  | Methods                |                           |  
-| nexus.backend.api-backend-resource.matchers.{name}[X].pattern | Patterns               |                           | 
+| **Keys Methods** and **Keys Path pattern**                    | **Default value**      | **Content-Type**         |
+|---------------------------------------------------------------|:-----------------------|:-------------------------|
+| nexus.backend.api-backend-resource.matchers.1.method          | GET                    |                          |
+| nexus.backend.api-backend-resource.matchers.1.pattern         | /api/encoding/**       | text/html;charset=utf-8  |   
+| nexus.backend.api-backend-resource.matchers.2.method          | GET                    |                          |
+| nexus.backend.api-backend-resource.matchers.2.pattern         | /api/streaming/**      | application/octet-stream |
+| nexus.backend.api-backend-resource.matchers.3.method          | GET                    |                          |
+| nexus.backend.api-backend-resource.matchers.3.pattern         | /api/time/now          | text/html;charset=utf-8  |
+| nexus.backend.api-backend-resource.matchers.{name}[X].method  | Methods                |                          |  
+| nexus.backend.api-backend-resource.matchers.{name}[X].pattern | Patterns               |                          | 
 
 **Http Responses** are considerate as **Resources**, the Http header **"Accept-Ranges: bytes"** is injected and allow you to use
 the Http header **'Range: bytes=1-100'** in the request and grabbed only range of Bytes desired. <br>
