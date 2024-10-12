@@ -272,6 +272,7 @@
                     <include>logo-marianne.svg</include>
                     <include>persistence.xml</include>
                     <include>api-ui/api-docs.yaml</include>
+                    <include>mime/*.properties</include>
                     <include>META-INF/services/javax.servlet.ServletContainerInitializer</include>
                 </includes>
                 <filtering>false</filtering>

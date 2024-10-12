@@ -42,10 +42,10 @@ import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartRequest;
 import org.springframework.web.servlet.HandlerMapping;
-import org.springframework.web.util.WebUtils;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -142,7 +142,7 @@ public class ApiBackend extends ApiBase {
 
     /**
      * Inner ConfigurationProperties keys prefixed with 'nexus.backend.api-backend-resource' and
-     * Lopping on incremental keys 'matchers.matchers[X].method' and 'matchers.matchers[X].pattern'
+     * Lopping on incremental keys 'matchers.{name}[X].method' and 'matchers.{name}[X].pattern'
      */
     @ConfigurationProperties("nexus.backend.api-backend-resource")
     public static class ResourceMatchersConfig {
@@ -177,17 +177,21 @@ public class ApiBackend extends ApiBase {
     /**
      * Manage a Request Json Entity Object and a Request Map parameters. <br>
      * Or a MultipartRequest encapsulated a List of BackendResource and a Request Map parameters, and form Json Entity Object <br>
-     * And return a ResponseEntity Json Entity Object or a ByteArray Resource file or any others content in ByteArray...
+     * And return a ResponseEntity Json Entity Object or a ByteArray Resource file or any others content in ByteArray...<br>
+     * <br>
+     * For a @RequestMapping allow headers is set to GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS
      *
      * @param body                          String representing the RequestBody Object, just transfer the RequestBody
      * @param method                        HttpMethod GET, POST, PUT, PATCH or DELETE
      * @param request                       The current HttpServletRequest
+     * @param nativeWebRequest              The current NativeWebRequest for get the MultipartRequest
      * @return Object                       Return a ResponseEntity Object or a ByteArray Resource
      * @throws NexusHttpException           Exception when a http request to the backend fails
      * @throws NexusIllegalUrlException     Exception when an illegal url will be requested
      */
     @RequestMapping(value = "/**")
-    public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method, HttpServletRequest request)
+    public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method,
+                                      HttpServletRequest request, NativeWebRequest nativeWebRequest)
             throws NexusHttpException, NexusIllegalUrlException {
         // MultiValueMap store the MultiPartFiles and the Parameters Map
         MultiValueMap<String, Object> map = null;
@@ -196,8 +200,8 @@ public class ApiBackend extends ApiBase {
             String url = ((String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).replaceAll("api/", "");
             if (request.getQueryString() != null) url = url + "?" + request.getQueryString();
 
-            // Get the MultipartRequest from the miscellaneous Web utilities NativeRequest!
-            MultipartRequest multipartRequest = WebUtils.getNativeRequest(request, MultipartRequest.class);
+            // Get the MultipartRequest from the NativeRequest!
+            MultipartRequest multipartRequest = nativeWebRequest.getNativeRequest(MultipartRequest.class);
             map = processMapResources(multipartRequest, request.getParameterMap());
 
             // Optimize logs writing, log methods can take time!
@@ -214,7 +218,7 @@ public class ApiBackend extends ApiBase {
                 responseType = backendService.createResponseType(Resource.class);
             }
 
-            // Return a Generics EntityError or a Generics EntityBackend
+            // Return a EntityError or a EntityBackend
             Object obj = backendService.doRequest(url, method, responseType, !map.isEmpty() ? map : body, getAllHeaders(request));
 
             // Manage a Generics EntityError embedded a Json Entity Object!

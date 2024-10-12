@@ -31,17 +31,17 @@ import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerF
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ResourceLoaderAware;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.*;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertySource;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
+import org.springframework.web.accept.HeaderContentNegotiationStrategy;
 import org.springframework.web.context.ServletContextAware;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.filter.*;
@@ -52,8 +52,12 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.MissingResourceException;
+import java.util.Properties;
+
 /*
  * Web Mvc Configuration
  */
@@ -68,18 +72,19 @@ import java.util.Map;
 })
 @EnableWebMvc
 //@MultipartConfig(location="/tmp", fileSizeThreshold=1024*1024, maxFileSize=1024*1024*15, maxRequestSize=1024*1024*15)
-@SuppressWarnings({ "unchecked", "rawtypes" })
 public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, ServletContextAware, ApplicationContextAware {
 
     private final static Logger logger = LoggerFactory.getLogger(WebConfig.class);
 
-    private static final String ENV_VAR = "environment";
-    private Environment env;
 
     private ResourceLoader resourceLoader;
+
     private ServletContext servletContext;
 
-    private static ApplicationContext context;
+    private static ApplicationContext appContext;
+
+    private Environment env;
+    private static final String ENV_VAR = "environment";
 
     @Autowired
     public void setEnv(Environment env) {
@@ -90,7 +95,7 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     @Override
     public synchronized void setApplicationContext(@NonNull ApplicationContext ac) {
         logger.info("SpringBoot set ApplicationContext -> ac: ['{}']", ac.getId());
-        WebConfig.context = ac;
+        WebConfig.appContext = ac;
 
         if (logger.isInfoEnabled()) {
             Map<String, Object> map = getApplicationProperties(env);
@@ -106,8 +111,8 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
      * Get the current ApplicationContext
      * @return ApplicationContext
      */
-    public synchronized ApplicationContext getApplicationContext() {
-        return context;
+    public static synchronized ApplicationContext getApplicationContext() {
+        return appContext;
     }
 
     /* Stuff, get loaded Application Properties */
@@ -117,7 +122,7 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
             for (PropertySource<?> propertySource : ((ConfigurableEnvironment) env).getPropertySources()) {
                 // WARN all tracked springboot config file *.properties!
                 if (propertySource instanceof OriginTrackedMapPropertySource) {
-                    for (String key : ((EnumerablePropertySource) propertySource).getPropertyNames()) {
+                    for (String key : ((EnumerablePropertySource<?>) propertySource).getPropertyNames()) {
                         map.put(key, propertySource.getProperty(key));
                     }
                 }
@@ -181,8 +186,8 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     @Bean
     @Order(1)
     @ConditionalOnProperty(value="nexus.backend.filter.forwardedHeader.enabled", havingValue = "true")
-    public FilterRegistrationBean forwardedInfoFilter() {
-        FilterRegistrationBean registrationBean = new FilterRegistrationBean();
+    public FilterRegistrationBean<Filter> forwardedInfoFilter() {
+        FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
         ForwardedHeaderFilter filter = new ForwardedHeaderFilter();
         filter.setRemoveOnly(forwardedHeaderRemoveOnly);
         registrationBean.setFilter(filter);
@@ -198,8 +203,8 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     @Bean
     @Order(2)
     @ConditionalOnProperty(value="nexus.backend.filter.gzip.enabled", havingValue = "true")
-    public FilterRegistrationBean gzipFilter() {
-        FilterRegistrationBean registrationBean = new FilterRegistrationBean();
+    public FilterRegistrationBean<Filter> gzipFilter() {
+        FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setFilter(new CompressingFilter());
         registrationBean.setOrder(2);
         return registrationBean;
@@ -213,8 +218,8 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     @Bean
     @Order(3)
     @ConditionalOnProperty(value="nexus.backend.filter.cors.enabled", havingValue = "true")
-    public FilterRegistrationBean corsFilterRegistrationBean() {
-        FilterRegistrationBean registrationBean = new FilterRegistrationBean();
+    public FilterRegistrationBean<Filter> corsFilterRegistrationBean() {
+        FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ERROR, DispatcherType.ASYNC);
         registrationBean.setFilter(new CorsFilter(request -> {
             final CorsConfiguration configuration = new CorsConfiguration();
@@ -235,8 +240,8 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     @Bean
     @Order(4)
     @ConditionalOnProperty(value="nexus.backend.filter.shallowEtag.enabled", havingValue = "true")
-    public FilterRegistrationBean shallowEtagHeaderFilter() {
-        FilterRegistrationBean registrationBean = new FilterRegistrationBean();
+    public FilterRegistrationBean<Filter> shallowEtagHeaderFilter() {
+        FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setFilter(new ShallowEtagHeaderFilter());
         registrationBean.setOrder(4);
         return registrationBean;
@@ -300,6 +305,60 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         // Enable static resources
         registry.addResourceHandler("/resources/api-ui/**").addResourceLocations("/resources/");
         registry.addResourceHandler("/static/**").addResourceLocations("/static/");
+    }
+
+
+    @Value("${nexus.backend.content.negotiation.favorParameter:false}")
+    private boolean favorParameter;
+    @Value("${nexus.backend.content.negotiation.parameterName:mediaType}")
+    private String parameterName;
+
+    @Value("${nexus.backend.content.negotiation.ignoreAcceptHeader:false}")
+    private boolean ignoreAcceptHeader;
+
+    @Value("${nexus.backend.content.negotiation.useRegisteredExtensionsOnly:true}")
+    private boolean useRegisteredExtensionsOnly;
+
+    @Value("${nexus.backend.content.negotiation.commonMediaTypes:true}")
+    private boolean commonMediaTypes;
+
+
+    /**
+     * Configure a default ContentNegotiation with a default HeaderContentNegotiationStrategy (ignoreAcceptHeader at false)
+     * Force the defaultContentType by application/octet-stream
+     * @see org.springframework.web.accept.ContentNegotiationManagerFactoryBean
+     *
+     * @param configurer The current ContentNegotiationConfigurer
+     */
+    @Override
+    public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+        configurer // JSON Mandatory forced for Resource 404 not found from the Backend
+                .defaultContentType(MediaType.APPLICATION_JSON, MediaType.APPLICATION_OCTET_STREAM)
+                //.defaultContentTypeStrategy(new HeaderContentNegotiationStrategy())
+                .favorParameter(favorParameter)
+                .parameterName(parameterName)
+                .ignoreAcceptHeader(ignoreAcceptHeader)
+                .useRegisteredExtensionsOnly(useRegisteredExtensionsOnly)
+                .mediaType("pdf", MediaType.APPLICATION_PDF); // Add pdf as safe extensions by default!
+
+        if (commonMediaTypes) {
+            extractedMediaTypes(configurer, "classpath:mime/MediaTypes_commons.properties");
+        }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private void extractedMediaTypes(ContentNegotiationConfigurer configurer, String classpath) {
+        Resource resource = resourceLoader.getResource(classpath);
+        if (resource.exists()) {
+            try {
+                Properties properties = new Properties();
+                properties.load(resource.getInputStream());
+                properties.forEach((key, value) ->
+                        configurer.mediaType(key.toString(), MediaType.parseMediaType(value.toString())));
+            } catch (IOException e) {
+                logger.error("Failed to load '{}' media types {}", classpath, e.getMessage());
+            }
+        }
     }
 
 }

@@ -21,9 +21,12 @@ package com.jservlet.nexus.controller;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.web.firewall.RequestRejectedException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.RestClientException;
@@ -73,6 +76,18 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
         logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
         return super.getResponseEntity("400", "ERROR", "Request rejected!", BAD_REQUEST);
+    }
+
+    /*
+     * For no acceptable representation for a Resource, but will never more happens with the ContentNegotiation
+     */
+    @ExceptionHandler(value = { HttpMediaTypeNotAcceptableException.class })
+    public ResponseEntity<?> handleMediaTypeNotAcceptableException(HttpServletRequest request, HttpMediaTypeNotAcceptableException e) {
+        logger.error("Intercepted HttpMediaTypeNotAcceptableException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
+                e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON); // Mandatory forced ContentType can be null
+        return super.getResponseEntity("406", "ERROR", e, headers, NOT_ACCEPTABLE);
     }
 
     /*
