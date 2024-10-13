@@ -86,7 +86,7 @@
 
         <!-- Dependency version -->
         <spring-boot.version>2.7.18</spring-boot.version>
-        <spring.framework.version>5.3.37</spring.framework.version>
+        <spring.framework.version>5.3.39</spring.framework.version>
         <spring.security.version>5.7.12</spring.security.version>
         <servlet.api.version>4.0.1</servlet.api.version>
 
@@ -567,8 +567,6 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
         </dependency>
-
-
 
         <!-- Security -->
         <dependency>
