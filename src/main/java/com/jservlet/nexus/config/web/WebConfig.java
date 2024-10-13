@@ -39,9 +39,10 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
-import org.springframework.web.accept.HeaderContentNegotiationStrategy;
+import org.springframework.util.StringUtils;
 import org.springframework.web.context.ServletContextAware;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.filter.*;
@@ -53,10 +54,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.MissingResourceException;
-import java.util.Properties;
+import java.util.*;
 
 /*
  * Web Mvc Configuration
@@ -277,21 +275,18 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
     }
 
     /**
-     * Use Servlet 4 style MultipartResolver: StandardServletMultipartResolver
-     * @return the MultipartResolver
+     * Use Servlet 4 style MultipartResolver: StandardServletMultipartResolver <br>
+     * Strict Servlet compliance only multipart/form-data
+     * @return the MultipartResolver,
      */
     @Bean
     public MultipartResolver multipartResolver() {
         return new StandardServletMultipartResolver() {
+            private final Set<HttpMethod> SUPPORTED_METHODS = EnumSet.of(HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH);
             @Override
             public boolean isMultipart(@NonNull HttpServletRequest request) {
-                if (!"POST".equalsIgnoreCase(request.getMethod()) &&
-                    !"PUT".equalsIgnoreCase(request.getMethod()) &&
-                    !"PATCH".equalsIgnoreCase(request.getMethod())) {
-                    return false;
-                }
-                String contentType = request.getContentType();
-                return contentType != null && contentType.toLowerCase().startsWith("multipart/");
+                if (!SUPPORTED_METHODS.contains(HttpMethod.resolve(request.getMethod()))) return false;
+                return StringUtils.startsWithIgnoreCase(request.getContentType(), MediaType.MULTIPART_FORM_DATA_VALUE);
             }
         };
     }

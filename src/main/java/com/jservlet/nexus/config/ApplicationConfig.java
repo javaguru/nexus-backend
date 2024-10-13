@@ -338,7 +338,7 @@ public class ApplicationConfig  {
                 .setKeepAliveStrategy(myStrategy)
                 .setRedirectStrategy(new LaxRedirectStrategy())
                 .setRetryHandler(new DefaultHttpRequestRetryHandler(retryCount, requestSentRetryEnabled))
-                .disableCookieManagement()
+                //.disableCookieManagement()
                 .disableAuthCaching()
                 .disableConnectionState()
                 .build());

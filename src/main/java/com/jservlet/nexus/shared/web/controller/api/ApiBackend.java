@@ -49,6 +49,7 @@ import org.springframework.web.servlet.HandlerMapping;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -191,7 +192,7 @@ public class ApiBackend extends ApiBase {
      */
     @RequestMapping(value = "/**")
     public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method,
-                                      HttpServletRequest request, NativeWebRequest nativeWebRequest)
+                                      HttpServletRequest request, HttpServletResponse response, NativeWebRequest nativeWebRequest)
             throws NexusHttpException, NexusIllegalUrlException {
         // MultiValueMap store the MultiPartFiles and the Parameters Map
         MultiValueMap<String, Object> map = null;
@@ -261,20 +262,40 @@ public class ApiBackend extends ApiBase {
     }
 
     /**
-     * Transfer some headers from the Backend RestOperations
+     * Default List of Headers transfer
+     */
+    private final static List<String> TRANSFER_HEADERS =
+            List.of(HttpHeaders.SERVER,
+                    HttpHeaders.SET_COOKIE,
+                    HttpHeaders.ETAG,
+                    HttpHeaders.DATE, // transfer as Date-Backend
+                    HttpHeaders.USER_AGENT,
+                    "test" // Test postman-echo
+            );
+
+    /**
+     * Transfer some headers from the Backend RestOperations.
+     * Not CONTENT_LENGTH, CONTENT_RANGE or TRANSFER_ENCODING. Cause already sent in their own Context.
+     * Case SET_COOKIE need a Store!
      */
     private static HttpHeaders getBackendHeaders(HttpHeaders readHeaders) {
         HttpHeaders newHeaders = new HttpHeaders();
         if (readHeaders == null || readHeaders.isEmpty()) return newHeaders;
-        // Original CONTENT_TYPE for a Resource and its character set if it exists
+        // Original CONTENT_TYPE for a Resource and its charset if it exists
         if (readHeaders.getFirst(HttpHeaders.CONTENT_TYPE) != null) {
             newHeaders.set(HttpHeaders.CONTENT_TYPE, readHeaders.getFirst(HttpHeaders.CONTENT_TYPE));
         } else {// ByteArray by default!
             newHeaders.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
         }
-        // Others useful HttpHeaders SERVER, ETAG, Original DATE Backend Server (!?)
-        // Not CONTENT_LENGTH, CONTENT_RANGE or TRANSFER_ENCODING. Cause already sent in their own Context.
-        // case SET_COOKIE need a Store !?
+        for (String headerName : TRANSFER_HEADERS) {
+            if (readHeaders.getFirst(headerName) != null) {
+                if (HttpHeaders.DATE.equals(headerName)) {
+                    newHeaders.add(HttpHeaders.DATE + "-Backend", readHeaders.getFirst(HttpHeaders.DATE));
+                } else {
+                    newHeaders.add(headerName, readHeaders.getFirst(headerName));
+                }
+            }
+        }
         return newHeaders;
     }
 
