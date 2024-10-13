@@ -131,7 +131,7 @@ public class ApplicationTestConfig {
 
                     @Override
                     public @NonNull List<MediaType> getSupportedMediaTypes() {
-                        return Collections.singletonList(MediaType.APPLICATION_OCTET_STREAM);
+                        return List.of(MediaType.APPLICATION_OCTET_STREAM);
                     }
 
                     @Override
@@ -156,18 +156,9 @@ public class ApplicationTestConfig {
 
                             @Override
                             public String getFilename() {
-                                HttpHeaders httpHeaders = inputMessage.getHeaders();
-                                String disposition = httpHeaders.getFirst(HttpHeaders.CONTENT_DISPOSITION);
-                                if (disposition != null) {
-                                    int filenameIdx = disposition.indexOf("filename");
-                                    if (filenameIdx != -1) {
-                                        return disposition.substring(filenameIdx + 9);
-                                    }
-                                }
-                                return null;
+                                return inputMessage.getHeaders().getContentDisposition().getFilename();
                             }
                         };
-
                     }
 
                     @Override

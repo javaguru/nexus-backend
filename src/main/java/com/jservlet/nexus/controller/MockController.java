@@ -369,7 +369,7 @@ public class MockController extends ApiBase {
     private HttpHeaders filterHeaders(HttpHeaders originalHeaders) {
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.putAll(originalHeaders);
-        //chuncked and length headers must not be forwarded
+        // chunked and length headers must not be forwarded
         responseHeaders.remove(HttpHeaders.TRANSFER_ENCODING);
         responseHeaders.remove(HttpHeaders.CONTENT_LENGTH);
         //responseHeaders.remove("Accept-Encoding"); // Gzip !?

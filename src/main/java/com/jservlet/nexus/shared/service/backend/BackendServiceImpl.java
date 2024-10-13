@@ -62,6 +62,18 @@ public class BackendServiceImpl implements BackendService {
 
     private ObjectMapper objectMapper;
 
+    /**
+     * Return by the default a Json Entity Object or Resource, else if true a Generics Object.
+     */
+    private boolean isHandleBackendEntity = false;
+
+    public BackendServiceImpl() {
+    }
+
+    public BackendServiceImpl(boolean isHandleBackendEntity) {
+        this.isHandleBackendEntity = isHandleBackendEntity;
+    }
+
     public void setBackendURL(String backendURL) {
         this.backendURL = backendURL;
     }
@@ -347,7 +359,8 @@ public class BackendServiceImpl implements BackendService {
             }
         }
         if (responseBody == null) return (T) httpStatus;
-        if (isHandleHttpState(httpStatus)) return (T) new EntityError<>(responseBody, httpStatus);
+        if (isHandleHttpState(httpStatus)) return (T) new EntityError<>(responseBody, httpHeaders, httpStatus);
+        if (isHandleBackendEntity) return (T) new EntityBackend<>(responseBody, httpHeaders, httpStatus);
         return responseBody;
     }
 
@@ -444,15 +457,45 @@ public class BackendServiceImpl implements BackendService {
 
     public static class EntityError<T> {
         private final T body;
+        private final HttpHeaders headers;
         private final HttpStatus status;
 
-        public EntityError(T body, HttpStatus status) {
+        public EntityError(T body, HttpHeaders headers, HttpStatus status) {
             this.body = body;
+            this.headers = headers;
             this.status = status;
         }
 
         public T getBody() {
             return this.body;
+        }
+
+        public HttpHeaders getHttpHeaders() {
+            return this.headers;
+        }
+
+        public HttpStatus getStatus() {
+            return this.status;
+        }
+    }
+
+    public static class EntityBackend<T> {
+        private final T body;
+        private final HttpHeaders headers;
+        private final HttpStatus status;
+
+        public EntityBackend(T body, HttpHeaders headers, HttpStatus status) {
+            this.body = body;
+            this.headers = headers;
+            this.status = status;
+        }
+
+        public T getBody() {
+            return this.body;
+        }
+
+        public HttpHeaders getHttpHeaders() {
+            return this.headers;
         }
 
         public HttpStatus getStatus() {

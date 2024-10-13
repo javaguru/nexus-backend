@@ -64,8 +64,7 @@ public class WAFRequestWrapper extends HttpServletRequestWrapper {
      */
     public void setInputStream(byte[] newRawData) {
         cachedBytes = new ByteArrayOutputStream(newRawData.length);
-        cachedBytes.write(newRawData, 0, newRawData.length);
-        //cachedBytes.writeBytes(newRawData);
+        cachedBytes.writeBytes(newRawData);
     }
 
     @Override

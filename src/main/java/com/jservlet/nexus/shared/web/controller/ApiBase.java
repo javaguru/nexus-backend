@@ -19,6 +19,7 @@
 package com.jservlet.nexus.shared.web.controller;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -55,6 +56,12 @@ public abstract class ApiBase {
         Message message = getMessageObject(code, level);
         message.setMessage(e.getMessage());
         return new ResponseEntity<>(message, httpStatus);
+    }
+
+    protected final ResponseEntity<?> getResponseEntity(String code, String level, Exception e, HttpHeaders headers, HttpStatus httpStatus) {
+        Message message = getMessageObject(code, level);
+        message.setMessage(e.getMessage());
+        return new ResponseEntity<>(message, headers, httpStatus);
     }
 
     protected final ResponseEntity<?> getResponseEntity(String code, String level, HttpStatus httpStatus) {
