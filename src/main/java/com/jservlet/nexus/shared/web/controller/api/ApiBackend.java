@@ -192,7 +192,7 @@ public class ApiBackend extends ApiBase {
      */
     @RequestMapping(value = "/**")
     public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method,
-                                      HttpServletRequest request, HttpServletResponse response, NativeWebRequest nativeWebRequest)
+                                      HttpServletRequest request, NativeWebRequest nativeWebRequest)
             throws NexusHttpException, NexusIllegalUrlException {
         // MultiValueMap store the MultiPartFiles and the Parameters Map
         MultiValueMap<String, Object> map = null;

@@ -338,30 +338,32 @@ public class BackendServiceImpl implements BackendService {
         T responseBody = exchange.getBody();
         HttpStatus httpStatus = exchange.getStatusCode();
         HttpHeaders httpHeaders = exchange.getHeaders();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Headers response: {}", httpHeaders);
-            if (responseBody != null) {
-                if (responseBody instanceof Resource) {
-                    Resource resource = (Resource) responseBody;
-                    String body = null;
-                    try {
-                        body = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-                    } catch (IOException e) {
-                        logger.error("Resource not readable: {}", e.getMessage());
-                    } finally {
-                        logger.debug("The response is: {} {} {}", httpStatus, resource.getDescription(), LogFormatUtils.formatValue(body, maxLengthTruncated, truncated));
-                    }
-                } else {
-                    logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, maxLengthTruncated, truncated));
-                }
-            } else {
-                logger.debug("The response is empty with HttpState: {}", httpStatus);
-            }
-        }
+        if (logger.isDebugEnabled()) logger(httpHeaders, responseBody, httpStatus, maxLengthTruncated, truncated);
         if (responseBody == null) return (T) httpStatus;
         if (isHandleHttpState(httpStatus)) return (T) new EntityError<>(responseBody, httpHeaders, httpStatus);
         if (isHandleBackendEntity) return (T) new EntityBackend<>(responseBody, httpHeaders, httpStatus);
         return responseBody;
+    }
+
+    private static <T> void logger(HttpHeaders httpHeaders, T responseBody, HttpStatus httpStatus, int maxLengthTruncated, boolean truncated) {
+        logger.debug("Headers response: {}", httpHeaders);
+        if (responseBody != null) {
+            if (responseBody instanceof Resource) {
+                Resource resource = (Resource) responseBody;
+                String body = null;
+                try {
+                    body = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    logger.error("Resource not readable: {}", e.getMessage());
+                } finally {
+                    logger.debug("The response is: {} {} {}", httpStatus, resource.getDescription(), LogFormatUtils.formatValue(body, maxLengthTruncated, truncated));
+                }
+            } else {
+                logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, maxLengthTruncated, truncated));
+            }
+        } else {
+            logger.debug("The response is empty with HttpState: {}", httpStatus);
+        }
     }
 
     private <T> T handleResponseError(String url, HttpStatusCodeException e) throws NexusResourceNotFoundException, NexusHttpException {
