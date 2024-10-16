@@ -227,9 +227,9 @@ public class ApplicationTestConfig {
     /**
      * SpEL reads allow method delimited with a comma and splits into a List of Strings
      */
-    @Value("#{'${nexus.backend.client.ssl.https.protocols:TLSv1.3}'.split(',')}")
+    @Value("${nexus.backend.client.ssl.https.protocols:TLSv1.3}")
     private List<String> httpsProtocols;
-    @Value("#{'${nexus.backend.client.ssl.https.cipherSuites:TLS_AES_256_GCM_SHA384}'.split(',')}")
+    @Value("${nexus.backend.client.ssl.https.cipherSuites:TLS_AES_256_GCM_SHA384}")
     private List<String> httpsCipherSuites;
 
     @Bean

@@ -286,21 +286,16 @@ public class BackendServiceImpl implements BackendService {
                 return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), responseClass));
             }
         } catch (HttpStatusCodeException e) {
-
+            // WARN RestClientResponseException use now the default Charset UTF-8 vs ISO_8859_1 in Spring < 5.1.18
             if (isHandleHttpState(e.getStatusCode())) {
-                try {
-                    // WARN RestClientResponseException use now the default Charset UTF-8 vs ISO_8859_1 in Spring < 5.1.18
-                    return handleResponse(new ResponseEntity<>((T) objectMapper.readValue
-                            (e.getResponseBodyAsByteArray(), Object.class), e.getResponseHeaders(), e.getStatusCode()));
-                }
-                catch (Exception jx) {
-                    // Unable to parse response body
-                    logger.info("The request to the backend failed. Url {} Method {} Reason id '{}: {}' Message: {}",
-                            url, method, e.getStatusCode(), e.getStatusText(), jx.getMessage());
-                    // let the default backend ErrorMessage!
-                }
+                // Test the ResponseHeaders and the Content-Type
+                HttpHeaders responseHeaders = e.getResponseHeaders();
+                if (responseHeaders == null) responseHeaders = new HttpHeaders();
+                if (responseHeaders.getContentType() == null) responseHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+                return handleResponse(new ResponseEntity<>(
+                        (T) e.getResponseBodyAsString(), e.getResponseHeaders(), e.getStatusCode()));
             }
-            //  handle default ErrorMessage or exception..
+            // handle the default ErrorMessage or an Exception...
             return handleResponseError(url, e);
         }
     }
@@ -366,6 +361,7 @@ public class BackendServiceImpl implements BackendService {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private <T> T handleResponseError(String url, HttpStatusCodeException e) throws NexusResourceNotFoundException, NexusHttpException {
         switch (e.getStatusCode()) {
             case NOT_FOUND: throw new NexusResourceNotFoundException("Failed to request to the backend. Resource not found. URI: " + url);
@@ -374,9 +370,10 @@ public class BackendServiceImpl implements BackendService {
             case UNAUTHORIZED:
             case INTERNAL_SERVER_ERROR:
                 try {
-                    // The default response ErrorMessage!
+                    // The default response ErrorMessage, NO Tests ResponseHeaders or the Content-Type
                     final ErrorMessage errorMessage = objectMapper.readValue(e.getResponseBodyAsByteArray(), ErrorMessage.class);
                     logger.info("The request to the backend failed. Reason id '{}: {}' Details: {} ", e.getStatusCode(), e.getStatusText(), errorMessage);
+                    return (T) new ResponseEntity<>(errorMessage, e.getResponseHeaders(), e.getStatusCode());
                 } catch (Exception jx) {
                     // Unable to parse response body
                     logger.info("The request to the backend failed. URI: {} Reason id '{}: {}' Message: {}", url, e.getStatusCode(), e.getStatusText(), jx.getMessage());

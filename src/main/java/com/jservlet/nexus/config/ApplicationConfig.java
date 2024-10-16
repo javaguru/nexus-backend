@@ -197,11 +197,11 @@ public class ApplicationConfig  {
 
         // List HttpMessage Converters
         restTemplate.setMessageConverters(Arrays.asList(
-                new StringHttpMessageConverter(UTF_8), // String
-                new FormHttpMessageConverter(),        // Form data to/from a MultiValueMap<String, String>
-                new ByteArrayHttpMessageConverter(),   // byte[]
-                new ResourceHttpMessageConverter(),    // Resource // WARN or let the ResourceHttpRequestHandler create for us!
-                mappingJackson2HttpMessageConverter    // JSON
+                new StringHttpMessageConverter(UTF_8),  // String
+                new FormHttpMessageConverter(),         // Form x-www-form-urlencoded, multipart/form-data multipart/mixed
+                new ByteArrayHttpMessageConverter(),    // byte[] octet-stream
+                new ResourceHttpMessageConverter(true), // Resource, ByteArrayResource, InputStreamResource
+                mappingJackson2HttpMessageConverter     // JSON
         ));
         return restTemplate;
     }

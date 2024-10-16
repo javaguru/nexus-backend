@@ -91,7 +91,7 @@
         <servlet.api.version>4.0.1</servlet.api.version>
 
         <swagger.version>3.0.0</swagger.version>
-        <springdoc.version>1.6.11</springdoc.version>
+        <springdoc-openapi.version>1.8.0</springdoc-openapi.version>
         <jackson.version>2.17.1</jackson.version>
         <ziplet.version>2.4.1</ziplet.version>
 
@@ -613,16 +613,16 @@
             <version>2.6.1</version>
         </dependency>
 
-        <!-- OpenApi-ui springdoc, 1.7.0 cause 'Unable to render' error version fields are swagger: "2.0" or openapi: 3.0.0 -->
+         <!-- OpenApi-ui springdoc -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-ui</artifactId>
-            <version>${springdoc.version}</version>
+            <version>${springdoc-openapi.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-security</artifactId>
-            <version>${springdoc.version}</version>
+            <version>${springdoc-openapi.version}</version>
         </dependency>
 
         <!-- Jackson, JSON parser, annotations, databind and dataformat-xml -->

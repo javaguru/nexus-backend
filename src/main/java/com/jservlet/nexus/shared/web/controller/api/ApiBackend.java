@@ -30,6 +30,7 @@ import io.swagger.v3.oas.annotations.Hidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.AbstractResource;
@@ -122,6 +123,13 @@ public class ApiBackend extends ApiBase {
     }
 
     /**
+     * Allow a list of headers transfer back from the Backend Server (see default headers ApiBackend.STATIC_TRANSFER_HEADERS)
+     * SpEL reads allow method delimited with a comma (or other character) and splits into a List of Strings
+     */
+    @Value("#{'${nexus.api.backend.transfer.headers:test}'.split(',')}") // 'test' for postman-echo
+    private List<String> TRANSFER_HEADERS;
+
+    /**
      * Prepare matchers Methods and Ant paths pattern dedicated only for the Resources
      */
     @PostConstruct
@@ -138,6 +146,9 @@ public class ApiBackend extends ApiBase {
             logger.warn("Config ResourceMatchers: No ByteArray Resource specified!");
         }
         orRequestMatcher = new OrRequestMatcher(requestMatchers);
+
+        // Load transfer headers with preconfigured static headers
+        TRANSFER_HEADERS.addAll(STATIC_TRANSFER_HEADERS);
     }
 
     /**
@@ -225,7 +236,7 @@ public class ApiBackend extends ApiBase {
             if (obj instanceof EntityError) {
                 EntityError<?> entityError = (EntityError<?>) obj;
                 final HttpHeaders newHeaders = getBackendHeaders(entityError.getHttpHeaders());
-                return new ResponseEntity<>(entityError, newHeaders, entityError.getStatus());
+                return new ResponseEntity<>(entityError.getBody(), newHeaders, entityError.getStatus());
             }
 
             // Manage a Generics EntityBackend embedded a Json Entity Object or a Resource!
@@ -260,24 +271,25 @@ public class ApiBackend extends ApiBase {
         return headers;
     }
 
+
     /**
-     * Default List of Headers transfer
+     * Default transfer List of Headers transfer
      */
-    private final static List<String> TRANSFER_HEADERS =
+    private final static List<String> STATIC_TRANSFER_HEADERS =
             List.of(HttpHeaders.SERVER,
                     HttpHeaders.SET_COOKIE,
                     HttpHeaders.ETAG,
+                    HttpHeaders.VIA,
                     HttpHeaders.DATE, // transfer as Date-Backend
-                    HttpHeaders.USER_AGENT,
-                    "test" // Test postman-echo
+                    HttpHeaders.USER_AGENT
             );
 
     /**
-     * Transfer some headers from the Backend RestOperations.
+     * Transfer some headers from the Backend RestOperations
+     * Included by default the original Backend CONTENT_TYPE Server
      * Not CONTENT_LENGTH, CONTENT_RANGE or TRANSFER_ENCODING. Cause already sent in their own Context.
-     * Case SET_COOKIE need a Store!
      */
-    private static HttpHeaders getBackendHeaders(HttpHeaders readHeaders) {
+    private HttpHeaders getBackendHeaders(HttpHeaders readHeaders) {
         HttpHeaders newHeaders = new HttpHeaders();
         if (readHeaders == null || readHeaders.isEmpty()) return newHeaders;
         // Original CONTENT_TYPE for a Resource and its charset if it exists
@@ -286,9 +298,15 @@ public class ApiBackend extends ApiBase {
         } else {// ByteArray by default!
             newHeaders.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
         }
+        if (readHeaders.getFirst(HttpHeaders.VIA) != null) {
+            newHeaders.set(HttpHeaders.VIA, readHeaders.getFirst(HttpHeaders.VIA) + ", Nexus 1.0.X");
+        } else {
+            newHeaders.set(HttpHeaders.VIA, readHeaders.getFirst(HttpHeaders.VIA));
+        }
+        // Transfer static headers and the others in the config
         for (String headerName : TRANSFER_HEADERS) {
             if (readHeaders.getFirst(headerName) != null) {
-                if (HttpHeaders.DATE.equals(headerName)) {
+                if (HttpHeaders.DATE.equalsIgnoreCase(headerName)) {
                     newHeaders.add(HttpHeaders.DATE + "-Backend", readHeaders.getFirst(HttpHeaders.DATE));
                 } else {
                     newHeaders.add(headerName, readHeaders.getFirst(headerName));
@@ -416,7 +434,7 @@ public class ApiBackend extends ApiBase {
     }
 
     /**
-     * Build a new BackendResource because the MultipartFile Resource will be deleted before the end of Request.
+     * Build a new BackendResource because the MultipartFile Resource will be deleted at the end of Request.
      * The BackendResource can convert a MultipartFile to a temporary Resource, ready to be sent!
      */
     private static class BackendResource extends AbstractResource {
