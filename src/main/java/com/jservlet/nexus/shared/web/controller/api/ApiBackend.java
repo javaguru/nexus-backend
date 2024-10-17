@@ -273,20 +273,17 @@ public class ApiBackend extends ApiBase {
 
 
     /**
-     * Default transfer List of Headers transfer
+     * Default transfer List of Headers, including SET_COOKIE and transfer Date as Date-Backend.
      */
     private final static List<String> STATIC_TRANSFER_HEADERS =
             List.of(HttpHeaders.SERVER,
                     HttpHeaders.SET_COOKIE,
                     HttpHeaders.ETAG,
-                    HttpHeaders.VIA,
-                    HttpHeaders.DATE, // transfer as Date-Backend
-                    HttpHeaders.USER_AGENT
-            );
+                    HttpHeaders.DATE,
+                    HttpHeaders.USER_AGENT);
 
     /**
-     * Transfer some headers from the Backend RestOperations
-     * Included by default the original Backend CONTENT_TYPE Server
+     * Transfer some headers from the Backend RestOperations, including by default the original Backend CONTENT_TYPE Server.
      * Not CONTENT_LENGTH, CONTENT_RANGE or TRANSFER_ENCODING. Cause already sent in their own Context.
      */
     private HttpHeaders getBackendHeaders(HttpHeaders readHeaders) {
@@ -298,12 +295,7 @@ public class ApiBackend extends ApiBase {
         } else {// ByteArray by default!
             newHeaders.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
         }
-        if (readHeaders.getFirst(HttpHeaders.VIA) != null) {
-            newHeaders.set(HttpHeaders.VIA, readHeaders.getFirst(HttpHeaders.VIA) + ", Nexus 1.0.X");
-        } else {
-            newHeaders.set(HttpHeaders.VIA, readHeaders.getFirst(HttpHeaders.VIA));
-        }
-        // Transfer static headers and the others in the config
+        // Transfer static headers and the others from the config
         for (String headerName : TRANSFER_HEADERS) {
             if (readHeaders.getFirst(headerName) != null) {
                 if (HttpHeaders.DATE.equalsIgnoreCase(headerName)) {
