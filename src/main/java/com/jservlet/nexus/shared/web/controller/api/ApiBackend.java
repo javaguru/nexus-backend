@@ -114,7 +114,7 @@ public class ApiBackend extends ApiBase {
 
     private ResourceMatchersConfig matchersConfig;
 
-    private OrRequestMatcher orRequestMatcher;
+    private OrRequestMatcher orRequestResourceMatcher;
 
     @Autowired
     public final void setBackendService(BackendService backendService, ResourceMatchersConfig matchersConfig) {
@@ -145,7 +145,7 @@ public class ApiBackend extends ApiBase {
             requestMatchers.add(new AntPathRequestMatcher("*/**", null));
             logger.warn("Config ResourceMatchers: No ByteArray Resource specified!");
         }
-        orRequestMatcher = new OrRequestMatcher(requestMatchers);
+        orRequestResourceMatcher = new OrRequestMatcher(requestMatchers);
 
         // Load transfer headers with preconfigured static headers
         TRANSFER_HEADERS.addAll(STATIC_TRANSFER_HEADERS);
@@ -223,10 +223,10 @@ public class ApiBackend extends ApiBase {
 
             // Create a ResponseType Object or Resource by RequestMatcher
             ResponseType<?> responseType;
-            if (!orRequestMatcher.matches(request)) {
-                responseType = backendService.createResponseType(Object.class);
-            } else {
+            if (orRequestResourceMatcher.matches(request)) {
                 responseType = backendService.createResponseType(Resource.class);
+            } else {
+                responseType = backendService.createResponseType(Object.class);
             }
 
             // Return a EntityError or a EntityBackend
