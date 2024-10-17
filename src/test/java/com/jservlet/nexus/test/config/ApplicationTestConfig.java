@@ -227,9 +227,9 @@ public class ApplicationTestConfig {
     /**
      * SpEL reads allow method delimited with a comma and splits into a List of Strings
      */
-    @Value("${nexus.backend.client.ssl.https.protocols:TLSv1.3}")
+    @Value("#{'${nexus.backend.client.ssl.https.protocols:TLSv1.3}'.split(',')}")
     private List<String> httpsProtocols;
-    @Value("${nexus.backend.client.ssl.https.cipherSuites:TLS_AES_256_GCM_SHA384}")
+    @Value("#{'${nexus.backend.client.ssl.https.cipherSuites:TLS_AES_256_GCM_SHA384}'.split(',')}")
     private List<String> httpsCipherSuites;
 
     @Bean
@@ -302,7 +302,7 @@ public class ApplicationTestConfig {
                 .setKeepAliveStrategy(myStrategy)
                 .setRedirectStrategy(new LaxRedirectStrategy())
                 .setRetryHandler(new DefaultHttpRequestRetryHandler(retryCount, requestSentRetryEnabled))
-                .disableCookieManagement()
+                //.disableCookieManagement()
                 .disableAuthCaching()
                 .disableConnectionState()
                 .build());

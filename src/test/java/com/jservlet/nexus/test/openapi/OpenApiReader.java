@@ -24,7 +24,7 @@ import java.util.*;
  * Columns:
  * "Uri","Method","Id","Parameters Name,Type,Example,Required","RegExp","BodyRequest","Required","Media","Type"
  *
- * @author frank@jservlet.com, 06.2024
+ * @author franck@jservlet.com, 06.2024
  */
 public class OpenApiReader {
 
