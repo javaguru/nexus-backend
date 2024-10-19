@@ -24,11 +24,15 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -100,14 +104,6 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
         assertNotNull(data);
     }
 
-    /*@Test
-    public void testGetXssBackend() throws NexusGetException, NexusResourceNotFoundException {
-        String url = "/mock/v1/dataXss?param1=<script>alert('info1')</script>"; //
-        Object error = backendService.get(url, ERROR_RESPONSE_TYPE);
-        assertNotNull(error);
-        //MatcherAssert.assertThat(error.toString(), CoreMatchers.containsString("rejected"));
-    }*/
-
     @Test
     public void testGetListBackend() throws NexusGetException, NexusResourceNotFoundException {
         String url = "/mock/v1/dataList";
@@ -157,16 +153,6 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
             assertTrue(status.is2xxSuccessful());
         }
     }
-
-   /* @Test
-    public void testPostXssBackend() throws  NexusCreationException, NexusResourceExistsException {
-        String url = "/mock/v1/dataPostXss?param1=test";
-        // try also security exception \\<script> or <script> only!
-        Data data = new Data("<script>alert('info1')</script>","info2", 0.0006);
-        Object error = backendService.post(url, data, ERROR_RESPONSE_TYPE);
-        assertNotNull(error);
-       // MatcherAssert.assertThat(error.getBody().toString(), CoreMatchers.containsString("rejected"));
-     }*/
 
     @Test
     public void testGetFileBackend() throws NexusGetException, NexusResourceNotFoundException, IOException {
@@ -232,24 +218,69 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
                 CoreMatchers.containsString("echo"));
     }
 
-    /*@Test
-    public void testXErrorBackend400() throws NexusGetException, NexusResourceNotFoundException {
-        String url = "/mock/v1/dataError400";
-        Object error = backendService.get(url, ERROR_RESPONSE_TYPE);
-        assertNotNull(error);
-    }*/
 
-    /*@Test
+    /* Http Errors */
+    @Test
+    public void testGetXssBackend() throws NexusResourceNotFoundException {
+        try {
+            String url = "/mock/v1/dataXss?param1=<script>alert('info1')</script>"; //
+            backendService.get(url, ERROR_RESPONSE_TYPE);
+        } catch (NexusGetException e) {
+            testException(e);
+        }
+    }
+
+    private static void testException(NexusGetException e) {
+        if (e.getCause() instanceof HttpClientErrorException) {
+            HttpClientErrorException cause = (HttpClientErrorException) e.getCause();
+            assertNotNull(cause.getStatusCode());
+            logger.debug("Error: {} {}", cause.getStatusCode(), cause.getResponseBodyAsString());
+        } else {
+            assertNotNull(e.getMessage());
+            logger.debug("Error: {}", e.getCause().getMessage());
+        }
+    }
+
+    @Test
+    public void testPostXssBackend() throws NexusCreationException, NexusResourceExistsException {
+        try {
+            // try also security exception \\<script> or <script> only!
+            String url = "/mock/v1/dataPostXss?param1=test";
+            Data data = new Data("<script>alert('info1')</script>","info2", 0.0006);
+            backendService.post(url, data, ERROR_RESPONSE_TYPE);
+        } catch (NexusCreationException e) {
+            assertNotNull(e.getMessage());
+            logger.debug("Error: {}", e.getCause().getMessage());
+        }
+    }
+
+    @Test
+    public void testXErrorBackend400() throws NexusResourceNotFoundException {
+        try {
+           String url = "/mock/v1/dataError400";
+           backendService.get(url, ERROR_RESPONSE_TYPE);
+        } catch (NexusGetException e) {
+            testException(e);
+        }
+   }
+
+    @Test
     public void testXErrorBackend500() throws NexusGetException, NexusResourceNotFoundException {
-        String url = "/mock/v1/dataError500";
-        Object error = backendService.get(url, ERROR_RESPONSE_TYPE);
-        assertNotNull(error);
-    }*/
+        try {
+            String url = "/mock/v1/dataError500";
+            backendService.get(url, ERROR_RESPONSE_TYPE);
+        } catch (NexusGetException e) {
+            testException(e);
+        }
+    }
 
-    /*@Test
+    @Test
     public void testXErrorBackend401() throws  NexusGetException, NexusResourceNotFoundException {
-        String url = "/mock/v1/dataError401";
-        Object error = backendService.get(url, ERROR_RESPONSE_TYPE);
-        assertNotNull(error);
-    }*/
+        try {
+            String url = "/mock/v1/dataError401";
+            backendService.get(url, ERROR_RESPONSE_TYPE);
+        } catch (NexusGetException e) {
+            testException(e);
+        }
+    }
 }
