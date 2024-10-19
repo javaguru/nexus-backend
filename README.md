@@ -112,11 +112,6 @@ Requests to a RestApi Backend Server.**
 | nexus.backend.mapper.serializer.timezone        | -                            | Europe/Paris                    | Locale TimeZone by Default                      |   
 | nexus.backend.mapper.date.timezone              | Zulu                         | Europe/Paris                    | Locale Zulu by Default                          |   
 | nexus.backend.mapper.date.withColon             | true                         | true                            | Locale with Colon in TimeZone                   |   
-| **Exceptions**                                  |                              |                                 |                                                 |
-| nexus.backend.exception.http500                 | false                        | true                            | Activated Object mapper on a Http error 500     |   
-| nexus.backend.exception.http400                 | false                        | true                            | Activated Object mapper on a Http error 400     |   
-| nexus.backend.exception.http401                 | false                        | true                            | Activated Object mapper on a Http error 401     |   
-| nexus.backend.exception.http405                 | false                        | true                            | Activated Object mapper on a Http error 405     |   
 | **Debug**                                       |                              |                                 |                                                 |
 | nexus.spring.web.security.debug                 | false                        | true                            | Debug the Spring FilterChain                    |
 

@@ -23,7 +23,6 @@ import com.jservlet.nexus.shared.exceptions.NexusIllegalUrlException;
 import com.jservlet.nexus.shared.exceptions.NexusResourceNotFoundException;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendService.ResponseType;
-import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.EntityError;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.EntityBackend;
 import com.jservlet.nexus.shared.web.controller.ApiBase;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -231,13 +230,6 @@ public class ApiBackend extends ApiBase {
 
             // Return a EntityError or a EntityBackend
             Object obj = backendService.doRequest(url, method, responseType, !map.isEmpty() ? map : body, getAllHeaders(request));
-
-            // Manage a Generics EntityError embedded a Json Entity Object!
-            if (obj instanceof EntityError) {
-                EntityError<?> entityError = (EntityError<?>) obj;
-                final HttpHeaders newHeaders = getBackendHeaders(entityError.getHttpHeaders());
-                return new ResponseEntity<>(entityError.getBody(), newHeaders, entityError.getStatus());
-            }
 
             // Manage a Generics EntityBackend embedded a Json Entity Object or a Resource!
             EntityBackend<?> entityBackend = (EntityBackend<?>) obj;

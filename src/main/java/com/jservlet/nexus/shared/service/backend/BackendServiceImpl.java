@@ -18,6 +18,7 @@
 
 package com.jservlet.nexus.shared.service.backend;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.exceptions.*;
@@ -113,16 +114,6 @@ public class BackendServiceImpl implements BackendService {
 
     @Value("${nexus.backend.header.user-agent:JavaNexus}")
     private String userAgent = "JavaNexus";
-
-
-    @Value("${nexus.backend.exception.http500:true}")
-    private boolean isHttp500;
-    @Value("${nexus.backend.exception.http400:true}")
-    private boolean isHttp400;
-    @Value("${nexus.backend.exception.http401:true}")
-    private boolean isHttp401;
-    @Value("${nexus.backend.exception.http405:true}")
-    private boolean isHttp405;
 
 
     @Override
@@ -287,7 +278,7 @@ public class BackendServiceImpl implements BackendService {
             }
         } catch (HttpStatusCodeException e) {
             // WARN RestClientResponseException use now the default Charset UTF-8 vs ISO_8859_1 in Spring < 5.1.18
-            if (isHandleHttpState(e.getStatusCode())) {
+            if (isHandleHttpStatus(e.getStatusCode())) {
                 // Test the ResponseHeaders and the Content-Type
                 HttpHeaders responseHeaders = e.getResponseHeaders();
                 if (responseHeaders == null) responseHeaders = new HttpHeaders();
@@ -300,17 +291,20 @@ public class BackendServiceImpl implements BackendService {
         }
     }
 
+    private final static EnumSet<HttpStatus> listHttpStatusError = EnumSet.of(
+            HttpStatus.BAD_REQUEST,
+            HttpStatus.UNAUTHORIZED,
+            HttpStatus.METHOD_NOT_ALLOWED,
+            HttpStatus.INTERNAL_SERVER_ERROR);
+
     /**
-     * Returns true if a specific HttpStatus has to be handled by the configuration
+     * Returns true if a specific HttpStatus is contained in th list
      *
      * @param status Ht tpStatus
      * @return true Returns true if HttpStatus has to be handled
      */
-    private boolean isHandleHttpState(HttpStatus status) {
-        return isHttp400 && status == HttpStatus.BAD_REQUEST ||
-               isHttp401 && status == HttpStatus.UNAUTHORIZED ||
-               isHttp405 && status == HttpStatus.METHOD_NOT_ALLOWED ||
-               isHttp500 && status == HttpStatus.INTERNAL_SERVER_ERROR;
+    private boolean isHandleHttpStatus(HttpStatus status) {
+        return isHandleBackendEntity && listHttpStatusError.contains(status);
     }
 
     /**
@@ -335,8 +329,7 @@ public class BackendServiceImpl implements BackendService {
         HttpHeaders httpHeaders = exchange.getHeaders();
         if (logger.isDebugEnabled()) logger(httpHeaders, responseBody, httpStatus, maxLengthTruncated, truncated);
         if (responseBody == null) return (T) httpStatus;
-        if (isHandleHttpState(httpStatus)) return (T) new EntityError<>(responseBody, httpHeaders, httpStatus);
-        if (isHandleBackendEntity) return (T) new EntityBackend<>(responseBody, httpHeaders, httpStatus);
+        if (isHandleBackendEntity || isHandleHttpStatus(httpStatus)) return (T) new EntityBackend<>(responseBody, httpHeaders, httpStatus);
         return responseBody;
     }
 
@@ -361,7 +354,6 @@ public class BackendServiceImpl implements BackendService {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private <T> T handleResponseError(String url, HttpStatusCodeException e) throws NexusResourceNotFoundException, NexusHttpException {
         switch (e.getStatusCode()) {
             case NOT_FOUND: throw new NexusResourceNotFoundException("Failed to request to the backend. Resource not found. URI: " + url);
@@ -373,7 +365,6 @@ public class BackendServiceImpl implements BackendService {
                     // The default response ErrorMessage, NO Tests ResponseHeaders or the Content-Type
                     final ErrorMessage errorMessage = objectMapper.readValue(e.getResponseBodyAsByteArray(), ErrorMessage.class);
                     logger.info("The request to the backend failed. Reason id '{}: {}' Details: {} ", e.getStatusCode(), e.getStatusText(), errorMessage);
-                    return (T) new ResponseEntity<>(errorMessage, e.getResponseHeaders(), e.getStatusCode());
                 } catch (Exception jx) {
                     // Unable to parse response body
                     logger.info("The request to the backend failed. URI: {} Reason id '{}: {}' Message: {}", url, e.getStatusCode(), e.getStatusText(), jx.getMessage());
@@ -431,6 +422,16 @@ public class BackendServiceImpl implements BackendService {
         return new ResponseTypeImpl<>(responseType);
     }
 
+    @Override
+    public String getBackendURL() {
+        return this.backendURL;
+    }
+
+    @Override
+    public boolean isRemovedHeaders() {
+        return this.removeHeaders || this.removeHostHeader || this.removeOriginHeader;
+    }
+
     private static class ResponseTypeImpl<T> implements ResponseType<T> {
 
         private final Class<T> responseClass;
@@ -452,30 +453,6 @@ public class BackendServiceImpl implements BackendService {
 
         @Override
         public ParameterizedTypeReference<T> getResponseParameterizedTypeReference() { return parameterizedType; }
-    }
-
-    public static class EntityError<T> {
-        private final T body;
-        private final HttpHeaders headers;
-        private final HttpStatus status;
-
-        public EntityError(T body, HttpHeaders headers, HttpStatus status) {
-            this.body = body;
-            this.headers = headers;
-            this.status = status;
-        }
-
-        public T getBody() {
-            return this.body;
-        }
-
-        public HttpHeaders getHttpHeaders() {
-            return this.headers;
-        }
-
-        public HttpStatus getStatus() {
-            return this.status;
-        }
     }
 
     public static class EntityBackend<T> {
@@ -502,40 +479,81 @@ public class BackendServiceImpl implements BackendService {
         }
     }
 
-    private static class ErrorMessage {
-        @JsonProperty(required = true)
-        private Message error;
+    // 401 : "{"code":"401","level":"ERROR","source":"MOCK-REST-NEXUS-BACKEND","message":"Unauthorized"}"
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ErrorMessage {
 
-        public ErrorMessage(String code, String source, String message) {
-            this.error = new Message(code, "ERROR", source, message);
+        private String code;
+        private String level;
+        private String source;
+        private String message;
+        private String cause;
+
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        private Map<String, String> parameters = new HashMap<>();
+
+        public ErrorMessage() {
         }
 
-        public String toString() { return "ErrorMessage{error=" + this.error + "}"; }
-    }
+        public String getCode() {
+            return code;
+        }
 
-    private static class Message {
-        public final String code;
-        public final String level;
-        public final String source;
-        public final String message;
-
-        public Message(String code, String level, String source, String message) {
+        public void setCode(String code) {
             this.code = code;
+        }
+
+        public String getLevel() {
+            return level;
+        }
+
+        public void setLevel(String level) {
             this.level = level;
+        }
+
+        public String getSource() {
+            return source;
+        }
+
+        public void setSource(String source) {
             this.source = source;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
             this.message = message;
         }
-    }
 
+        public String getCause() {
+            return cause;
+        }
 
-    @Override
-    public String getBackendURL() {
-        return this.backendURL;
-    }
+        public void setCause(String cause) {
+            this.cause = cause;
+        }
 
-    @Override
-    public boolean isRemovedHeaders() {
-        return this.removeHeaders || this.removeHostHeader || this.removeOriginHeader;
+        public Map<String, String> getParameters() {
+            return parameters;
+        }
+
+        public void setParameters(Map<String, String> parameters) {
+            this.parameters = parameters;
+        }
+
+        @Override
+        public String toString() {
+            return "ErrorMessage{" +
+                    "code='" + code + '\'' +
+                    ", level='" + level + '\'' +
+                    ", source='" + source + '\'' +
+                    ", message='" + message + '\'' +
+                    ", cause='" + cause + '\'' +
+                    ", parameters=" + parameters +
+                    '}';
+        }
     }
 
 }

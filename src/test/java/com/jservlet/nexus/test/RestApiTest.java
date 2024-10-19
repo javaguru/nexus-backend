@@ -3,7 +3,6 @@ package com.jservlet.nexus.test;
 import com.jservlet.nexus.controller.MockController.Data;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendService.ResponseType;
-import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.EntityError;
 import com.jservlet.nexus.shared.exceptions.*;
 import com.jservlet.nexus.test.config.ApplicationTestConfig;
 import junit.framework.TestCase;
@@ -65,12 +64,7 @@ public class RestApiTest extends TestCase {
             // get Error Entity
             Object objError = backendService.doRequest("/mock/v1/dataXss?param1=<script>alert('info1')</script>",
                     HttpMethod.GET, backendService.createResponseType(Data.class), null, null);
-            // Handle an Entity Error!
-            if (objError instanceof EntityError) {
-                System.out.println(((EntityError<?>) objError).getBody() + " " + ((EntityError<?>) objError).getStatus());
-            }
-            else
-                System.out.println(objError);
+            System.out.println(objError);
         } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
             System.out.println("Failed to GET EntityError entity/entities on backend: " + e.getMessage());
         } catch (NexusResourceNotFoundException ex) {
