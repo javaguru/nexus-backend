@@ -18,10 +18,9 @@
 
 package com.jservlet.nexus.shared.service.backend;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.exceptions.*;
+import com.jservlet.nexus.shared.service.backend.api.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,7 +50,7 @@ import java.util.*;
  * </ul>
  */
 @Service
-public class BackendServiceImpl implements BackendService {
+public final class BackendServiceImpl implements BackendService {
 
     private static final Logger logger = LoggerFactory.getLogger(BackendServiceImpl.class);
 
@@ -362,7 +361,7 @@ public class BackendServiceImpl implements BackendService {
             case UNAUTHORIZED:
             case INTERNAL_SERVER_ERROR:
                 try {
-                    // The default response ErrorMessage, NO Tests ResponseHeaders or the Content-Type
+                    // ErrorMessage from the Backend!
                     final ErrorMessage errorMessage = objectMapper.readValue(e.getResponseBodyAsByteArray(), ErrorMessage.class);
                     logger.info("The request to the backend failed. Reason id '{}: {}' Details: {} ", e.getStatusCode(), e.getStatusText(), errorMessage);
                 } catch (Exception jx) {
@@ -476,83 +475,6 @@ public class BackendServiceImpl implements BackendService {
 
         public HttpStatus getStatus() {
             return this.status;
-        }
-    }
-
-    // 401 : "{"code":"401","level":"ERROR","source":"MOCK-REST-NEXUS-BACKEND","message":"Unauthorized"}"
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class ErrorMessage {
-
-        private String code;
-        private String level;
-        private String source;
-        private String message;
-        private String cause;
-
-        @JsonInclude(JsonInclude.Include.NON_EMPTY)
-        private Map<String, String> parameters = new HashMap<>();
-
-        public ErrorMessage() {
-        }
-
-        public String getCode() {
-            return code;
-        }
-
-        public void setCode(String code) {
-            this.code = code;
-        }
-
-        public String getLevel() {
-            return level;
-        }
-
-        public void setLevel(String level) {
-            this.level = level;
-        }
-
-        public String getSource() {
-            return source;
-        }
-
-        public void setSource(String source) {
-            this.source = source;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
-        public String getCause() {
-            return cause;
-        }
-
-        public void setCause(String cause) {
-            this.cause = cause;
-        }
-
-        public Map<String, String> getParameters() {
-            return parameters;
-        }
-
-        public void setParameters(Map<String, String> parameters) {
-            this.parameters = parameters;
-        }
-
-        @Override
-        public String toString() {
-            return "ErrorMessage{" +
-                    "code='" + code + '\'' +
-                    ", level='" + level + '\'' +
-                    ", source='" + source + '\'' +
-                    ", message='" + message + '\'' +
-                    ", cause='" + cause + '\'' +
-                    ", parameters=" + parameters +
-                    '}';
         }
     }
 
