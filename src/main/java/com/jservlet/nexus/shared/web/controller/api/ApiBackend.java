@@ -125,7 +125,7 @@ public class ApiBackend extends ApiBase {
      * Allow a list of headers transfer back from the Backend Server (see default headers ApiBackend.STATIC_TRANSFER_HEADERS)
      * SpEL reads allow method delimited with a comma (or other character) and splits into a List of Strings
      */
-    @Value("#{'${nexus.api.backend.transfer.headers:test}'.split(',')}") // 'test' for postman-echo
+    @Value("#{'${nexus.api.backend.transfer.headers:test,WWW-Authenticate}'.split(',')}") // 'test' for postman-echo
     private List<String> TRANSFER_HEADERS;
 
     /**
