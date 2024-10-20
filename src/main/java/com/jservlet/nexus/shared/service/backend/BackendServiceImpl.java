@@ -264,7 +264,6 @@ public final class BackendServiceImpl implements BackendService {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers)
             throws NexusResourceNotFoundException, NexusHttpException, NexusIllegalUrlException {
         try {
@@ -283,7 +282,7 @@ public final class BackendServiceImpl implements BackendService {
                 if (responseHeaders == null) responseHeaders = new HttpHeaders();
                 if (responseHeaders.getContentType() == null) responseHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
                 return handleResponse(new ResponseEntity<>(
-                        (T) e.getResponseBodyAsString(), e.getResponseHeaders(), e.getStatusCode()));
+                        (T) e.getResponseBodyAsByteArray(), e.getResponseHeaders(), e.getStatusCode()));
             }
             // handle the default ErrorMessage or an Exception...
             return handleResponseError(url, e);
