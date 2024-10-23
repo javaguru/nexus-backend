@@ -478,7 +478,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.14**, released at 14/10/2024 Support Backend Headers and Support ContentNegotiation Header Strategy for Resources
+* Last version **1.0.15**, released at 23/10/2024 Fix missing method addCorsMappings
+* Version **1.0.14**, released at 14/10/2024 Support Backend Headers and Support ContentNegotiation Header Strategy for Resources
 * Version **1.0.13**, released at 06/10/2024 Full support Response in ByteArray Resource and Streaming Http Response Range Bytes 
 * Version **1.0.12**, released at 02/10/2024 Fix ApiBase error Message super.getResponseEntity
 * Version **1.0.11**, released at 30/09/2024 Does not encode the URI template! 
