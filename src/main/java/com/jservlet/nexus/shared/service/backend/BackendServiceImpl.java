@@ -264,6 +264,7 @@ public final class BackendServiceImpl implements BackendService {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers)
             throws NexusResourceNotFoundException, NexusHttpException, NexusIllegalUrlException {
         try {
@@ -368,10 +369,6 @@ public final class BackendServiceImpl implements BackendService {
                     logger.info("The request to the backend failed. URI: {} Reason id '{}: {}' Message: {}", url, e.getStatusCode(), e.getStatusText(), jx.getMessage());
                     throw new NexusHttpException("An internal error occurred on the backend. URI: " + url + " Reason id '" + e.getStatusCode()+ "'");
                 }
-                // let back BAD_REQUEST!
-                //if (e.getStatusCode() != HttpStatus.BAD_REQUEST) {
-                //   throw new NexusHttpException("An internal error occurred on the backend. URI: " + url + " Reason id '" + e.getStatusCode()+ "'");
-                //}
             default:
                 throw e;
         }
