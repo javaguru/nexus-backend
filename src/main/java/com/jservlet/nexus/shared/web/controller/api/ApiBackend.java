@@ -272,8 +272,7 @@ public class ApiBackend extends ApiBase {
             List.of(HttpHeaders.SERVER,
                     HttpHeaders.SET_COOKIE,
                     HttpHeaders.ETAG,
-                    HttpHeaders.DATE,
-                    HttpHeaders.USER_AGENT);
+                    HttpHeaders.DATE);
 
     /**
      * Transfer some headers from the Backend RestOperations, including by default the original Backend CONTENT_TYPE Server.
