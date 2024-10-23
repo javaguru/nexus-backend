@@ -36,7 +36,7 @@ Requests to a RestApi Backend Server.**
 ### Ability to Secure all RestApi Request to a Backend Server
 
  * Implements a **BackendService**, ability to request typed response Object class or ParameterizedTypeReference, requested on all HTTP methods to a RestApi Backend Server.
- * Implements an **EntityError** Json object on the HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
+ * Implements an **EntityBackend** Json Object or a Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
  * Implements a **HttpFirewall** filter protection against evasion, rejected any suspicious Requests, Headers, Parameters, and log IP address at fault.
  * Implements a **WAF** filter protection against evasion on the Http Json BodyRequest, and log IP address at fault.
  * Implements a **Fingerprint** for each Http header Request, generate a unique trackable Token APP-REQUEST-ID in the access logs.

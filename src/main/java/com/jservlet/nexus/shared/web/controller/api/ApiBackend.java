@@ -86,7 +86,8 @@ import java.util.*;
  * <p>
  *      The Http Responses can be considerate as Resources, the Http header "Accept-Ranges: bytes" is injected and allow you to use
  *      the Http header 'Range:bytes=-1000' in the request and by example grabbed the last 1000 bytes (or a range of Bytes). <br>
- *      And the Http Responses will come back without a "Transfer-Encoding: chunked" HttpHeader cause now the header Content-Length.
+ *      And the Http Responses will come back without a "Transfer-Encoding: chunked" HttpHeader cause now the header Content-Length
+ *      is calculated.
  *      <br><br>
  *      For configure all the Responses in Resource put eh Method empty and use the path pattern=/api/** <br>
  *      nexus.backend.api-backend-resource.matchers.matchers1.method= <br>
@@ -229,7 +230,7 @@ public class ApiBackend extends ApiBase {
                 responseType = backendService.createResponseType(Object.class);
             }
 
-            // Return a EntityError or a EntityBackend
+            // Return an EntityBackend
             Object obj = backendService.doRequest(url, method, responseType, !map.isEmpty() ? map : body, getAllHeaders(request));
 
             // Manage a Generics EntityBackend embedded a Json Entity Object or a Resource!
