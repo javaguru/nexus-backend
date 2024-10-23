@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpMethod;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -63,8 +64,8 @@ public class HTTPMethodOverrideFilter extends OncePerRequestFilter {
 
     static {
         final Map<HttpMethod, Set<HttpMethod>> defaultMethodMapping = new HashMap<>();
-        defaultMethodMapping.put(HttpMethod.POST, Collections.unmodifiableSet(new HashSet<>(Arrays.asList(HttpMethod.PATCH, HttpMethod.PUT))));
-        defaultMethodMapping.put(HttpMethod.GET, Collections.unmodifiableSet(new HashSet<>(Collections.singletonList(HttpMethod.DELETE))));
+        defaultMethodMapping.put(HttpMethod.POST, Set.of(HttpMethod.PATCH, HttpMethod.PUT));
+        defaultMethodMapping.put(HttpMethod.GET, Set.copyOf(Collections.singletonList(HttpMethod.DELETE)));
         DEFAULT_METHOD_MAPPING = Collections.unmodifiableMap(defaultMethodMapping);
     }
 
@@ -103,7 +104,8 @@ public class HTTPMethodOverrideFilter extends OncePerRequestFilter {
 
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         String overriddenMethod = request.getHeader(headerName);
         if (shouldApplyMethodOverriding(overriddenMethod, request)) {
             filterChain.doFilter(new HttpMethodRequestWrapper(request, overriddenMethod), response);

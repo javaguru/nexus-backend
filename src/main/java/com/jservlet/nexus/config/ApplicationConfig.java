@@ -31,19 +31,31 @@ import com.jservlet.nexus.shared.config.annotation.ConfigProperties;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl;
 import com.jservlet.nexus.shared.web.controller.api.ApiBackend;
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
+import org.apache.http.ParseException;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.HttpConnectionFactory;
+import org.apache.http.conn.ManagedHttpClientConnection;
+import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
+import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.impl.client.*;
+import org.apache.http.impl.conn.DefaultHttpResponseParserFactory;
+import org.apache.http.impl.conn.ManagedHttpClientConnectionFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.io.DefaultHttpRequestWriterFactory;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicLineParser;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.PrivateKeyDetails;
 import org.apache.http.ssl.PrivateKeyStrategy;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.http.util.CharArrayBuffer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -197,11 +209,11 @@ public class ApplicationConfig  {
 
         // List HttpMessage Converters
         restTemplate.setMessageConverters(Arrays.asList(
-                new StringHttpMessageConverter(UTF_8), // String
-                new FormHttpMessageConverter(),        // Form data to/from a MultiValueMap<String, String>
-                new ByteArrayHttpMessageConverter(),   // byte[]
-                new ResourceHttpMessageConverter(),    // Resource // WARN or let the ResourceHttpRequestHandler create for us!
-                mappingJackson2HttpMessageConverter    // JSON
+                new StringHttpMessageConverter(UTF_8),  // String
+                new FormHttpMessageConverter(),      // Form x-www-form-urlencoded, multipart/form-data multipart/mixed
+                new ByteArrayHttpMessageConverter(), // byte[] octet-stream
+                new ResourceHttpMessageConverter(),  // Resource, ByteArrayResource
+                mappingJackson2HttpMessageConverter  // JSON
         ));
         return restTemplate;
     }
@@ -271,12 +283,18 @@ public class ApplicationConfig  {
     @Bean
     public ClientHttpRequestFactory httpRequestFactory() throws Exception {
 
-        DefaultConnectionKeepAliveStrategy myStrategy = new DefaultConnectionKeepAliveStrategy() {
+        final DefaultConnectionKeepAliveStrategy myStrategy = new DefaultConnectionKeepAliveStrategy() {
             @Override
             public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
                 return super.getKeepAliveDuration(response, context);
             }
         };
+
+        final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory =
+                new ManagedHttpClientConnectionFactory(
+                        new DefaultHttpRequestWriterFactory(),
+                        new DefaultHttpResponseParserFactory(
+                                new CompliantLineParser(), new DefaultHttpResponseFactory()));
 
         final PoolingHttpClientConnectionManager cm;
 
@@ -312,9 +330,9 @@ public class ApplicationConfig  {
             cm = new PoolingHttpClientConnectionManager(RegistryBuilder.<ConnectionSocketFactory>create()
                     .register("http", PlainConnectionSocketFactory.getSocketFactory())
                     .register("https", sslConnectionSocketFactory)
-                    .build());
+                    .build(), connFactory);
         } else {
-            cm = new PoolingHttpClientConnectionManager();
+            cm = new PoolingHttpClientConnectionManager(connFactory);
         }
 
         cm.setDefaultMaxPerRoute(defaultMaxConnectionsPerRoute);
@@ -338,10 +356,26 @@ public class ApplicationConfig  {
                 .setKeepAliveStrategy(myStrategy)
                 .setRedirectStrategy(new LaxRedirectStrategy())
                 .setRetryHandler(new DefaultHttpRequestRetryHandler(retryCount, requestSentRetryEnabled))
-                //.disableCookieManagement()
+                .disableCookieManagement()
                 .disableAuthCaching()
                 .disableConnectionState()
                 .build());
+    }
+
+    /**
+     * Force HttpClient into accepting malformed response heads in order to salvage the content of the messages.
+     * (Deal non-standard and non-compliant behaviours!)
+     */
+    static class CompliantLineParser extends BasicLineParser {
+        @Override
+        public Header parseHeader(CharArrayBuffer buffer) throws ParseException {
+            try {
+                return super.parseHeader(buffer);
+            } catch (ParseException ex) {
+                // Suppress ParseException exception
+                return new BasicHeader(buffer.toString(), null);
+            }
+        }
     }
 
 }

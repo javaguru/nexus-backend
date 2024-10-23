@@ -231,6 +231,11 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         return registrationBean;
     }
 
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**");
+    }
+
     /**
      * Filter generates an ETag value based on the content on the response and set a Content-length header
      * @return shallowEtagHeaderFilter

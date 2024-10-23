@@ -18,9 +18,9 @@
 
 package com.jservlet.nexus.shared.service.backend;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.exceptions.*;
+import com.jservlet.nexus.shared.service.backend.api.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,7 +50,7 @@ import java.util.*;
  * </ul>
  */
 @Service
-public class BackendServiceImpl implements BackendService {
+public final class BackendServiceImpl implements BackendService {
 
     private static final Logger logger = LoggerFactory.getLogger(BackendServiceImpl.class);
 
@@ -113,16 +113,6 @@ public class BackendServiceImpl implements BackendService {
 
     @Value("${nexus.backend.header.user-agent:JavaNexus}")
     private String userAgent = "JavaNexus";
-
-
-    @Value("${nexus.backend.exception.http500:true}")
-    private boolean isHttp500;
-    @Value("${nexus.backend.exception.http400:true}")
-    private boolean isHttp400;
-    @Value("${nexus.backend.exception.http401:true}")
-    private boolean isHttp401;
-    @Value("${nexus.backend.exception.http405:true}")
-    private boolean isHttp405;
 
 
     @Override
@@ -274,7 +264,6 @@ public class BackendServiceImpl implements BackendService {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers)
             throws NexusResourceNotFoundException, NexusHttpException, NexusIllegalUrlException {
         try {
@@ -286,36 +275,34 @@ public class BackendServiceImpl implements BackendService {
                 return handleResponse(restOperations.exchange(getBackendURL(url), method, createRequestEntity(body, headers), responseClass));
             }
         } catch (HttpStatusCodeException e) {
-
-            if (isHandleHttpState(e.getStatusCode())) {
-                try {
-                    // WARN RestClientResponseException use now the default Charset UTF-8 vs ISO_8859_1 in Spring < 5.1.18
-                    return handleResponse(new ResponseEntity<>((T) objectMapper.readValue
-                            (e.getResponseBodyAsByteArray(), Object.class), e.getResponseHeaders(), e.getStatusCode()));
-                }
-                catch (Exception jx) {
-                    // Unable to parse response body
-                    logger.info("The request to the backend failed. Url {} Method {} Reason id '{}: {}' Message: {}",
-                            url, method, e.getStatusCode(), e.getStatusText(), jx.getMessage());
-                    // let the default backend ErrorMessage!
-                }
+            // WARN RestClientResponseException use now the default Charset UTF-8 vs ISO_8859_1 in Spring < 5.1.18
+            if (isHandleHttpStatus(e.getStatusCode())) {
+                // Test the ResponseHeaders and the Content-Type
+                HttpHeaders responseHeaders = e.getResponseHeaders();
+                if (responseHeaders == null) responseHeaders = new HttpHeaders();
+                if (responseHeaders.getContentType() == null) responseHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+                return handleResponse(new ResponseEntity<>(
+                        (T) e.getResponseBodyAsByteArray(), e.getResponseHeaders(), e.getStatusCode()));
             }
-            //  handle default ErrorMessage or exception..
+            // handle the default ErrorMessage or an Exception...
             return handleResponseError(url, e);
         }
     }
 
+    private final static EnumSet<HttpStatus> listHttpStatusError = EnumSet.of(
+            HttpStatus.BAD_REQUEST,
+            HttpStatus.UNAUTHORIZED,
+            HttpStatus.METHOD_NOT_ALLOWED,
+            HttpStatus.INTERNAL_SERVER_ERROR);
+
     /**
-     * Returns true if a specific HttpStatus has to be handled by the configuration
+     * Returns true if a specific HttpStatus is contained in th list
      *
      * @param status Ht tpStatus
      * @return true Returns true if HttpStatus has to be handled
      */
-    private boolean isHandleHttpState(HttpStatus status) {
-        return isHttp400 && status == HttpStatus.BAD_REQUEST ||
-               isHttp401 && status == HttpStatus.UNAUTHORIZED ||
-               isHttp405 && status == HttpStatus.METHOD_NOT_ALLOWED ||
-               isHttp500 && status == HttpStatus.INTERNAL_SERVER_ERROR;
+    private boolean isHandleHttpStatus(HttpStatus status) {
+        return isHandleBackendEntity && listHttpStatusError.contains(status);
     }
 
     /**
@@ -338,30 +325,31 @@ public class BackendServiceImpl implements BackendService {
         T responseBody = exchange.getBody();
         HttpStatus httpStatus = exchange.getStatusCode();
         HttpHeaders httpHeaders = exchange.getHeaders();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Headers response: {}", httpHeaders);
-            if (responseBody != null) {
-                if (responseBody instanceof Resource) {
-                    Resource resource = (Resource) responseBody;
-                    String body = null;
-                    try {
-                        body = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-                    } catch (IOException e) {
-                        logger.error("Resource not readable: {}", e.getMessage());
-                    } finally {
-                        logger.debug("The response is: {} {} {}", httpStatus, resource.getDescription(), LogFormatUtils.formatValue(body, maxLengthTruncated, truncated));
-                    }
-                } else {
-                    logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, maxLengthTruncated, truncated));
+        if (logger.isDebugEnabled()) logger(httpHeaders, responseBody, httpStatus, maxLengthTruncated, truncated);
+        if (responseBody == null) return (T) httpStatus;
+        if (isHandleBackendEntity || isHandleHttpStatus(httpStatus)) return (T) new EntityBackend<>(responseBody, httpHeaders, httpStatus);
+        return responseBody;
+    }
+
+    private static <T> void logger(HttpHeaders httpHeaders, T responseBody, HttpStatus httpStatus, int maxLengthTruncated, boolean truncated) {
+        logger.debug("Headers response: {}", httpHeaders);
+        if (responseBody != null) {
+            if (responseBody instanceof Resource) {
+                Resource resource = (Resource) responseBody;
+                String body = null;
+                try {
+                    body = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    logger.error("Resource not readable: {}", e.getMessage());
+                } finally {
+                    logger.debug("The response is: {} {} {}", httpStatus, resource.getDescription(), LogFormatUtils.formatValue(body, maxLengthTruncated, truncated));
                 }
             } else {
-                logger.debug("The response is empty with HttpState: {}", httpStatus);
+                logger.debug("The response is: {} {}", httpStatus, LogFormatUtils.formatValue(responseBody, maxLengthTruncated, truncated));
             }
+        } else {
+            logger.debug("The response is empty with HttpState: {}", httpStatus);
         }
-        if (responseBody == null) return (T) httpStatus;
-        if (isHandleHttpState(httpStatus)) return (T) new EntityError<>(responseBody, httpHeaders, httpStatus);
-        if (isHandleBackendEntity) return (T) new EntityBackend<>(responseBody, httpHeaders, httpStatus);
-        return responseBody;
     }
 
     private <T> T handleResponseError(String url, HttpStatusCodeException e) throws NexusResourceNotFoundException, NexusHttpException {
@@ -372,17 +360,18 @@ public class BackendServiceImpl implements BackendService {
             case UNAUTHORIZED:
             case INTERNAL_SERVER_ERROR:
                 try {
-                    // The default response ErrorMessage!
+                    // ErrorMessage from the Backend!
                     final ErrorMessage errorMessage = objectMapper.readValue(e.getResponseBodyAsByteArray(), ErrorMessage.class);
                     logger.info("The request to the backend failed. Reason id '{}: {}' Details: {} ", e.getStatusCode(), e.getStatusText(), errorMessage);
                 } catch (Exception jx) {
                     // Unable to parse response body
                     logger.info("The request to the backend failed. URI: {} Reason id '{}: {}' Message: {}", url, e.getStatusCode(), e.getStatusText(), jx.getMessage());
+                    throw new NexusHttpException("An internal error occurred on the backend. URI: " + url + " Reason id '" + e.getStatusCode()+ "'");
                 }
                 // let back BAD_REQUEST!
-                if (e.getStatusCode() != HttpStatus.BAD_REQUEST) {
-                   throw new NexusHttpException("An internal error occurred on the backend. URI: " + url + " Reason id '" + e.getStatusCode()+ "'");
-                }
+                //if (e.getStatusCode() != HttpStatus.BAD_REQUEST) {
+                //   throw new NexusHttpException("An internal error occurred on the backend. URI: " + url + " Reason id '" + e.getStatusCode()+ "'");
+                //}
             default:
                 throw e;
         }
@@ -432,6 +421,16 @@ public class BackendServiceImpl implements BackendService {
         return new ResponseTypeImpl<>(responseType);
     }
 
+    @Override
+    public String getBackendURL() {
+        return this.backendURL;
+    }
+
+    @Override
+    public boolean isRemovedHeaders() {
+        return this.removeHeaders || this.removeHostHeader || this.removeOriginHeader;
+    }
+
     private static class ResponseTypeImpl<T> implements ResponseType<T> {
 
         private final Class<T> responseClass;
@@ -453,30 +452,6 @@ public class BackendServiceImpl implements BackendService {
 
         @Override
         public ParameterizedTypeReference<T> getResponseParameterizedTypeReference() { return parameterizedType; }
-    }
-
-    public static class EntityError<T> {
-        private final T body;
-        private final HttpHeaders headers;
-        private final HttpStatus status;
-
-        public EntityError(T body, HttpHeaders headers, HttpStatus status) {
-            this.body = body;
-            this.headers = headers;
-            this.status = status;
-        }
-
-        public T getBody() {
-            return this.body;
-        }
-
-        public HttpHeaders getHttpHeaders() {
-            return this.headers;
-        }
-
-        public HttpStatus getStatus() {
-            return this.status;
-        }
     }
 
     public static class EntityBackend<T> {
@@ -501,42 +476,6 @@ public class BackendServiceImpl implements BackendService {
         public HttpStatus getStatus() {
             return this.status;
         }
-    }
-
-    private static class ErrorMessage {
-        @JsonProperty(required = true)
-        private Message error;
-
-        public ErrorMessage(String code, String source, String message) {
-            this.error = new Message(code, "ERROR", source, message);
-        }
-
-        public String toString() { return "ErrorMessage{error=" + this.error + "}"; }
-    }
-
-    private static class Message {
-        public final String code;
-        public final String level;
-        public final String source;
-        public final String message;
-
-        public Message(String code, String level, String source, String message) {
-            this.code = code;
-            this.level = level;
-            this.source = source;
-            this.message = message;
-        }
-    }
-
-
-    @Override
-    public String getBackendURL() {
-        return this.backendURL;
-    }
-
-    @Override
-    public boolean isRemovedHeaders() {
-        return this.removeHeaders || this.removeHostHeader || this.removeOriginHeader;
     }
 
 }

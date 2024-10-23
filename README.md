@@ -86,37 +86,34 @@ Requests to a RestApi Backend Server.**
 
  **Settings keys settings.properties:**
 
-| **Keys**                                         | **Default value**            | **Example value**               | **Descriptions**                                |
-|--------------------------------------------------|:-----------------------------|:--------------------------------|:------------------------------------------------|
-| **nexus.backend.url**                            | https://postman-echo.com     | https://nexus6.jservlet.com/api | The API Backend Server targeted                 |   
-| **nexus.backend.uri.alive**                      | /get                         | /health/info                    | The endpoint alive Backend Server               |   
-| nexus.backend.http.response.truncated            | false                        | true                            | Truncated the Json output in the logs           |   
-| nexus.backend.http.response.truncated.maxLength  | 1000                         | 100                             | MaxLength truncated                             |   
-| **WAF**                                          |                              |                                 |                                                 |
-| nexus.api.backend.filter.waf.reactive.mode       | STRICT                       | PASSIVE                         | Default Strict HttpFirewall + Json RequestBody  |
-| nexus.api.backend.filter.waf.deepscan.cookie     | false                        | true                            | Activated Deep Scan Cookie                      |
-| **Headers**                                      |                              |                                 |                                                 |
-| nexus.backend.header.remove                      | false                        | true                            | Remove all Headers                              |   
-| nexus.backend.header.host.remove                 | false                        | false                           | Remove just host Header                         |   
-| nexus.backend.header.origin.remove               | false                        | false                           | Remove just origin Header                       |   
-| nexus.backend.header.cookie                      | -                            | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX  | Set a Cookie Request Header                     |   
-| nexus.backend.header.bearer                      | -                            | eyJhbGciO                       | Activated Bearer Authorization request          |   
-| nexus.backend.header.user-agent                  | JavaNexus                    | Apache HttpClient/4.5           | User Agent header                               |
-| nexus.backend.header.authorization.username      | -                            | XUsername                       | Activated Basic Authorization request           |   
-| nexus.backend.header.authorization.password      | -                            | XPassword                       | "                                               |
-| **Mapper**                                       |                              |                                 |                                                 |
-| nexus.backend.mapper.indentOutput                | false                        | true                            | Indent Output Json                              |   
-| nexus.backend.mapper.serializer.date             | yyyy-MM-dd'T'HH:mm:ss.SSS'Z' | yyyy-MM-dd'T'HH:mm:ssZZ         | Date Pattern Zulu Time: .SSS'Z', X or ZZ +00:00 |   
-| nexus.backend.mapper.serializer.timezone         | -                            | Europe/Paris                    | Locale TimeZone by Default                      |   
-| nexus.backend.mapper.date.timezone               | Zulu                         | Europe/Paris                    | Locale Zulu by Default                          |   
-| nexus.backend.mapper.date.withColon              | true                         | true                            | Locale with Colon in TimeZone                   |   
-| **Exceptions**                                   |                              |                                 |                                                 |
-| nexus.backend.exception.http500                  | false                        | true                            | Activated Object mapper on a Http error 500     |   
-| nexus.backend.exception.http400                  | false                        | true                            | Activated Object mapper on a Http error 400     |   
-| nexus.backend.exception.http401                  | false                        | true                            | Activated Object mapper on a Http error 401     |   
-| nexus.backend.exception.http405                  | false                        | true                            | Activated Object mapper on a Http error 405     |   
-| **Debug**                                        |                              |                                 |                                                 |
-| nexus.spring.web.security.debug                  | false                        | true                            | Debug the Spring FilterChain                    |
+| **Keys**                                        | **Default value**            | **Example value**               | **Descriptions**                                |
+|-------------------------------------------------|:-----------------------------|:--------------------------------|:------------------------------------------------|
+| **nexus.backend.url**                           | https://postman-echo.com     | https://nexus6.jservlet.com/api | The API Backend Server targeted                 |   
+| **nexus.backend.uri.alive**                     | /get                         | /health/info                    | The endpoint alive Backend Server               |   
+| nexus.backend.http.response.truncated           | false                        | true                            | Truncated the Json output in the logs           |   
+| nexus.backend.http.response.truncated.maxLength | 1000                         | 100                             | MaxLength truncated                             |   
+| **WAF**                                         |                              |                                 |                                                 |
+| nexus.api.backend.filter.waf.reactive.mode      | STRICT                       | PASSIVE                         | Default Strict HttpFirewall + Json RequestBody  |
+| nexus.api.backend.filter.waf.deepscan.cookie    | false                        | true                            | Activated Deep Scan Cookie                      |
+| **Headers**                                     |                              |                                 |                                                 |
+| nexus.backend.header.remove                     | false                        | true                            | Remove all Headers                              |   
+| nexus.backend.header.host.remove                | false                        | false                           | Remove just host Header                         |   
+| nexus.backend.header.origin.remove              | false                        | false                           | Remove just origin Header                       |   
+| nexus.backend.header.cookie                     | -                            | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX  | Set a Cookie Request Header                     |   
+| nexus.backend.header.bearer                     | -                            | eyJhbGciO                       | Activated Bearer Authorization request          |   
+| nexus.backend.header.user-agent                 | JavaNexus                    | Apache HttpClient/4.5           | User Agent header                               |
+| nexus.backend.header.authorization.username     | -                            | XUsername                       | Activated Basic Authorization request           |   
+| nexus.backend.header.authorization.password     | -                            | XPassword                       | "                                               |
+| **Backend Headers**                             |                              |                                 |                                                 |
+| nexus.api.backend.transfer.headers              | test                         | test,...                        | Headers list back from Backend Server           |  
+| **Mapper**                                      |                              |                                 |                                                 |
+| nexus.backend.mapper.indentOutput               | false                        | true                            | Indent Output Json                              |   
+| nexus.backend.mapper.serializer.date            | yyyy-MM-dd'T'HH:mm:ss.SSS'Z' | yyyy-MM-dd'T'HH:mm:ssZZ         | Date Pattern Zulu Time: .SSS'Z', X or ZZ +00:00 |   
+| nexus.backend.mapper.serializer.timezone        | -                            | Europe/Paris                    | Locale TimeZone by Default                      |   
+| nexus.backend.mapper.date.timezone              | Zulu                         | Europe/Paris                    | Locale Zulu by Default                          |   
+| nexus.backend.mapper.date.withColon             | true                         | true                            | Locale with Colon in TimeZone                   |   
+| **Debug**                                       |                              |                                 |                                                 |
+| nexus.spring.web.security.debug                 | false                        | true                            | Debug the Spring FilterChain                    |
 
 
 #### Noted the settings.properties can be overridden by a file Path config.properties
@@ -348,7 +345,7 @@ Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
  * Java 13
  * SpringBoot 2.7.18
- * Tomcat 9.0.90 & Servlet 4.0.1
+ * Tomcat 9.0.95 & Servlet 4.0.1
  * Maven 3.9.x
 
 ### Build war external Tomcat 9
@@ -481,7 +478,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.13**, released at 06/10/2024 Full support Response in ByteArray Resource and Streaming Http Response Range Bytes 
+* Last version **1.0.14**, released at 14/10/2024 Support Backend Headers and Support ContentNegotiation Header Strategy for Resources
+* Version **1.0.13**, released at 06/10/2024 Full support Response in ByteArray Resource and Streaming Http Response Range Bytes 
 * Version **1.0.12**, released at 02/10/2024 Fix ApiBase error Message super.getResponseEntity
 * Version **1.0.11**, released at 30/09/2024 Does not encode the URI template! 
 * Version **1.0.10**, released at 29/09/2024 Add full support MultipartRequest content type multipart/form-data 
@@ -492,8 +490,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 * Version **1.0.5**, released at 13/07/2024 Optimize build war/jar.
 * Version **1.0.4**, released at 08/07/2024.
 * Version **1.0.3**, released at 23/06/2024 Reinit project.
-* Version **1.0.2** released on 28/04/2024.
-* Version **1.0.1** released on 21/11/2022.
+* Version **1.0.2** released at 28/04/2024.
+* Version **1.0.1** released at 21/11/2022.
 * Initial release **1.0.0** at 03/06/2021.
 
 ## Support
