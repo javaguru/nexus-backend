@@ -233,7 +233,7 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**");
+        registry.addMapping("/api/**");
     }
 
     /**
