@@ -130,7 +130,7 @@ public class ApplicationConfig  {
                 .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
                 // activate ISO8601 dates !
-                .dateFormat(new StdDateFormat().withTimeZone(TimeZone.getTimeZone("timeZone"))
+                .dateFormat(new StdDateFormat().withTimeZone(TimeZone.getTimeZone(timeZone))
                         .withColonInTimeZone(withColonInTimeZone))
                 //.dateFormat(new ISO8601DateFormat())
 
