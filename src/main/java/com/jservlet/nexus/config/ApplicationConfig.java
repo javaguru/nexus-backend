@@ -19,10 +19,7 @@
 package com.jservlet.nexus.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.jservlet.nexus.config.web.WebConfig;
 import com.jservlet.nexus.config.web.WebSecurityConfig;
@@ -73,11 +70,8 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import javax.net.ssl.SSLContext;
 import java.io.*;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.Socket;
 import java.security.KeyStore;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -113,11 +107,6 @@ public class ApplicationConfig  {
         return new MappingJackson2HttpMessageConverter(objectMapper);
     }
 
-    @Value("${nexus.backend.mapper.serializer.date:yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}") // or ZZ +00:00
-    private String patternDate;
-    @Value("${nexus.backend.mapper.serializer.timezone:}") // default locale timezone, or Etc/UTC or Europe/Paris
-    private String patternDateTimeZone;
-
     @Value("${nexus.backend.mapper.date.timezone:Zulu}")
     private String timeZone;
     @Value("${nexus.backend.mapper.date.withColon:true}")
@@ -130,68 +119,27 @@ public class ApplicationConfig  {
     @Bean
     public ObjectMapper objectMapper() {
         return new Jackson2ObjectMapperBuilder()
-                // fields not null globally! but not working !?
+                // fields not null globally!
                 .serializationInclusion(JsonInclude.Include.NON_NULL)
                 // to allow serialization of "empty" POJOs (no properties to serialize)
                 .failOnEmptyBeans(false)
                 // to prevent exception when encountering unknown property:
                 .failOnUnknownProperties(false)
 
-                // to enable entries are first sorted by key before serialization
-                .featuresToEnable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
-
-                // to write java.util.Date, Calendar as number (timestamp):
-                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                //.featuresToDisable(SerializationFeature.WRITE_NULL_MAP_VALUES)
-
-                // to allow coercion of JSON empty String ("") to null Object value:
-                .featuresToEnable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
-                .featuresToEnable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-
                 // disable, not thrown an exception if an unknown property
                 .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
                 // activate ISO8601 dates !
-                .dateFormat(new StdDateFormat().withTimeZone(TimeZone.getTimeZone(timeZone))
+                .dateFormat(new StdDateFormat().withTimeZone(TimeZone.getTimeZone("timeZone"))
                         .withColonInTimeZone(withColonInTimeZone))
                 //.dateFormat(new ISO8601DateFormat())
 
                 // to enable standard indentation ("pretty-printing"):
                 .indentOutput(indentOutput)
-                .modules(jacksonModule())
+                //.modules(jacksonModule())
                 .build();
     }
 
-    private Module jacksonModule() {
-        final SimpleModule module = new SimpleModule();
-        final SimpleDateFormat formatter = new SimpleDateFormat(patternDate);
-        if (patternDateTimeZone != null && !patternDateTimeZone.isEmpty()) {
-            formatter.setTimeZone(TimeZone.getTimeZone(patternDateTimeZone));
-        }
-        module.addSerializer(Date.class, new JsonSerializer<>() {
-            @Override
-            public void serialize (Date value, JsonGenerator gen, SerializerProvider unused) throws IOException {
-                gen.writeString(formatter.format(value));
-            }
-        });
-        module.addSerializer(Double.class, new JsonSerializer<>() {
-            @Override
-            public void serialize(Double value, JsonGenerator jgen, SerializerProvider unused) throws IOException {
-                if (null == value) {
-                    jgen.writeNull();
-                } else {
-                    if (value.isNaN() || value.isInfinite()) {
-                        jgen.writeNumber(value);
-                    } else if (value == 0d) {
-                        jgen.writeNumber(0d);
-                    } else {
-                        jgen.writeNumber(BigDecimal.valueOf(value).setScale(9, RoundingMode.HALF_UP).toString());
-                    }
-                }
-            }
-        });
-        return module;
-    }
 
     @Bean
     public RestOperations backendRestOperations(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter,

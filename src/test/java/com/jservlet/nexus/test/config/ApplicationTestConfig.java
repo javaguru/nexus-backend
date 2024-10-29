@@ -45,10 +45,7 @@ import javax.net.ssl.SSLContext;
 import java.io.*;
 import java.net.Socket;
 import java.security.KeyStore;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -78,36 +75,26 @@ public class ApplicationTestConfig {
     @Bean
     public ObjectMapper objectMapper() {
         return new Jackson2ObjectMapperBuilder()
-                // fields not null globally! but not working !?
+                // fields not null globally!
                 .serializationInclusion(JsonInclude.Include.NON_NULL)
                 // to allow serialization of "empty" POJOs (no properties to serialize)
                 .failOnEmptyBeans(false)
                 // to prevent exception when encountering unknown property:
                 .failOnUnknownProperties(false)
 
-                // to enable entries are first sorted by key before serialization
-                .featuresToEnable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
-
-                // to write java.util.Date, Calendar as number (timestamp):
-                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                //.featuresToDisable(SerializationFeature.WRITE_NULL_MAP_VALUES)
-
-                // to allow coercion of JSON empty String ("") to null Object value:
-                .featuresToEnable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
-                .featuresToEnable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-
                 // disable, not thrown an exception if an unknown property
                 .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
                 // activate ISO8601 dates !
-                .dateFormat(new StdDateFormat().withColonInTimeZone(true))
+                .dateFormat(new StdDateFormat().withTimeZone(TimeZone.getTimeZone("Zulu"))
+                        .withColonInTimeZone(true))
+                //.dateFormat(new ISO8601DateFormat())
 
                 // to enable standard indentation ("pretty-printing"):
                 .indentOutput(true)
                 //.modules(jacksonModule())
                 .build();
     }
-
 
     @Bean
     public RestOperations backendRestOperations(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) throws Exception {

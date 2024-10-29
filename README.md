@@ -108,8 +108,6 @@ Requests to a RestApi Backend Server.**
 | nexus.api.backend.transfer.headers              | test                         | test,...                        | Headers list back from Backend Server           |  
 | **Mapper**                                      |                              |                                 |                                                 |
 | nexus.backend.mapper.indentOutput               | false                        | true                            | Indent Output Json                              |   
-| nexus.backend.mapper.serializer.date            | yyyy-MM-dd'T'HH:mm:ss.SSS'Z' | yyyy-MM-dd'T'HH:mm:ssZZ         | Date Pattern Zulu Time: .SSS'Z', X or ZZ +00:00 |   
-| nexus.backend.mapper.serializer.timezone        | -                            | Europe/Paris                    | Locale TimeZone by Default                      |   
 | nexus.backend.mapper.date.timezone              | Zulu                         | Europe/Paris                    | Locale Zulu by Default                          |   
 | nexus.backend.mapper.date.withColon             | true                         | true                            | Locale with Colon in TimeZone                   |   
 | **Debug**                                       |                              |                                 |                                                 |
