@@ -85,11 +85,6 @@ public class ApplicationTestConfig {
                 // disable, not thrown an exception if an unknown property
                 .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
-                // activate ISO8601 dates !
-                .dateFormat(new StdDateFormat().withTimeZone(TimeZone.getTimeZone("Zulu"))
-                        .withColonInTimeZone(true))
-                //.dateFormat(new ISO8601DateFormat())
-
                 // to enable standard indentation ("pretty-printing"):
                 .indentOutput(true)
                 //.modules(jacksonModule())

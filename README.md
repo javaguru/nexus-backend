@@ -108,8 +108,6 @@ Requests to a RestApi Backend Server.**
 | nexus.api.backend.transfer.headers              | test                         | test,...                        | Headers list back from Backend Server           |  
 | **Mapper**                                      |                              |                                 |                                                 |
 | nexus.backend.mapper.indentOutput               | false                        | true                            | Indent Output Json                              |   
-| nexus.backend.mapper.date.timezone              | Zulu                         | Europe/Paris                    | Locale Zulu by Default                          |   
-| nexus.backend.mapper.date.withColon             | true                         | true                            | Locale with Colon in TimeZone                   |   
 | **Debug**                                       |                              |                                 |                                                 |
 | nexus.spring.web.security.debug                 | false                        | true                            | Debug the Spring FilterChain                    |
 
