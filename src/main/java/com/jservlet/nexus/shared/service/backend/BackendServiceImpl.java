@@ -367,6 +367,8 @@ public final class BackendServiceImpl implements BackendService {
                 } catch (Exception jx) {
                     // Unable to parse response body
                     logger.info("The request to the backend failed. URI: {} Reason id '{}: {}' Message: {}", url, e.getStatusCode(), e.getStatusText(), jx.getMessage());
+                }
+                if (e.getStatusCode() != HttpStatus.BAD_REQUEST) {
                     throw new NexusHttpException("An internal error occurred on the backend. URI: " + url + " Reason id '" + e.getStatusCode()+ "'");
                 }
             default:

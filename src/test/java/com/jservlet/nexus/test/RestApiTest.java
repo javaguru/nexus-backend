@@ -196,4 +196,48 @@ public class RestApiTest extends TestCase {
             System.out.println("ResourceNotFound: " + ex.getMessage());
         }
     }
+
+    @Test
+    public void testXErrorBackend500() throws NexusGetException, NexusResourceNotFoundException {
+        try {
+            // get Object Entity
+            Object obj = backendService.doRequest("/mock/v1/dataError500", HttpMethod.GET,
+                    backendService.createResponseType(Data.class), null, null);
+            System.out.println(obj);
+        } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
+            System.out.println("Failed to GET Data entity/entities on backend: " + e.getMessage());
+        } catch (NexusResourceNotFoundException ex) {
+            System.out.println("ResourceNotFound: " + ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testXErrorBackend401() throws  NexusGetException, NexusResourceNotFoundException {
+        try {
+            // get Object Entity
+            Object obj = backendService.doRequest("/mock/v1/dataError401", HttpMethod.GET,
+                    backendService.createResponseType(Data.class), null, null);
+            System.out.println(obj);
+        } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
+            System.out.println("Failed to GET Data entity/entities on backend: " + e.getMessage());
+        } catch (NexusResourceNotFoundException ex) {
+            System.out.println("ResourceNotFound: " + ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testXErrorBackend400() throws  NexusGetException, NexusResourceNotFoundException {
+        try {
+            // get Object Entity
+            Object obj = backendService.doRequest("/v1/dataError400", HttpMethod.GET,
+                    backendService.createResponseType(Data.class), null, null);
+            System.out.println(obj);
+        } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
+            System.out.println("Failed to GET Data entity/entities on backend: " + e.getMessage());
+        } catch (NexusResourceNotFoundException ex) {
+            System.out.println("ResourceNotFound: " + ex.getMessage());
+        }
+    }
+
+
 }
