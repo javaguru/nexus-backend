@@ -252,7 +252,7 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
 
 
     /**
-     * The full logs request and response
+     * The full logs request with payload!
      *
      * @return The Logging filter
      */
@@ -266,7 +266,9 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         filter.setHeaderPredicate(header -> !header.equalsIgnoreCase("authorization"));
         filter.setMaxPayloadLength(10000);
         filter.setBeforeMessagePrefix("INCOMING REQUEST : ");
-        filter.setAfterMessagePrefix("OUTGOING RESPONSE : ");
+        filter.setAfterMessagePrefix("OUTGOING REQUEST : ");
+        filter.setServletContext(servletContext);
+        filter.setEnvironment(env);
         return filter;
     }
 
