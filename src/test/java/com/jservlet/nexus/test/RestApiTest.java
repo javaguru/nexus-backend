@@ -67,7 +67,7 @@ public class RestApiTest extends TestCase {
         String url = "/mock/v1/dataList"; // dataListx Resource not found
         try {
             // get List Data Object
-            ResponseType<List<Data>> typeReference = backendService.createResponseType(new ParameterizedTypeReference<List<Data>>(){});
+            ResponseType<List<Data>> typeReference = backendService.createResponseType(new ParameterizedTypeReference<>(){});
             // Apply converter before, if needed!
             return backendService.get(url, typeReference);
         } catch (NexusGetException ngex) {
@@ -79,6 +79,49 @@ public class RestApiTest extends TestCase {
             logger.error("An error occurred while get ListData by url '{}'. ", url);
             throw new NexusGetException(ex.getMessage());
         }
+    }
+
+    /**
+     * Test ListEntity
+     */
+    @Test
+    public void testPutPostListEntity() {
+        try {
+            List<Data> list = getListData();
+            logger.info("Put or Post List Entity: {}", putPostListData(list));
+        } catch (NexusGetException e) {
+            logger.error(e.getMessage());
+        }
+    }
+
+    /**
+     * Example standardized method Put or Post List Data Request (or File Request...)
+     *
+     * @param dataList   List data
+     * @return  An Exception occurred during the get Request
+     */
+    private boolean putPostListData(List<Data> dataList) {
+        // Try to update existing -> if it fails (Response Code: 404), try to create a new
+        String url = "/mock/v1/dataPostList";
+        // get List Data Object
+        ResponseType<Boolean> typeReference = backendService.createResponseType(Boolean.class);
+        try {
+            try {
+                // Try to update dataList
+                return backendService.put(url, dataList, typeReference);
+            } catch (NexusResourceNotFoundException notFound) {
+                logger.warn("Update dataList not possible due to missing backend entry! '{}' ", dataList);
+                // Try to create dataList
+                return backendService.post(url, dataList, typeReference);
+            }
+        } catch (NexusResourceExistsException | NexusCreationException e) {
+            // Create new also failed !?
+            logger.warn("Error occurred in create new dataList: {}", dataList, e);
+        } catch (NexusModificationException e) {
+            // Error occurred while updating existing dataList
+            logger.warn("Error occurred while updating existing dataList: {}", dataList, e);
+        }
+        return false;
     }
 
     /* WARN Tests doRequest */

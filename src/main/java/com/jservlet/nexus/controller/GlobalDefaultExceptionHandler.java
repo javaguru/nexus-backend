@@ -27,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.web.firewall.RequestRejectedException;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.RestClientException;
@@ -76,6 +77,16 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
         logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
         return super.getResponseEntity("400", "ERROR", "Request rejected!", BAD_REQUEST);
+    }
+
+
+    @ExceptionHandler(value = { HttpRequestMethodNotSupportedException.class })
+    public ResponseEntity<?> handletMethodNotSupportedException(HttpServletRequest request, HttpRequestMethodNotSupportedException e) {
+        logger.error("Intercepted HttpRequestMethodNotSupportedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
+                e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON); // Mandatory forced ContentType can be null
+        return super.getResponseEntity("404", "ERROR", e, headers, NOT_FOUND);
     }
 
     /*
