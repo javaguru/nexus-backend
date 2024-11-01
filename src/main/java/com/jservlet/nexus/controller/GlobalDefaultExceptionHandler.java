@@ -81,7 +81,7 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
 
 
     @ExceptionHandler(value = { HttpRequestMethodNotSupportedException.class })
-    public ResponseEntity<?> handletMethodNotSupportedException(HttpServletRequest request, HttpRequestMethodNotSupportedException e) {
+    public ResponseEntity<?> handleMethodNotSupportedException(HttpServletRequest request, HttpRequestMethodNotSupportedException e) {
         logger.error("Intercepted HttpRequestMethodNotSupportedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
         HttpHeaders headers = new HttpHeaders();
