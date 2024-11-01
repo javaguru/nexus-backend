@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -88,19 +89,23 @@ public class WebSecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         // csrf disable,
         http.csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .antMatchers( "/", "/index.html",
-                                "/mock/**", "/static/**",
-                                "/actuator/**", "/swagger-ui/**",
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth.requestMatchers(
+                                "/", "/mock/**", "/static/**",
+                                "/actuator/**", "/swagger-ui/index.html",
                                 "/api/**").permitAll()
                             //.anyRequest().authenticated()
                 );
+        // exclude OPTIONS requests from authorization checks
+        http.cors(Customizer.withDefaults());
         // security headers
         http.headers(headers -> {
+              headers.contentTypeOptions();
               headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin);
               headers.cacheControl();
               headers.xssProtection();
+              headers.httpStrictTransportSecurity();
         });
         return http.build();
     }
