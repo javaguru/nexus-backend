@@ -265,7 +265,7 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
    }
 
     @Test
-    public void testXErrorBackend500() throws NexusGetException, NexusResourceNotFoundException {
+    public void testXErrorBackend500() throws NexusResourceNotFoundException {
         try {
             String url = "/mock/v1/dataError500";
             backendService.get(url, ERROR_RESPONSE_TYPE);

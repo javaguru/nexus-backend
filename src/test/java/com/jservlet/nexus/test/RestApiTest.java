@@ -44,6 +44,45 @@ public class RestApiTest extends TestCase {
     @Autowired
     private BackendService backendService;
 
+    /**
+     * Test ListEntity
+     */
+    @Test
+    public void testListEntity() {
+        try {
+            List<Data> list = getListData();
+            logger.info(list.toString());
+        } catch (NexusGetException e) {
+            logger.error(e.getMessage());
+        }
+    }
+
+    /**
+     * Example standardized method get List Data Request
+     *
+     * @return List<Data>
+     * @throws NexusGetException  An Exception occurred during the get Request
+     */
+    private List<Data> getListData() throws NexusGetException {
+        String url = "/mock/v1/dataList"; // dataListx Resource not found
+        try {
+            // get List Data Object
+            ResponseType<List<Data>> typeReference = backendService.createResponseType(new ParameterizedTypeReference<List<Data>>(){});
+            // Apply converter before, if needed!
+            return backendService.get(url, typeReference);
+        } catch (NexusGetException ngex) {
+            // GetException logged and propagated
+            logger.error("An error occurred while get ListData by url '{}'", url);
+            throw ngex;
+        } catch (NexusResourceNotFoundException ex) {
+            // NotFound error logged and GetException propagated
+            logger.error("An error occurred while get ListData by url '{}'. ", url);
+            throw new NexusGetException(ex.getMessage());
+        }
+    }
+
+    /* WARN Tests doRequest */
+
     @Test
     public void testGetEntity() {
          try {
@@ -198,7 +237,7 @@ public class RestApiTest extends TestCase {
     }
 
     @Test
-    public void testXErrorBackend500() throws NexusGetException, NexusResourceNotFoundException {
+    public void testXErrorBackend500() {
         try {
             // get Object Entity
             Object obj = backendService.doRequest("/mock/v1/dataError500", HttpMethod.GET,
@@ -212,7 +251,7 @@ public class RestApiTest extends TestCase {
     }
 
     @Test
-    public void testXErrorBackend401() throws  NexusGetException, NexusResourceNotFoundException {
+    public void testXErrorBackend401() {
         try {
             // get Object Entity
             Object obj = backendService.doRequest("/mock/v1/dataError401", HttpMethod.GET,
@@ -226,7 +265,7 @@ public class RestApiTest extends TestCase {
     }
 
     @Test
-    public void testXErrorBackend400() throws  NexusGetException, NexusResourceNotFoundException {
+    public void testXErrorBackend400() throws NexusGetException {
         try {
             // get Object Entity
             Object obj = backendService.doRequest("/v1/dataError400", HttpMethod.GET,
@@ -236,6 +275,7 @@ public class RestApiTest extends TestCase {
             System.out.println("Failed to GET Data entity/entities on backend: " + e.getMessage());
         } catch (NexusResourceNotFoundException ex) {
             System.out.println("ResourceNotFound: " + ex.getMessage());
+            //throw new NexusGetException(ex.getMessage());
         }
     }
 
