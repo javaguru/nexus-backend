@@ -115,56 +115,52 @@ public class WebSecurityConfig {
 
 
     /**
-     * Spring EL reads allow method delimited with a comma and splits into a List of Strings
+     * Spring EL reads allow method delimited with a comma and splits into a List of Strings (or an empty List)
      */
     // Provide a List of HttpMethods
-    @Value("#{'${nexus.backend.security.cors.allowedHttpMethods:GET,POST,PUT,HEAD,DELETE,PATCH}'.split(',')}")
+    @Value("#{T(java.util.Arrays).asList('${nexus.backend.security.cors.allowedHttpMethods:GET,POST,PUT,HEAD,DELETE,PATCH}')}")
     private List<String> allowedCorsHttpMethods;
     // Provide a Regex Patterns domains
-    @Value("#{'${nexus.backend.security.cors.allowedOriginPatterns:}'.split(',')}")
+    @Value("${nexus.backend.security.cors.allowedOriginPatterns:#{null}")
     private String allowedOriginPatterns;
     // Provide a List of domains
-    @Value("#{'${nexus.backend.security.cors.allowedOrigins:*}'.split(',')}")
+    @Value("#{T(java.util.Arrays).asList('${nexus.backend.security.cors.allowedOrigins:*}')}")
     private List<String> allowedOrigins;
     // Headers: Authorization,Cache-Control,Content-Type
-    @Value("#{'${nexus.backend.security.cors.allowedHeaders:}'.split(',')}")
+    @Value("#{T(java.util.Arrays).asList('${nexus.backend.security.cors.allowedHeaders:}')}")
     private List<String> allowedHeaders;
     // At true Origin cannot be a wildcard '*' a list of domains need to be provided.
     @Value("${nexus.backend.security.cors.credentials:false}")
     private boolean credentials;
     // Headers: Authorization
-    @Value("#{'${nexus.backend.security.cors.exposedHeaders:}'.split(',')}")
+    @Value("#{T(java.util.Arrays).asList('${nexus.backend.security.cors.exposedHeaders:}')}")
     private List<String> exposedHeaders;
     // Max age in second
     @Value("${nexus.backend.security.cors.maxAge:3600}")
     private Long maxAgeCors;
 
-    /**
+    /*
      * CORS Security configuration, allow Control Request by Headers <br>
      * Access-Control-Allow-Origin: * <br>
      * Access-Control-Allow-Methods: GET,POST,PUT,HEAD,DELETE,PATCH <br>
      * Access-Control-Max-Age: 3600 <br>
+     * Test OPTIONS request on the local domain:
+     *
+     * curl -v -H "Access-Control-Request-Method: GET" -H "Origin: http://localhost:8082" -X OPTIONS http://localhost:8082/nexus-backend/api/get
+     * or -H "Origin: http://localhost:4200"
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
         if (!allowedOriginPatterns.isEmpty()) configuration.addAllowedOriginPattern(allowedOriginPatterns);
-        if (!allowedOrigins.isEmpty()  && !Objects.equals(allowedOrigins.get(0), "")) {
-            configuration.setAllowedOrigins(allowedOrigins);
-        }
-        if (!allowedCorsHttpMethods.isEmpty()  && !Objects.equals(allowedCorsHttpMethods.get(0), "")) {
-            configuration.setAllowedMethods(allowedCorsHttpMethods);
-        }
+        if (!allowedOrigins.isEmpty()) configuration.setAllowedOrigins(allowedOrigins);
+        if (!allowedCorsHttpMethods.isEmpty()) configuration.setAllowedMethods(allowedCorsHttpMethods);
         // setAllowCredentials(true) is important, otherwise:
         // The value of the 'Access-Control-Allow-Origin' header in the response must not be the wildcard '*' when the request's credentials mode is 'include'.
         configuration.setAllowCredentials(credentials);
         // setAllowedHeaders is important! Without it, OPTIONS preflight request will fail with 403 Invalid CORS request
-        if (!allowedHeaders.isEmpty() && !Objects.equals(allowedHeaders.get(0), "")) {
-            configuration.setAllowedHeaders(allowedHeaders);  // "Authorization", "Cache-Control", "Content-Type"
-        }
-        if (!exposedHeaders.isEmpty() && !Objects.equals(exposedHeaders.get(0), "")) {
-            configuration.setExposedHeaders(exposedHeaders); // "Authorization"
-        }
+        if (!allowedHeaders.isEmpty()) configuration.setAllowedHeaders(allowedHeaders);  // "Authorization", "Cache-Control", "Content-Type"
+        if (!exposedHeaders.isEmpty()) configuration.setExposedHeaders(exposedHeaders); // "Authorization"
         configuration.setMaxAge(maxAgeCors);
         // register source Cors pattern
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
