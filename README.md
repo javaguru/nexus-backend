@@ -36,15 +36,15 @@ Requests to a RestApi Backend Server.**
 ### Ability to Secure all RestApi Request to a Backend Server
 
  * Implements a **BackendService**, ability to request typed response Object class or ParameterizedTypeReference, requested on all HTTP methods to a RestApi Backend Server.
- * Implements an **EntityBackend** Json Object or a Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
+ * Implements an **EntityBackend** Json Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
  * Implements a **HttpFirewall** filter protection against evasion, rejected any suspicious Requests, Headers, Parameters, and log IP address at fault.
  * Implements a **WAF** filter protection against evasion on the Http Json BodyRequest, and log IP address at fault.
+ * Implements a **CORS Security Request** filter, Authorize request based on Origin Domains and Methods.
  * Implements a **Fingerprint** for each Http header Request, generate a unique trackable Token APP-REQUEST-ID in the access logs.
- * Implements a **Method Override** PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override
+ * Implements a **Method Override** filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override
  * Implements a **Forwarded Header** filter, set removeOnly at true by default, remove "Forwarded" and "X-Forwarded-*" headers.
- * Implements a **Shallow Etag Header** filter, force Content-length in the HttpResponse, avoid header Transfer-Encoding: Chunked.
- * Implements a **Compressing** filter Gzip compression for the Http Responses.
  * Implements a **FormContent** filter, parses form data for Http PUT, PATCH, and DELETE requests and exposes it as Servlet request parameters.
+ * Implements a **Compressing** filter Gzip compression for the Http Responses.
  * Implements a **CharacterEncoding** filter, UTF-8 default encoding for requests.
 
 
@@ -177,21 +177,21 @@ Default Header ContentNegotiation Strategy:
 | nexus.backend.content.negotiation.commonMediaTypes            | true              | Enabled                     |   
 
 
-**CORS Security configuration, allow Control Request on Domains**
+**CORS Security configuration, allow Control Request on Domains and Methods**
 
 **Settings keys settings.properties:**
 
 The default Cors Configuration:
 
-| **Cors Configuration**                            | **Default value**              | **Descriptions  **                       |
-|---------------------------------------------------|:-------------------------------|:-----------------------------------------|
-| nexus.backend.security.cors.credentials           | false                          | true                                     |  
-| nexus.backend.security.cors.allowedHttpMethods    | GET,POST,PUT,HEAD,DELETE,PATCH | List Http Methods                        |  
-| nexus.backend.security.cors.allowedOriginPatterns |                                | Regex Patterns domains                   |  
-| nexus.backend.security.cors.allowedOrigins        | *                              | List domains                             |  
-| nexus.backend.security.cors.allowedHeaders        |                                | Authorization,Cache-Control,Content-Type |  
-| nexus.backend.security.cors.exposedHeaders        |                                | Authorization                            |  
-| nexus.backend.security.cors.maxAge                | 3600                           | 1800                                     |  
+| **Cors Configuration**                            | **Default value**              | **Example value**                           | **Descriptions  **     |
+|---------------------------------------------------|:-------------------------------|:--------------------------------------------|:-----------------------|
+| nexus.backend.security.cors.credentials           | false                          | true                                        | Enable credentials     |  
+| nexus.backend.security.cors.allowedHttpMethods    | GET,POST,PUT,HEAD,DELETE,PATCH | GET,POST,PUT                                | List Http Methods      |  
+| nexus.backend.security.cors.allowedOriginPatterns |                                |                                             | Regex Patterns domains |  
+| nexus.backend.security.cors.allowedOrigins        | *                              | http://localhost:4042,http://localhost:4083 | List domains           |  
+| nexus.backend.security.cors.allowedHeaders        |                                | Authorization,Cache-Control,Content-Type    | List Allowed Headers   |  
+| nexus.backend.security.cors.exposedHeaders        |                                | Authorization                               | List Exposed Headers   |  
+| nexus.backend.security.cors.maxAge                | 3600                           | 1800                                        | Max Age cached         |  
 
 **Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
 
