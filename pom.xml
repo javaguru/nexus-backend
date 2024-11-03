@@ -7,7 +7,7 @@
     <groupId>com.jservlet.nexus.backend</groupId>
     <artifactId>nexus-backend</artifactId>
     <packaging>${packaging}</packaging>
-    <version>1.0.15</version>
+    <version>1.0.16</version>
 
     <name>nexus-backend</name>
     <description>The Java Nexus BackendService, an advanced and secure Rest Backend Gateway</description>
@@ -87,7 +87,7 @@
         <!-- Dependency version -->
         <spring-boot.version>2.7.18</spring-boot.version>
         <spring.framework.version>5.3.39</spring.framework.version>
-        <spring.security.version>5.7.12</spring.security.version>
+        <spring.security.version>5.8.15</spring.security.version>
         <servlet.api.version>4.0.1</servlet.api.version>
 
         <swagger.version>3.0.0</swagger.version>
@@ -308,6 +308,7 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <showDeprecation>true</showDeprecation>
+                    <compilerArgument>-Xlint:unchecked</compilerArgument>
                 </configuration>
             </plugin>
             <plugin>

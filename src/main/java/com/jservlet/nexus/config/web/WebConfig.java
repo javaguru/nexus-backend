@@ -44,7 +44,6 @@ import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.ServletContextAware;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.filter.*;
 import org.springframework.web.multipart.MultipartResolver;
 import org.springframework.web.multipart.support.StandardServletMultipartResolver;
@@ -208,51 +207,9 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         return registrationBean;
     }
 
-    /**
-     * Cors Filter, Allowed method, headers and origin
-     *
-     * @return The Cors Filter
-     */
-    @Bean
-    @Order(3)
-    @ConditionalOnProperty(value="nexus.backend.filter.cors.enabled", havingValue = "true")
-    public FilterRegistrationBean<Filter> corsFilterRegistrationBean() {
-        FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ERROR, DispatcherType.ASYNC);
-        registrationBean.setFilter(new CorsFilter(request -> {
-            final CorsConfiguration configuration = new CorsConfiguration();
-            configuration.addAllowedMethod("*");
-            configuration.addAllowedHeader("*");
-            configuration.setAllowCredentials(true);
-            configuration.addAllowedOriginPattern("*");
-            return configuration;
-        }));
-        registrationBean.setOrder(3);
-        return registrationBean;
-    }
-
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**");
-    }
 
     /**
-     * Filter generates an ETag value based on the content on the response and set a Content-length header
-     * @return shallowEtagHeaderFilter
-     */
-    @Bean
-    @Order(4)
-    @ConditionalOnProperty(value="nexus.backend.filter.shallowEtag.enabled", havingValue = "true")
-    public FilterRegistrationBean<Filter> shallowEtagHeaderFilter() {
-        FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(new ShallowEtagHeaderFilter());
-        registrationBean.setOrder(4);
-        return registrationBean;
-    }
-
-
-    /**
-     * The full logs request and response
+     * The full logs request with payload!
      *
      * @return The Logging filter
      */
@@ -266,7 +223,9 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         filter.setHeaderPredicate(header -> !header.equalsIgnoreCase("authorization"));
         filter.setMaxPayloadLength(10000);
         filter.setBeforeMessagePrefix("INCOMING REQUEST : ");
-        filter.setAfterMessagePrefix("OUTGOING RESPONSE : ");
+        filter.setAfterMessagePrefix("OUTGOING REQUEST : ");
+        filter.setServletContext(servletContext);
+        filter.setEnvironment(env);
         return filter;
     }
 

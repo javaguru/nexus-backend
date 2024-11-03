@@ -71,6 +71,7 @@ import java.util.*;
  * Full support Response in Json Entity Object: application/json <br>
  * Full support Response in ByteArray Resource file: application/octet-stream <br>
  * Full support Streaming Http Response Json Entity Object: application/octet-stream, accept header Range bytes
+ * </p>
  * <p>
  *     ApiBackend ResponseType is now a Resource ByteArray by default (see settings.properties). All is Bytes!
  *     <br>
@@ -81,11 +82,12 @@ import java.util.*;
  *      nexus.backend.api-backend-resource.matchers.matchers2.method=GET <br>
  *      nexus.backend.api-backend-resource.matchers.matchers2.pattern=/api/decoding/** <br>
  *      etc...
- * <p>
+ * </p>
  * <p>
  *      The Http Responses can be considerate as Resources, the Http header "Accept-Ranges: bytes" is injected and allow you to use
  *      the Http header 'Range:bytes=-1000' in the request and by example grabbed the last 1000 bytes (or a range of Bytes). <br>
- *      And the Http Responses will come back without a "Transfer-Encoding: chunked" HttpHeader cause now the header Content-Length.
+ *      And the Http Responses will come back without a "Transfer-Encoding: chunked" HttpHeader cause now the header Content-Length
+ *      is calculated.
  *      <br><br>
  *      For configure all the Responses in Resource put eh Method empty and use the path pattern=/api/** <br>
  *      nexus.backend.api-backend-resource.matchers.matchers1.method= <br>
@@ -228,7 +230,7 @@ public class ApiBackend extends ApiBase {
                 responseType = backendService.createResponseType(Object.class);
             }
 
-            // Return a EntityError or a EntityBackend
+            // Return an EntityBackend
             Object obj = backendService.doRequest(url, method, responseType, !map.isEmpty() ? map : body, getAllHeaders(request));
 
             // Manage a Generics EntityBackend embedded a Json Entity Object or a Resource!
@@ -271,8 +273,7 @@ public class ApiBackend extends ApiBase {
             List.of(HttpHeaders.SERVER,
                     HttpHeaders.SET_COOKIE,
                     HttpHeaders.ETAG,
-                    HttpHeaders.DATE,
-                    HttpHeaders.USER_AGENT);
+                    HttpHeaders.DATE);
 
     /**
      * Transfer some headers from the Backend RestOperations, including by default the original Backend CONTENT_TYPE Server.

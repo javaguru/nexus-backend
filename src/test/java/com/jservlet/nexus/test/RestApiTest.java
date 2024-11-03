@@ -44,6 +44,88 @@ public class RestApiTest extends TestCase {
     @Autowired
     private BackendService backendService;
 
+    /**
+     * Test ListEntity
+     */
+    @Test
+    public void testListEntity() {
+        try {
+            List<Data> list = getListData();
+            logger.info(list.toString());
+        } catch (NexusGetException e) {
+            logger.error(e.getMessage());
+        }
+    }
+
+    /**
+     * Example standardized method get List Data Request
+     *
+     * @return List<Data>
+     * @throws NexusGetException  An Exception occurred during the get Request
+     */
+    private List<Data> getListData() throws NexusGetException {
+        String url = "/mock/v1/dataList"; // dataListx Resource not found
+        try {
+            // get List Data Object
+            ResponseType<List<Data>> typeReference = backendService.createResponseType(new ParameterizedTypeReference<>(){});
+            // Apply converter before, if needed!
+            return backendService.get(url, typeReference);
+        } catch (NexusGetException ngex) {
+            // GetException logged and propagated
+            logger.error("An error occurred while get ListData by url '{}'", url);
+            throw ngex;
+        } catch (NexusResourceNotFoundException ex) {
+            // NotFound error logged and GetException propagated
+            logger.error("An error occurred while get ListData by url '{}'. ", url);
+            throw new NexusGetException(ex.getMessage());
+        }
+    }
+
+    /**
+     * Test ListEntity
+     */
+    @Test
+    public void testPutPostListEntity() {
+        try {
+            List<Data> list = getListData();
+            logger.info("Put or Post List Entity: {}", putPostListData(list));
+        } catch (NexusGetException e) {
+            logger.error(e.getMessage());
+        }
+    }
+
+    /**
+     * Example standardized method Put or Post List Data Request (or File Request...)
+     *
+     * @param dataList   List data
+     * @return  An Exception occurred during the get Request
+     */
+    private boolean putPostListData(List<Data> dataList) {
+        // Try to update existing -> if it fails (Response Code: 404), try to create a new
+        String url = "/mock/v1/dataPostList";
+        // get List Data Object
+        ResponseType<Boolean> typeReference = backendService.createResponseType(Boolean.class);
+        try {
+            try {
+                // Try to update dataList
+                return backendService.put(url, dataList, typeReference);
+            } catch (NexusResourceNotFoundException notFound) {
+                logger.warn("Update dataList not possible due to missing backend entry! '{}' ", dataList);
+                // Try to create dataList
+                return backendService.post(url, dataList, typeReference);
+            }
+        } catch (NexusResourceExistsException | NexusCreationException e) {
+            // Create new also failed !?
+            logger.warn("Error occurred in create new dataList: {}", dataList, e);
+        } catch (NexusModificationException e) {
+            // Error occurred while updating existing dataList
+            logger.warn("Error occurred while updating existing dataList: {}", dataList, e);
+        }
+        return false;
+    }
+
+    /* WARN Tests doRequest */
+
     @Test
     public void testGetEntity() {
          try {
@@ -196,4 +278,49 @@ public class RestApiTest extends TestCase {
             System.out.println("ResourceNotFound: " + ex.getMessage());
         }
     }
+
+    @Test
+    public void testXErrorBackend500() {
+        try {
+            // get Object Entity
+            Object obj = backendService.doRequest("/mock/v1/dataError500", HttpMethod.GET,
+                    backendService.createResponseType(Data.class), null, null);
+            System.out.println(obj);
+        } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
+            System.out.println("Failed to GET Data entity/entities on backend: " + e.getMessage());
+        } catch (NexusResourceNotFoundException ex) {
+            System.out.println("ResourceNotFound: " + ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testXErrorBackend401() {
+        try {
+            // get Object Entity
+            Object obj = backendService.doRequest("/mock/v1/dataError401", HttpMethod.GET,
+                    backendService.createResponseType(Data.class), null, null);
+            System.out.println(obj);
+        } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
+            System.out.println("Failed to GET Data entity/entities on backend: " + e.getMessage());
+        } catch (NexusResourceNotFoundException ex) {
+            System.out.println("ResourceNotFound: " + ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testXErrorBackend400() throws NexusGetException {
+        try {
+            // get Object Entity
+            Object obj = backendService.doRequest("/v1/dataError400", HttpMethod.GET,
+                    backendService.createResponseType(Data.class), null, null);
+            System.out.println(obj);
+        } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
+            System.out.println("Failed to GET Data entity/entities on backend: " + e.getMessage());
+        } catch (NexusResourceNotFoundException ex) {
+            System.out.println("ResourceNotFound: " + ex.getMessage());
+            //throw new NexusGetException(ex.getMessage());
+        }
+    }
+
+
 }

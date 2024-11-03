@@ -158,7 +158,7 @@ public class MockController extends ApiBase {
         return new ResponseEntity<>(dataList, HttpStatus.OK);
     }
 
-    @Operation(summary = "Post data List", description = "Post data List")
+    @Operation(summary = "Post and get data List", description = "Post and get data List")
     @ApiResponses(value = {
             @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = Data[].class))}),
     })
@@ -168,6 +168,14 @@ public class MockController extends ApiBase {
         dataList.add(new Data("info1","info2",10.00));
         dataList.add(new Data("info4","info5",0.0006));
         return new ResponseEntity<>(dataList, HttpStatus.OK);
+    }
+    @Operation(summary = "Post data List", description = "Post data List")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = Data[].class))}),
+    })
+    @PostMapping(path = "/v1/dataPostList", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> postDataList(@RequestBody List<Data> dataList) {
+        return new ResponseEntity<>(true, HttpStatus.OK);
     }
 
     @Operation(summary = "Post datafile", description = "Post datafile")

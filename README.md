@@ -36,15 +36,15 @@ Requests to a RestApi Backend Server.**
 ### Ability to Secure all RestApi Request to a Backend Server
 
  * Implements a **BackendService**, ability to request typed response Object class or ParameterizedTypeReference, requested on all HTTP methods to a RestApi Backend Server.
- * Implements an **EntityError** Json object on the HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
+ * Implements an **EntityBackend** Json Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
  * Implements a **HttpFirewall** filter protection against evasion, rejected any suspicious Requests, Headers, Parameters, and log IP address at fault.
  * Implements a **WAF** filter protection against evasion on the Http Json BodyRequest, and log IP address at fault.
+ * Implements a **CORS Security Request** filter, Authorize request based on Origin Domains and Methods.
  * Implements a **Fingerprint** for each Http header Request, generate a unique trackable Token APP-REQUEST-ID in the access logs.
- * Implements a **Method Override** PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override
+ * Implements a **Method Override** filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override
  * Implements a **Forwarded Header** filter, set removeOnly at true by default, remove "Forwarded" and "X-Forwarded-*" headers.
- * Implements a **Shallow Etag Header** filter, force Content-length in the HttpResponse, avoid header Transfer-Encoding: Chunked.
- * Implements a **Compressing** filter Gzip compression for the Http Responses.
  * Implements a **FormContent** filter, parses form data for Http PUT, PATCH, and DELETE requests and exposes it as Servlet request parameters.
+ * Implements a **Compressing** filter Gzip compression for the Http Responses.
  * Implements a **CharacterEncoding** filter, UTF-8 default encoding for requests.
 
 
@@ -67,11 +67,9 @@ Requests to a RestApi Backend Server.**
 | nexus.api.backend.enabled                     | true              | Activated the Nexus-Backend Service                |   
 | nexus.api.backend.filter.waf.enabled          | true              | Activated the WAF filter Json RequestBody          |   
 | nexus.api.backend.listener.requestid.enabled  | true              | Activated the Fingerprint for each Http Request    |   
-| nexus.api.backend.filter.httpoverride.enabled | false             | Activated the Http Override Method                 | 
+| nexus.api.backend.filter.httpoverride.enabled | true              | Activated the Http Override Method                 | 
 | nexus.backend.filter.forwardedHeader.enabled  | true              | Activated the ForwardedHeader filter               |   
 | nexus.backend.filter.gzip.enabled             | true              | Activated the Gzip compression filter              |   
-| nexus.backend.filter.cors.enabled             | true              | Activated the Cors filter                          |   
-| nexus.backend.filter.shallowEtag.enabled      | false             | Activated the ShallowEtagHeader filter             | 
 | spring.mvc.formcontent.filter.enabled         | true              | Activated the FormContent parameterMap Support     |   
 | nexus.backend.tomcat.connector.https.enable   | false             | Activated a Connector TLS/SSL in a Embedded Tomcat | 
 | nexus.backend.tomcat.accesslog.valve.enable   | false             | Activated an Accesslog in a Embedded Tomcat        | 
@@ -108,10 +106,6 @@ Requests to a RestApi Backend Server.**
 | nexus.api.backend.transfer.headers              | test                         | test,...                        | Headers list back from Backend Server           |  
 | **Mapper**                                      |                              |                                 |                                                 |
 | nexus.backend.mapper.indentOutput               | false                        | true                            | Indent Output Json                              |   
-| nexus.backend.mapper.serializer.date            | yyyy-MM-dd'T'HH:mm:ss.SSS'Z' | yyyy-MM-dd'T'HH:mm:ssZZ         | Date Pattern Zulu Time: .SSS'Z', X or ZZ +00:00 |   
-| nexus.backend.mapper.serializer.timezone        | -                            | Europe/Paris                    | Locale TimeZone by Default                      |   
-| nexus.backend.mapper.date.timezone              | Zulu                         | Europe/Paris                    | Locale Zulu by Default                          |   
-| nexus.backend.mapper.date.withColon             | true                         | true                            | Locale with Colon in TimeZone                   |   
 | **Debug**                                       |                              |                                 |                                                 |
 | nexus.spring.web.security.debug                 | false                        | true                            | Debug the Spring FilterChain                    |
 
@@ -181,6 +175,25 @@ Default Header ContentNegotiation Strategy:
 | nexus.backend.content.negotiation.useRegisteredExtensionsOnly | true              | Registered Only Enabled     |   
 | **Load commons MediaTypes**                                   |                   |                             |  
 | nexus.backend.content.negotiation.commonMediaTypes            | true              | Enabled                     |   
+
+
+**CORS Security configuration, allow Control Request on Domains and Methods**
+
+**Settings keys settings.properties:**
+
+The default Cors Configuration:
+
+| **Cors Configuration**                            | **Default value**              | **Example value**                           | **Descriptions  **     |
+|---------------------------------------------------|:-------------------------------|:--------------------------------------------|:-----------------------|
+| nexus.backend.security.cors.credentials           | false                          | true                                        | Enable credentials     |  
+| nexus.backend.security.cors.allowedHttpMethods    | GET,POST,PUT,HEAD,DELETE,PATCH | GET,POST,PUT                                | List Http Methods      |  
+| nexus.backend.security.cors.allowedOriginPatterns |                                |                                             | Regex Patterns domains |  
+| nexus.backend.security.cors.allowedOrigins        | *                              | http://localhost:4042,http://localhost:4083 | List domains           |  
+| nexus.backend.security.cors.allowedHeaders        |                                | Authorization,Cache-Control,Content-Type    | List Allowed Headers   |  
+| nexus.backend.security.cors.exposedHeaders        |                                | Authorization                               | List Exposed Headers   |  
+| nexus.backend.security.cors.maxAge                | 3600                           | 1800                                        | Max Age cached         |  
+
+**Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
 
 
 ### The Nexus-Backend provides a full support MultipartRequest and Map parameters inside a form-data HttpRequest
@@ -478,7 +491,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.14**, released at 14/10/2024 Support Backend Headers and Support ContentNegotiation Header Strategy for Resources
+* Last version **1.0.15**, released at 23/10/2024 Fix missing method addCorsMappings
+* Version **1.0.14**, released at 14/10/2024 Support Backend Headers and Support ContentNegotiation Header Strategy for Resources
 * Version **1.0.13**, released at 06/10/2024 Full support Response in ByteArray Resource and Streaming Http Response Range Bytes 
 * Version **1.0.12**, released at 02/10/2024 Fix ApiBase error Message super.getResponseEntity
 * Version **1.0.11**, released at 30/09/2024 Does not encode the URI template! 
