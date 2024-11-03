@@ -67,11 +67,9 @@ Requests to a RestApi Backend Server.**
 | nexus.api.backend.enabled                     | true              | Activated the Nexus-Backend Service                |   
 | nexus.api.backend.filter.waf.enabled          | true              | Activated the WAF filter Json RequestBody          |   
 | nexus.api.backend.listener.requestid.enabled  | true              | Activated the Fingerprint for each Http Request    |   
-| nexus.api.backend.filter.httpoverride.enabled | false             | Activated the Http Override Method                 | 
+| nexus.api.backend.filter.httpoverride.enabled | true              | Activated the Http Override Method                 | 
 | nexus.backend.filter.forwardedHeader.enabled  | true              | Activated the ForwardedHeader filter               |   
 | nexus.backend.filter.gzip.enabled             | true              | Activated the Gzip compression filter              |   
-| nexus.backend.filter.cors.enabled             | true              | Activated the Cors filter                          |   
-| nexus.backend.filter.shallowEtag.enabled      | false             | Activated the ShallowEtagHeader filter             | 
 | spring.mvc.formcontent.filter.enabled         | true              | Activated the FormContent parameterMap Support     |   
 | nexus.backend.tomcat.connector.https.enable   | false             | Activated a Connector TLS/SSL in a Embedded Tomcat | 
 | nexus.backend.tomcat.accesslog.valve.enable   | false             | Activated an Accesslog in a Embedded Tomcat        | 
@@ -177,6 +175,25 @@ Default Header ContentNegotiation Strategy:
 | nexus.backend.content.negotiation.useRegisteredExtensionsOnly | true              | Registered Only Enabled     |   
 | **Load commons MediaTypes**                                   |                   |                             |  
 | nexus.backend.content.negotiation.commonMediaTypes            | true              | Enabled                     |   
+
+
+**CORS Security configuration, allow Control Request on Domains**
+
+**Settings keys settings.properties:**
+
+The default Cors Configuration:
+
+| **Cors Configuration**                            | **Default value**              | **Descriptions  **                       |
+|---------------------------------------------------|:-------------------------------|:-----------------------------------------|
+| nexus.backend.security.cors.credentials           | false                          | true                                     |  
+| nexus.backend.security.cors.allowedHttpMethods    | GET,POST,PUT,HEAD,DELETE,PATCH | List Http Methods                        |  
+| nexus.backend.security.cors.allowedOriginPatterns |                                | Regex Patterns domains                   |  
+| nexus.backend.security.cors.allowedOrigins        | *                              | List domains                             |  
+| nexus.backend.security.cors.allowedHeaders        |                                | Authorization,Cache-Control,Content-Type |  
+| nexus.backend.security.cors.exposedHeaders        |                                | Authorization                            |  
+| nexus.backend.security.cors.maxAge                | 3600                           | 1800                                     |  
+
+**Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
 
 
 ### The Nexus-Backend provides a full support MultipartRequest and Map parameters inside a form-data HttpRequest

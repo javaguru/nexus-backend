@@ -35,12 +35,16 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.firewall.*;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 /*
  * Web Security Configuration: HttpFirewall, FilterChain and Customizer
@@ -87,18 +91,17 @@ public class WebSecurityConfig {
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // csrf disable,
-        http.csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.requestMatchers(
+        // cors config, csrf disable
+        http.cors(c -> c.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable);
+        // session STATELESS
+        http.sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        // authorize HttpRequests
+        http.authorizeHttpRequests(auth -> auth.requestMatchers(
                                 "/", "/mock/**", "/static/**",
                                 "/actuator/**", "/swagger-ui/index.html",
-                                "/api/**").permitAll()
-                            //.anyRequest().authenticated()
-                );
-        // exclude OPTIONS requests from authorization checks
-        http.cors(Customizer.withDefaults());
+                                "/api/**").permitAll());
         // security headers
         http.headers(headers -> {
               headers.contentTypeOptions();
@@ -109,6 +112,66 @@ public class WebSecurityConfig {
         });
         return http.build();
     }
+
+
+    /**
+     * Spring EL reads allow method delimited with a comma and splits into a List of Strings
+     */
+    // Provide a List of HttpMethods
+    @Value("#{'${nexus.backend.security.cors.allowedHttpMethods:GET,POST,PUT,HEAD,DELETE,PATCH}'.split(',')}")
+    private List<String> allowedCorsHttpMethods;
+    // Provide a Regex Patterns domains
+    @Value("#{'${nexus.backend.security.cors.allowedOriginPatterns:}'.split(',')}")
+    private String allowedOriginPatterns;
+    // Provide a List of domains
+    @Value("#{'${nexus.backend.security.cors.allowedOrigins:*}'.split(',')}")
+    private List<String> allowedOrigins;
+    // Headers: Authorization,Cache-Control,Content-Type
+    @Value("#{'${nexus.backend.security.cors.allowedHeaders:}'.split(',')}")
+    private List<String> allowedHeaders;
+    // At true Origin cannot be a wildcard '*' a list of domains need to be provided.
+    @Value("${nexus.backend.security.cors.credentials:false}")
+    private boolean credentials;
+    // Headers: Authorization
+    @Value("#{'${nexus.backend.security.cors.exposedHeaders:}'.split(',')}")
+    private List<String> exposedHeaders;
+    // Max age in second
+    @Value("${nexus.backend.security.cors.maxAge:3600}")
+    private Long maxAgeCors;
+
+    /**
+     * CORS Security configuration, allow Control Request by Headers <br>
+     * Access-Control-Allow-Origin: * <br>
+     * Access-Control-Allow-Methods: GET,POST,PUT,HEAD,DELETE,PATCH <br>
+     * Access-Control-Max-Age: 3600 <br>
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        final CorsConfiguration configuration = new CorsConfiguration();
+        if (!allowedOriginPatterns.isEmpty()) configuration.addAllowedOriginPattern(allowedOriginPatterns);
+        if (!allowedOrigins.isEmpty()  && !Objects.equals(allowedOrigins.get(0), "")) {
+            configuration.setAllowedOrigins(allowedOrigins);
+        }
+        if (!allowedCorsHttpMethods.isEmpty()  && !Objects.equals(allowedCorsHttpMethods.get(0), "")) {
+            configuration.setAllowedMethods(allowedCorsHttpMethods);
+        }
+        // setAllowCredentials(true) is important, otherwise:
+        // The value of the 'Access-Control-Allow-Origin' header in the response must not be the wildcard '*' when the request's credentials mode is 'include'.
+        configuration.setAllowCredentials(credentials);
+        // setAllowedHeaders is important! Without it, OPTIONS preflight request will fail with 403 Invalid CORS request
+        if (!allowedHeaders.isEmpty() && !Objects.equals(allowedHeaders.get(0), "")) {
+            configuration.setAllowedHeaders(allowedHeaders);  // "Authorization", "Cache-Control", "Content-Type"
+        }
+        if (!exposedHeaders.isEmpty() && !Objects.equals(exposedHeaders.get(0), "")) {
+            configuration.setExposedHeaders(exposedHeaders); // "Authorization"
+        }
+        configuration.setMaxAge(maxAgeCors);
+        // register source Cors pattern
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+        return source;
+    }
+
 
     @Value("${nexus.backend.security.allowSemicolon:false}")
     public boolean isAllowSemicolon;
