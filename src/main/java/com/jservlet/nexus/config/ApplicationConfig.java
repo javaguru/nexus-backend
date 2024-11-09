@@ -20,7 +20,6 @@ package com.jservlet.nexus.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.jservlet.nexus.config.web.WebConfig;
 import com.jservlet.nexus.config.web.WebSecurityConfig;
 import com.jservlet.nexus.config.web.tomcat.ssl.TomcatConnectorConfig;
