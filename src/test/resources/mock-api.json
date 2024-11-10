@@ -11,11 +11,11 @@
       "name": "Copyright (c) JServlet.com",
       "url": "https://jservlet.com"
     },
-    "version": "1.0.3-SNAPSHOT"
+    "version": "1.0.17"
   },
   "servers": [
     {
-      "url": "/nexus-backend"
+      "url": "http://localhost:8082/nexus-backend"
     }
   ],
   "paths": {
@@ -567,6 +567,37 @@
         }
       }
     },
+    "/mock/v1/proxy": {
+      "post": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Proxy Post data ",
+        "description": "Proxy Post data",
+        "operationId": "redirect",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mock/v1/dataPostXss": {
       "post": {
         "tags": [
@@ -609,6 +640,83 @@
         }
       }
     },
+    "/mock/v1/dataPostList": {
+      "post": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Post data List",
+        "description": "Post data List",
+        "operationId": "postDataList",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Data"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock/v1/dataList": {
+      "get": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Get data List",
+        "description": "Get data List",
+        "operationId": "getList",
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Mock"
+        ],
+        "summary": "Post and get data List",
+        "description": "Post and get data List",
+        "operationId": "postDataList_1",
+        "responses": {
+          "200": {
+            "description": "Request executed successfully, returning the requested item(s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mock/v1/dataXss": {
       "get": {
         "tags": [
@@ -641,28 +749,6 @@
         }
       }
     },
-    "/mock/v1/dataList": {
-      "get": {
-        "tags": [
-          "Mock"
-        ],
-        "summary": "Get data List",
-        "description": "Get data List",
-        "operationId": "getList",
-        "responses": {
-          "200": {
-            "description": "Request executed successfully, returning the requested item(s)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/mock/v1/dataError500": {
       "get": {
         "tags": [
@@ -677,7 +763,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorMessage"
+                  "$ref": "#/components/schemas/Message"
                 }
               }
             }
@@ -699,7 +785,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorMessage"
+                  "$ref": "#/components/schemas/Message"
                 }
               }
             }
@@ -721,7 +807,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorMessage"
+                  "type": "string"
                 }
               }
             }
@@ -734,8 +820,8 @@
         "tags": [
           "Mock"
         ],
-        "summary": "Get Binary data",
-        "description": "Get Binary data",
+        "summary": "Get ByteArray data",
+        "description": "Get ByteArray data",
         "operationId": "getBytes",
         "responses": {
           "200": {
@@ -764,18 +850,12 @@
             "type": "string"
           },
           "data3": {
-            "type": "string"
-          }
-        }
-      },
-      "ErrorMessage": {
-        "required": [
-          "error"
-        ],
-        "type": "object",
-        "properties": {
-          "error": {
-            "$ref": "#/components/schemas/Message"
+            "type": "number",
+            "format": "double"
+          },
+          "data4": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -791,7 +871,10 @@
           "source": {
             "type": "string"
           },
-          "text": {
+          "message": {
+            "type": "string"
+          },
+          "cause": {
             "type": "string"
           },
           "parameters": {
@@ -799,10 +882,6 @@
             "additionalProperties": {
               "type": "string"
             }
-          },
-          "parameter": {
-            "type": "string",
-            "writeOnly": true
           }
         }
       }
