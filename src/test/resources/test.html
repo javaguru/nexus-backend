@@ -1,0 +1,43 @@
+<html lang="en">
+<header>
+    <script src="//code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        jQuery(function ($) {
+            let $precode = $('#precode');
+            let $logs = $('#logs');
+            let elapsed = 0;
+            let interval = setInterval(function() { elapsed = elapsed + 10 }, 10); // WARN by 10 millisecond!
+            $.ajax({
+                url: 'http://localhost:8082/nexus-backend/api/get?foo1=bar1&foo2=bar2',
+                dataType: 'json',
+                success: function (json) {
+                    $precode.html('').html(JSON.stringify(json, null, 2));
+                },
+                error: function () {
+                    $logs.text('Load failed!');
+                },
+                complete: function() {
+                    $('#box').text(elapsedTime(elapsed));
+                    clearInterval(interval);
+                }
+            });
+        });
+
+        function elapsedTime(time) {
+            let seconds = (time / 1000).toFixed(2);
+            return (seconds > 1) ? (seconds + "s") : (time + "ms");
+        }
+
+    </script>
+</header>
+
+<body>
+
+<div id="logs"></div>
+<div id="box"></div>
+<pre>
+    <code id="precode"></code>
+</pre>
+
+</body>
+</html>

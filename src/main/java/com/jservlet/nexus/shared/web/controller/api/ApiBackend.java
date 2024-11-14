@@ -256,12 +256,18 @@ public class ApiBackend extends ApiBase {
      */
     private static HttpHeaders getAllHeaders(HttpServletRequest request) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setOrigin(request.getRequestURL().toString());
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
             headers.add(headerName, request.getHeader(headerName));
         }
+        // Backup and remove the original Origin!
+        if (headers.getOrigin() != null) {
+            headers.set(HttpHeaders.ORIGIN + "-Client", headers.getOrigin());
+            headers.setOrigin(null); // remove Origin
+        }
+        // Set the current Request as Origin
+        headers.setOrigin(request.getRequestURL().toString());
         return headers;
     }
 
