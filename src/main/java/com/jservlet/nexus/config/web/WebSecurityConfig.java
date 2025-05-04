@@ -26,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -44,7 +43,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 
 /*
  * Web Security Configuration: HttpFirewall, FilterChain and Customizer
@@ -198,6 +196,26 @@ public class WebSecurityConfig {
     @Value("#{'${nexus.backend.security.allowedHttpMethods:GET,POST,PUT,OPTIONS,HEAD,DELETE,PATCH}'.split(',')}")
     private List<String> allowedHttpMethods;
 
+    @Value("${nexus.backend.security.predicate.parameterLength:255}")
+    private int parameterLength = 255;
+    @Value("${nexus.backend.security.predicate.parameterValuesLength:1000000}")
+    private int parameterValuesLength = 1000000;
+    @Value("${nexus.backend.security.predicate.headerNamesLength:255}")
+    private int headerNamesLength = 255;
+    @Value("${nexus.backend.security.predicate.headerNamesValuesLength:25000}")
+    private int headerNamesValuesLength = 25000;
+    @Value("${nexus.backend.security.predicate.hostNamesLength:255}")
+    private int hostNamesLength = 255;
+
+    @Bean
+    public WAFPredicate wafPredicate() {
+        return new WAFPredicate(
+                parameterLength, parameterValuesLength,
+                headerNamesLength, headerNamesValuesLength,
+                hostNamesLength
+        );
+    }
+
     /**
      * Web HttpFirewall, allow semicolon by example
      *
@@ -237,10 +255,6 @@ public class WebSecurityConfig {
         return firewall;
     }
 
-    @Bean
-    public WAFPredicate wafPredicate() {
-         return new WAFPredicate();
-    }
 
     /**
      * A simple implementation of {@link RequestRejectedHandler} that sends an error  with configurable status code

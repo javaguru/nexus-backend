@@ -20,7 +20,6 @@ package com.jservlet.nexus.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.jservlet.nexus.config.web.WebConfig;
 import com.jservlet.nexus.config.web.WebSecurityConfig;
 import com.jservlet.nexus.config.web.tomcat.ssl.TomcatConnectorConfig;
@@ -31,7 +30,9 @@ import com.jservlet.nexus.shared.web.controller.api.ApiBackend;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.config.Lookup;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.HttpConnectionFactory;
 import org.apache.http.conn.ManagedHttpClientConnection;
@@ -39,12 +40,14 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.cookie.CookieSpecProvider;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.DefaultHttpResponseParserFactory;
 import org.apache.http.impl.conn.ManagedHttpClientConnectionFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.cookie.IgnoreSpecProvider;
 import org.apache.http.impl.io.DefaultHttpRequestWriterFactory;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicLineParser;
@@ -53,27 +56,34 @@ import org.apache.http.ssl.PrivateKeyDetails;
 import org.apache.http.ssl.PrivateKeyStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.CharArrayBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.*;
+import org.springframework.http.client.*;
 import org.springframework.http.converter.*;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.web.client.RestOperations;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.lang.Nullable;
+import org.springframework.web.client.*;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.util.DefaultUriBuilderFactory;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.net.ssl.SSLContext;
 import java.io.*;
+import java.net.HttpCookie;
 import java.net.Socket;
+import java.net.URI;
 import java.security.KeyStore;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -135,6 +145,7 @@ public class ApplicationConfig  {
                                                 ClientHttpRequestFactory httpRequestFactory) throws Exception {
 
         RestTemplate restTemplate = new RestTemplate(httpRequestFactory);
+        restTemplate.setInterceptors(List.of(new ManualRedirectInterceptor(maxRedirects)));
 
         // Does not encode the URI template, prevent to re-encode again the Uri with percent encoded in %25
         DefaultUriBuilderFactory uriFactory = new DefaultUriBuilderFactory();
@@ -180,7 +191,7 @@ public class ApplicationConfig  {
     @Value("${nexus.backend.client.requestSentRetryEnabled:false}")
     private boolean requestSentRetryEnabled;
 
-    @Value("${nexus.backend.client.redirectsEnabled:true}")
+    @Value("${nexus.backend.client.redirectsEnabled:false}")
     private boolean redirectsEnabled;
     @Value("${nexus.backend.client.maxRedirects:5}")
     private int maxRedirects;
@@ -280,11 +291,14 @@ public class ApplicationConfig  {
         return new HttpComponentsClientHttpRequestFactory(HttpClientBuilder.create()
                 .setUserAgent(userAgent)
                 .setConnectionManager(cm)
+                .setDefaultCookieSpecRegistry(RegistryBuilder.<CookieSpecProvider>create()
+                        .register(CookieSpecs.IGNORE_COOKIES, new IgnoreSpecProvider()) // Forced IGNORE_COOKIES for a Gateway stateless!
+                        .build())
                 .setDefaultRequestConfig(RequestConfig.custom()
                     .setConnectTimeout(connectTimeout * 1000)
                     .setConnectionRequestTimeout(requestTimeout * 1000)
                     .setSocketTimeout(socketTimeout * 1000)
-                    .setRedirectsEnabled(redirectsEnabled)
+                    .setRedirectsEnabled(redirectsEnabled) // mandatory disabled by default!
                     .setMaxRedirects(maxRedirects)
                     .setAuthenticationEnabled(authenticationEnabled)
                     .setCircularRedirectsAllowed(circularRedirectsAllowed)
@@ -293,7 +307,8 @@ public class ApplicationConfig  {
                 .setKeepAliveStrategy(myStrategy)
                 .setRedirectStrategy(new LaxRedirectStrategy())
                 .setRetryHandler(new DefaultHttpRequestRetryHandler(retryCount, requestSentRetryEnabled))
-                .disableCookieManagement()
+                .disableRedirectHandling()
+                //.disableCookieManagement() // Cookie manually managed, the Gateway is Stateless!
                 .disableAuthCaching()
                 .disableConnectionState()
                 .build());
@@ -312,6 +327,128 @@ public class ApplicationConfig  {
                 // Suppress ParseException exception
                 return new BasicHeader(buffer.toString(), null);
             }
+        }
+    }
+
+    /**
+     * Manage manually the Redirections, fix propagation Cookie and Set-Cookie during a redirection.
+     */
+    static class ManualRedirectInterceptor implements ClientHttpRequestInterceptor {
+
+        private static final Logger Logger = LoggerFactory.getLogger(ManualRedirectInterceptor.class);
+
+        private final int maxRedirects;
+
+        public ManualRedirectInterceptor(int maxRedirects) {
+            this.maxRedirects = maxRedirects;
+        }
+
+        @Override
+        public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+           List<String> setCookies = new ArrayList<>();
+            return executeWithRedirectHandling(request, body, execution, setCookies, 0);
+        }
+
+        private ClientHttpResponse executeWithRedirectHandling(HttpRequest request, byte[] body,
+            ClientHttpRequestExecution execution, List<String> setCookies, int redirectCount) throws IOException {
+
+            Logger.debug("INTERCEPTOR: Execute request to " + request.getURI() + " (Redirect count: " + redirectCount + ")");
+
+            ClientHttpResponse response = execution.execute(request, body);
+            HttpStatus statusCode = response.getStatusCode();
+
+            // All 3xx redirection, exception 304 is not a redirection to follow!
+            if (isRedirect(statusCode)) {
+                if (redirectCount >= maxRedirects) {
+                    throw new IOException("Too many redirections (" + redirectCount + ")");
+                }
+
+                // Get Location
+                URI location = response.getHeaders().getLocation();
+                if (location == null) {
+                    throw new IOException("Response redirection (" + statusCode + ") without header Location");
+                }
+
+                // URL relative vs URL original request if need it!
+                URI redirectUri = UriComponentsBuilder.fromUri(request.getURI())
+                        .replacePath(location.getPath()).replaceQuery(location.getQuery()).build(true).toUri();
+
+                // Get Set-Cookie
+                List<String> setCookieHeaders = response.getHeaders().get(HttpHeaders.SET_COOKIE);
+
+                // Prepare the new request with the Wrapper
+                HttpRequest redirectedRequest = new HttpRequestWrapper(request) {
+                    @Override
+                    public URI getURI() {
+                        return redirectUri;
+                    }
+                    @Override
+                    public HttpMethod getMethod() {
+                        // 303 See Other force GET
+                        if (statusCode == HttpStatus.SEE_OTHER) {
+                            return HttpMethod.GET;
+                        }
+                        return super.getMethod(); // Keep original method for 301, 302, 307
+                    }
+                };
+
+                // Delete specifics headers previous requested if need it (ex: Content-Length if GET)
+                if (statusCode == HttpStatus.SEE_OTHER) {
+                    redirectedRequest.getHeaders().remove(HttpHeaders.CONTENT_LENGTH);
+                    redirectedRequest.getHeaders().remove(HttpHeaders.CONTENT_TYPE);
+                    body = new byte[0]; // Body empty for GET
+                }
+
+                // Format and add headers Cookie for redirection request
+                if (setCookieHeaders != null && !setCookieHeaders.isEmpty()) {
+                    setCookies.addAll(setCookieHeaders);
+                    String cookieHeaderValue = setCookieHeaders.stream()
+                            .map(h -> h.split(";", 2)[0]) // Get key=value
+                            .collect(Collectors.joining("; "));
+                    redirectedRequest.getHeaders().add(HttpHeaders.COOKIE, cookieHeaderValue);
+                } else {
+                    // Remove cookie in the previous request
+                    redirectedRequest.getHeaders().remove(HttpHeaders.COOKIE);
+                }
+
+                // Close previous response before redirection
+                response.close();
+
+                // Execute a redirect request by a recursive call
+                return executeWithRedirectHandling(redirectedRequest, body, execution, setCookies, redirectCount + 1);
+
+            } else {
+                // Propagation set cookies, not compared with the current final SetCookies headers!
+                for (String cookie : setCookies) {
+                    response.getHeaders().add(HttpHeaders.SET_COOKIE, cookie);
+                }
+
+                return response;
+            }
+        }
+
+        private static boolean isRedirect(HttpStatus status) {
+            return status.is3xxRedirection() && status != HttpStatus.NOT_MODIFIED; // 304 is not a redirection to follow!
+        }
+
+        // Basic wrapper
+        private static class HttpRequestWrapper implements HttpRequest {
+            private final HttpRequest original;
+            private URI uri;
+            private HttpMethod method;
+
+            HttpRequestWrapper(HttpRequest original) { this.original = original;}
+            @Override
+            public HttpMethod getMethod() { return method != null ? method: original.getMethod();}
+            @Override
+            public String getMethodValue() { return method.toString();}
+            @Override
+            public URI getURI() { return uri != null ? uri : original.getURI();}
+            @Override
+            public HttpHeaders getHeaders() { return original.getHeaders();}
+
+            public void setUri(URI uri) { this.uri = uri;}
+            public void setMethod(HttpMethod method) { this.method = method;}
         }
     }
 

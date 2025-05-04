@@ -46,6 +46,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartRequest;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.http.HttpHeaders;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -57,6 +58,8 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static org.apache.http.HttpHeaders.TRANSFER_ENCODING;
 
 /**
  * Rest control ApiBackend, replicate all HttpRequests to the Backend Server. <br>
@@ -127,7 +130,7 @@ public class ApiBackend extends ApiBase {
      * Allow a list of headers transfer back from the Backend Server (see default headers ApiBackend.STATIC_TRANSFER_HEADERS)
      * SpEL reads allow method delimited with a comma (or other character) and splits into a List of Strings
      */
-    @Value("#{'${nexus.api.backend.transfer.headers:test,WWW-Authenticate}'.split(',')}") // 'test' for postman-echo
+    @Value("#{'${nexus.api.backend.transfer.headers:test,WWW-Authenticate,ETag}'.split(',')}") // 'test' for postman-echo
     private List<String> TRANSFER_HEADERS;
 
     /**
@@ -252,48 +255,77 @@ public class ApiBackend extends ApiBase {
     }
 
     /**
-     * Get all Headers from the HttpServletRequest
+     * Get all Headers from the HttpServletRequest, apply ID headers set "X-ID"
      */
+    private static final String REQUEST_ID_HEADER = "APP-REQUEST-ID";
+
     private static HttpHeaders getAllHeaders(HttpServletRequest request) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setOrigin(request.getRequestURL().toString());
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
             headers.add(headerName, request.getHeader(headerName));
+        }
+        // Backup and remove the original Origin!
+        if (headers.getOrigin() != null) {
+            headers.set(HttpHeaders.ORIGIN + "-Client", headers.getOrigin());
+            headers.setOrigin(null); // remove Origin
+        }
+        // Set the current Request as Origin
+        headers.setOrigin(request.getRequestURL().toString());
+
+        // Apply X-APP-REQUEST-ID
+        if (request.getAttribute(REQUEST_ID_HEADER) != null) {
+            headers.set("X-" + REQUEST_ID_HEADER, (String) request.getAttribute(REQUEST_ID_HEADER));
         }
         return headers;
     }
 
 
     /**
-     * Default transfer List of Headers, including SET_COOKIE and transfer Date as Date-Backend.
+     * Default transfer List of Headers: transfer SERVER, transfer Date as Date-Backend, and TRANSFER_ENCODING
      */
     private final static List<String> STATIC_TRANSFER_HEADERS =
             List.of(HttpHeaders.SERVER,
-                    HttpHeaders.SET_COOKIE,
-                    HttpHeaders.ETAG,
+                    HttpHeaders.TRANSFER_ENCODING,
                     HttpHeaders.DATE);
 
     /**
      * Transfer some headers from the Backend RestOperations, including by default the original Backend CONTENT_TYPE Server.
-     * Not CONTENT_LENGTH, CONTENT_RANGE or TRANSFER_ENCODING. Cause already sent in their own Context.
+     * And including all SET_COOKIE, Not CONTENT_LENGTH or TRANSFER_ENCODING or CONTENT_RANGE. Cause already sent in their own Context.
      */
     private HttpHeaders getBackendHeaders(HttpHeaders readHeaders) {
         HttpHeaders newHeaders = new HttpHeaders();
         if (readHeaders == null || readHeaders.isEmpty()) return newHeaders;
-        // Original CONTENT_TYPE for a Resource and its charset if it exists
+
+        // for propagation add Set-Cookie headers, avoid rules getFirst!
+        List<String> setCookieHeaders = readHeaders.get(HttpHeaders.SET_COOKIE);
+        if (setCookieHeaders != null) {
+            for (String cookieHeaderValue : setCookieHeaders) {
+                newHeaders.add(HttpHeaders.SET_COOKIE, cookieHeaderValue);
+            }
+        }
+
+        // set the Original CONTENT_TYPE for a Resource and its charset if it exists
         if (readHeaders.getFirst(HttpHeaders.CONTENT_TYPE) != null) {
             newHeaders.set(HttpHeaders.CONTENT_TYPE, readHeaders.getFirst(HttpHeaders.CONTENT_TYPE));
         } else {// ByteArray by default!
             newHeaders.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
         }
+
         // Transfer static headers and the others from the config
         for (String headerName : TRANSFER_HEADERS) {
             if (readHeaders.getFirst(headerName) != null) {
+                // add Date-Backend
                 if (HttpHeaders.DATE.equalsIgnoreCase(headerName)) {
                     newHeaders.add(HttpHeaders.DATE + "-Backend", readHeaders.getFirst(HttpHeaders.DATE));
-                } else {
+                }
+                // set Transfer-Encoding 'chunked' case stream content type and range bytes
+                else if (HttpHeaders.TRANSFER_ENCODING.equalsIgnoreCase(headerName)) {
+                    String transferEncoding = readHeaders.getFirst(HttpHeaders.TRANSFER_ENCODING);
+                    if (!"chunked".equals(transferEncoding)) newHeaders.set(headerName, readHeaders.getFirst(headerName));
+                }
+                else {
                     newHeaders.add(headerName, readHeaders.getFirst(headerName));
                 }
             }

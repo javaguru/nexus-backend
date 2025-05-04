@@ -37,31 +37,55 @@ public class WAFPredicate {
     final private FILEPattern f = new FILEPattern();
     final private LINKPattern l = new LINKPattern();
 
+    private int parameterLength = 255;
+    private int parameterValuesLength = 1000000;
+    private int headerNamesLength = 255;
+    private int headerNamesValuesLength = 25000;
+    private int hostNamesLength = 255;
+
+    /**
+     * Constructor
+     */
+    public WAFPredicate(int parameterLength, int parameterValuesLength, int headerNamesLength,
+                        int headerNamesValuesLength, int hostNamesLength) {
+        this.parameterLength = parameterLength;
+        this.parameterValuesLength = parameterValuesLength;
+        this.headerNamesLength = headerNamesLength;
+        this.headerNamesValuesLength = headerNamesValuesLength;
+        this.hostNamesLength = hostNamesLength;
+    }
+
+    /**
+     * Constructor
+     */
+    public WAFPredicate() {
+    }
+
     final private Predicate<String> WAFParameterNames = (param) -> {
-        if (param.length() > 255) return true;
+        if (param.length() > parameterLength) return true;
         return x.test(param) && s.test(param) && c.test(param) && f.test(param) && l.test(param);
     };
     final private Predicate<String> WAFParameterValues = (param) -> {
-        if (param.length() > 10000) return true;
+        if (param.length() > parameterValuesLength) return true;
         return x.test(param) && s.test(param) && c.test(param) && f.test(param) && l.test(param);
     };
     final private Predicate<String> WAFHeaderNames = (header) -> {
-        if (header.length() > 255) return true;
-        return x.test(header) && s.test(header) && c.test(header);
+        if (header.length() > headerNamesLength) return true;
+        return x.test(header);
     };
     final private Predicate<String> WAFHeaderValues = (header) -> {
-        if (header.length() > 7000) return true;
-        return x.test(header) && s.test(header) && c.test(header);
+        if (header.length() > headerNamesValuesLength) return true;
+        return x.test(header);
     };
-    final private Predicate<String> WAFHostnames = (names) -> {
-        if (names.length() > 255) return true;
-        return x.test(names);
+    final private Predicate<String> WAFHostnames = (header) -> {
+        if (header.length() > hostNamesLength) return true;
+        return x.test(header);
     };
 
     public static class XSSPattern implements Predicate<String> {
         @Override
         public boolean test(String v) {
-            return WAFUtils.isWAFPattern(v, WAFUtils.xssPattern);
+            return !WAFUtils.isWAFPattern(v, WAFUtils.xssPattern);
         }
 
         public List<Pattern> getPatterns() {
@@ -72,7 +96,7 @@ public class WAFPredicate {
     public static class SQLPattern implements Predicate<String> {
         @Override
         public boolean test(String v) {
-            return WAFUtils.isWAFPattern(v, WAFUtils.sqlPattern);
+            return !WAFUtils.isWAFPattern(v, WAFUtils.sqlPattern);
         }
 
         public List<Pattern> getPatterns() {
@@ -83,7 +107,7 @@ public class WAFPredicate {
     public static class GOOGLEPattern implements Predicate<String> {
         @Override
         public boolean test(String v) {
-            return WAFUtils.isWAFPattern(v, WAFUtils.googlePattern);
+            return !WAFUtils.isWAFPattern(v, WAFUtils.googlePattern);
         }
 
         public List<Pattern> getPatterns() {
@@ -94,7 +118,7 @@ public class WAFPredicate {
     public static class CMDPattern implements Predicate<String> {
         @Override
         public boolean test(String v) {
-            return WAFUtils.isWAFPattern(v, WAFUtils.commandPattern);
+            return !WAFUtils.isWAFPattern(v, WAFUtils.commandPattern);
         }
 
         public List<Pattern> getPatterns() {
@@ -105,7 +129,7 @@ public class WAFPredicate {
     public static class FILEPattern implements Predicate<String> {
         @Override
         public boolean test(String v) {
-            return WAFUtils.isWAFPattern(v, WAFUtils.filePattern);
+            return !WAFUtils.isWAFPattern(v, WAFUtils.filePattern);
         }
 
         public List<Pattern> getPatterns() {
@@ -116,7 +140,7 @@ public class WAFPredicate {
     public static class LINKPattern implements Predicate<String> {
         @Override
         public boolean test(String v) {
-            return WAFUtils.isWAFPattern(v, WAFUtils.linkPattern);
+            return !WAFUtils.isWAFPattern(v, WAFUtils.linkPattern);
         }
 
         public List<Pattern> getPatterns() {
@@ -139,6 +163,10 @@ public class WAFPredicate {
         return patterns;
     }
 
+    public List<Pattern> getXSSPatterns() {
+        return new ArrayList<>(x.getPatterns());
+    }
+
     public Predicate<String> getWAFParameterNames() {
         return WAFParameterNames;
     }
@@ -158,4 +186,5 @@ public class WAFPredicate {
     public Predicate<String> getWAFHostnames() {
         return WAFHostnames;
     }
+
 }

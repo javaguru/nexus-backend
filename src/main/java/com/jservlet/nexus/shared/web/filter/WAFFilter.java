@@ -139,14 +139,14 @@ public class WAFFilter extends ApiBase implements Filter {
             }
 
             if (PASSIVE == reactiveMode) {
-                // Just clean the current parameters, no evasion !
+                // Just clean XSS pattern in the current parameters, no evasion !
                 Map<String, String[]> map = cleanerParameterMap(wrappedRequest.getParameterMap()) ;
                 wrappedRequest.setParameterMap(map);
 
-                // Just clean the Json body!
+                // Just clean XSS pattern in the Json body!
                 String body = IOUtils.toString(wrappedRequest.getReader());
                 if (!StringUtils.isBlank(body)) {
-                    wrappedRequest.setInputStream(stripWAFPattern(body, wafPredicate.getWafPatterns()).getBytes());
+                    wrappedRequest.setInputStream(stripWAFPattern(body, wafPredicate.getXSSPatterns()).getBytes());
                 }
             }
 
@@ -204,7 +204,7 @@ public class WAFFilter extends ApiBase implements Filter {
             int len = values.length;
             String[] encodedValues = new String[len];
             for (int i = 0; i < len; i++)
-                encodedValues[i] = stripWAFPattern(values[i], wafPredicate.getWafPatterns());
+                encodedValues[i] = stripWAFPattern(values[i], wafPredicate.getXSSPatterns());
             parameters.put(key, encodedValues);
         }
         return parameters;
