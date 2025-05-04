@@ -196,6 +196,26 @@ public class WebSecurityConfig {
     @Value("#{'${nexus.backend.security.allowedHttpMethods:GET,POST,PUT,OPTIONS,HEAD,DELETE,PATCH}'.split(',')}")
     private List<String> allowedHttpMethods;
 
+    @Value("${nexus.backend.security.predicate.parameterLength:255}")
+    private int parameterLength = 255;
+    @Value("${nexus.backend.security.predicate.parameterValuesLength:1000000}")
+    private int parameterValuesLength = 1000000;
+    @Value("${nexus.backend.security.predicate.headerNamesLength:255}")
+    private int headerNamesLength = 255;
+    @Value("${nexus.backend.security.predicate.headerNamesValuesLength:25000}")
+    private int headerNamesValuesLength = 25000;
+    @Value("${nexus.backend.security.predicate.hostNamesLength:255}")
+    private int hostNamesLength = 255;
+
+    @Bean
+    public WAFPredicate wafPredicate() {
+        return new WAFPredicate(
+                parameterLength, parameterValuesLength,
+                headerNamesLength, headerNamesValuesLength,
+                hostNamesLength
+        );
+    }
+
     /**
      * Web HttpFirewall, allow semicolon by example
      *
@@ -235,10 +255,6 @@ public class WebSecurityConfig {
         return firewall;
     }
 
-    @Bean
-    public WAFPredicate wafPredicate() {
-         return new WAFPredicate();
-    }
 
     /**
      * A simple implementation of {@link RequestRejectedHandler} that sends an error  with configurable status code
