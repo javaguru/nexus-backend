@@ -196,8 +196,8 @@ public class WebSecurityConfig {
     @Value("#{'${nexus.backend.security.allowedHttpMethods:GET,POST,PUT,OPTIONS,HEAD,DELETE,PATCH}'.split(',')}")
     private List<String> allowedHttpMethods;
 
-    @Value("${nexus.backend.security.predicate.parameterLength:255}")
-    private int parameterLength = 255;
+    @Value("${nexus.backend.security.predicate.parameterNamesLength:255}")
+    private int parameterNamesLength = 255;
     @Value("${nexus.backend.security.predicate.parameterValuesLength:1000000}")
     private int parameterValuesLength = 1000000;
     @Value("${nexus.backend.security.predicate.headerNamesLength:255}")
@@ -210,7 +210,7 @@ public class WebSecurityConfig {
     @Bean
     public WAFPredicate wafPredicate() {
         return new WAFPredicate(
-                parameterLength, parameterValuesLength,
+                parameterNamesLength, parameterValuesLength,
                 headerNamesLength, headerNamesValuesLength,
                 hostNamesLength
         );
