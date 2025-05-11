@@ -37,7 +37,7 @@ public class WAFPredicate {
     final private FILEPattern f = new FILEPattern();
     final private LINKPattern l = new LINKPattern();
 
-    private int parameterLength = 255;
+    private int parameterNamesLength = 255;
     private int parameterValuesLength = 1000000;
     private int headerNamesLength = 255;
     private int headerNamesValuesLength = 25000;
@@ -45,10 +45,15 @@ public class WAFPredicate {
 
     /**
      * Constructor
+     * @param parameterNamesLength      Names parameter Length
+     * @param parameterValuesLength     Values parameter Length
+     * @param headerNamesLength         Header names Length
+     * @param headerNamesValuesLength   Header names values Length
+     * @param hostNamesLength           Host names Length
      */
-    public WAFPredicate(int parameterLength, int parameterValuesLength, int headerNamesLength,
+    public WAFPredicate(int parameterNamesLength, int parameterValuesLength, int headerNamesLength,
                         int headerNamesValuesLength, int hostNamesLength) {
-        this.parameterLength = parameterLength;
+        this.parameterNamesLength = parameterNamesLength;
         this.parameterValuesLength = parameterValuesLength;
         this.headerNamesLength = headerNamesLength;
         this.headerNamesValuesLength = headerNamesValuesLength;
@@ -62,7 +67,7 @@ public class WAFPredicate {
     }
 
     final private Predicate<String> WAFParameterNames = (param) -> {
-        if (param.length() > parameterLength) return true;
+        if (param.length() > parameterNamesLength) return true;
         return x.test(param) && s.test(param) && c.test(param) && f.test(param) && l.test(param);
     };
     final private Predicate<String> WAFParameterValues = (param) -> {

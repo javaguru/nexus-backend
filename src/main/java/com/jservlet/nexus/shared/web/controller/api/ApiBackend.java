@@ -59,7 +59,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static org.apache.http.HttpHeaders.TRANSFER_ENCODING;
 
 /**
  * Rest control ApiBackend, replicate all HttpRequests to the Backend Server. <br>

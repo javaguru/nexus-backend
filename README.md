@@ -19,6 +19,7 @@ Requests to a RestApi Backend Server.**
 * Full support **Response in Json Entity Object**: application/json
 * Full support **Response in ByteArray Resource file**: application/octet-stream
 * Full support **Streaming Http Response Json Entity Object**: application/octet-stream, accept header Range bytes
+* Full support **Cookie manage** during a redirection Http status 3xx  
 
 **Tomcat Servlet Containers under Servlet version 4.x**
 
@@ -276,7 +277,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 * File injection
 * Link injection
  
-**Implements a WAF Predicate for potential evasion by Headers:**
+**Implements a WAF Predicate for potential evasion by Headers or Parameters:**
 
  * Header Names / Header Values
  * Parameter Names / Parameter Values
@@ -284,8 +285,8 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
 **And check for Buffer Overflow evasion by the Length:**
 
- * Parameter Names 255 characters max. / Values 10.000  characters max.
- * Header Names 255 characters max. / Values 7.000 characters max.
+ * Parameter Names 255 characters max. / Values 1000000 characters max.
+ * Header Names 255 characters max. / Values 25000 characters max.
  * Hostnames 255 characters max.
 
  **The WAF Reactive mode configuration:**
@@ -293,6 +294,16 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
  * **STRICT**:  Strict HttpFirewall + Json RequestBody
  * **PASSIVE**: Strict HttpFirewall + Clean Json RequestBody and Parameters Map
  * **UNSAFE**:  Strict HttpFirewall + No check Json RequestBody!
+
+**Settings keys settings.properties:** Define a max length for Keys/Values Headers or Parameters 
+
+| **Keys**                                                 | **Default value** | **Descriptions**            |
+|----------------------------------------------------------|:------------------|:----------------------------|
+| nexus.backend.security.predicate.parameterNamesLength    | 255               | Parameter names length max  |   
+| nexus.backend.security.predicate.parameterValuesLength   | 1000000           | Parameter values length max |   
+| nexus.backend.security.predicate.headerNamesLength       | 255               | Header names length max     |   
+| nexus.backend.security.predicate.headerNamesValuesLength | 25000             | Header values length max    |   
+| nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max       |   
 
 
 ### Activated the Mutual Authentication or mTLS connection on the HttpFactory Client
@@ -358,7 +369,7 @@ Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
  * Java 13
  * SpringBoot 2.7.18
- * Tomcat 9.0.95 & Servlet 4.0.1
+ * Tomcat 9.0.104 & Servlet 4.0.1
  * Maven 3.9.x
 
 ### Build war external Tomcat 9
@@ -491,7 +502,10 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.15**, released at 23/10/2024 Fix missing method addCorsMappings
+* Last version **1.0.18**, released at 10/05/2025 Fix manage Cookie during a redirection 3xx
+* Version **1.0.17**, released at 04/05/2025 Fix manage Cookie, Gateway is stateless!
+* Version **1.0.16**, released at 03/11/2024 Fix CORS Security configuration Spring 5/6
+* Version **1.0.15**, released at 23/10/2024 Fix missing method addCorsMappings
 * Version **1.0.14**, released at 14/10/2024 Support Backend Headers and Support ContentNegotiation Header Strategy for Resources
 * Version **1.0.13**, released at 06/10/2024 Full support Response in ByteArray Resource and Streaming Http Response Range Bytes 
 * Version **1.0.12**, released at 02/10/2024 Fix ApiBase error Message super.getResponseEntity

@@ -32,7 +32,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.config.Lookup;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.HttpConnectionFactory;
 import org.apache.http.conn.ManagedHttpClientConnection;
@@ -68,12 +67,8 @@ import org.springframework.http.client.*;
 import org.springframework.http.converter.*;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.lang.Nullable;
 import org.springframework.web.client.*;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.util.DefaultUriBuilderFactory;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.net.ssl.SSLContext;
 import java.io.*;
@@ -145,7 +140,7 @@ public class ApplicationConfig  {
                                                 ClientHttpRequestFactory httpRequestFactory) throws Exception {
 
         RestTemplate restTemplate = new RestTemplate(httpRequestFactory);
-        restTemplate.setInterceptors(List.of(new ManualRedirectInterceptor(maxRedirects)));
+        restTemplate.setInterceptors(List.of(new CookieRedirectInterceptor(maxRedirects)));
 
         // Does not encode the URI template, prevent to re-encode again the Uri with percent encoded in %25
         DefaultUriBuilderFactory uriFactory = new DefaultUriBuilderFactory();
@@ -331,28 +326,28 @@ public class ApplicationConfig  {
     }
 
     /**
-     * Manage manually the Redirections, fix propagation Cookie and Set-Cookie during a redirection.
+     * Propagated Cookies and Set-Cookie during a redirection http status 3xx.
      */
-    static class ManualRedirectInterceptor implements ClientHttpRequestInterceptor {
+    static class CookieRedirectInterceptor implements ClientHttpRequestInterceptor {
 
-        private static final Logger Logger = LoggerFactory.getLogger(ManualRedirectInterceptor.class);
+        private static final Logger Logger = LoggerFactory.getLogger(CookieRedirectInterceptor.class);
 
         private final int maxRedirects;
 
-        public ManualRedirectInterceptor(int maxRedirects) {
+        public CookieRedirectInterceptor(int maxRedirects) {
             this.maxRedirects = maxRedirects;
         }
 
         @Override
         public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-           List<String> setCookies = new ArrayList<>();
+            List<String> setCookies = new ArrayList<>();
             return executeWithRedirectHandling(request, body, execution, setCookies, 0);
         }
 
         private ClientHttpResponse executeWithRedirectHandling(HttpRequest request, byte[] body,
-            ClientHttpRequestExecution execution, List<String> setCookies, int redirectCount) throws IOException {
+                                                               ClientHttpRequestExecution execution, List<String> setCookies, int redirectCount) throws IOException {
 
-            Logger.debug("INTERCEPTOR: Execute request to " + request.getURI() + " (Redirect count: " + redirectCount + ")");
+            Logger.debug("Execute request to " + request.getURI() + " (Redirect count: " + redirectCount + ")");
 
             ClientHttpResponse response = execution.execute(request, body);
             HttpStatus statusCode = response.getStatusCode();
@@ -366,12 +361,12 @@ public class ApplicationConfig  {
                 // Get Location
                 URI location = response.getHeaders().getLocation();
                 if (location == null) {
-                    throw new IOException("Response redirection (" + statusCode + ") without header Location");
+                    throw new IOException("Redirect response " + statusCode + " for " + request.getURI() + " missing Location header");
                 }
 
-                // URL relative vs URL original request if need it!
-                URI redirectUri = UriComponentsBuilder.fromUri(request.getURI())
-                        .replacePath(location.getPath()).replaceQuery(location.getQuery()).build(true).toUri();
+                // Correctly resolve the location URI against the current request URI
+                URI redirectUri = request.getURI().resolve(location);
+                Logger.debug("Interceptor: Redirecting from {} to {}", request.getURI(), redirectUri);
 
                 // Get Set-Cookie
                 List<String> setCookieHeaders = response.getHeaders().get(HttpHeaders.SET_COOKIE);
@@ -382,6 +377,7 @@ public class ApplicationConfig  {
                     public URI getURI() {
                         return redirectUri;
                     }
+
                     @Override
                     public HttpMethod getMethod() {
                         // 303 See Other force GET
@@ -418,12 +414,69 @@ public class ApplicationConfig  {
                 return executeWithRedirectHandling(redirectedRequest, body, execution, setCookies, redirectCount + 1);
 
             } else {
-                // Propagation set cookies, not compared with the current final SetCookies headers!
-                for (String cookie : setCookies) {
-                    response.getHeaders().add(HttpHeaders.SET_COOKIE, cookie);
+                // Get final Set-Cookie
+                List<String> finalSetCookies = response.getHeaders().get(HttpHeaders.SET_COOKIE);
+
+                // Identify the cookies to be propagated
+                Set<CookieIdentifier> cookieIdentifiers = new HashSet<>();
+                if (finalSetCookies != null) {
+                    for (String existingHeader : finalSetCookies) {
+                        try {
+                            List<HttpCookie> parsedCookies = HttpCookie.parse(existingHeader);
+                            for (HttpCookie cookie : parsedCookies) {
+                                cookieIdentifiers.add(new CookieIdentifier(cookie.getName(), cookie.getPath()));
+                            }
+                        } catch (IllegalArgumentException e) {
+                            Logger.warn(String.format("Failed to parse existing Set-Cookie header '%s': %s", existingHeader, e.getMessage()));
+                        }
+                    }
+                }
+
+                // Propagate Cookies receive without any alteration (Version, Name, Path, Domain, Expires/MaxAge, Secure HttpOnly or SameSite)
+                for (String cookieHeader : setCookies) {
+                    if (cookieHeader == null || cookieHeader.trim().isEmpty()) {
+                        continue;
+                    }
+
+                    List<HttpCookie> parsedCookies;
+                    try {
+                        parsedCookies = HttpCookie.parse(cookieHeader);
+                        if (parsedCookies.isEmpty()) {
+                            Logger.warn(String.format("Candidate Set-Cookie header '%s' parsed into zero cookies.", cookieHeader));
+                            continue;
+                        }
+                    } catch (IllegalArgumentException e) {
+                        Logger.warn(String.format("Failed to parse candidate Set-Cookie header '%s': %s", cookieHeader, e.getMessage()));
+                        continue; // Skip malformed candidate header
+                    }
+
+                    // Match cookie candidate
+                    boolean foundMatch = false;
+                    for (HttpCookie cookie : parsedCookies) {
+                        CookieIdentifier id = new CookieIdentifier(cookie.getName(), cookie.getPath());
+                        if (cookieIdentifiers.contains(id)) {
+                            foundMatch = true;
+                            break;
+                        }
+                    }
+
+                    // Propagate ?
+                    if (!foundMatch) {
+                        response.getHeaders().add(HttpHeaders.SET_COOKIE, cookieHeader);
+                    }
                 }
 
                 return response;
+            }
+        }
+
+        private static class CookieIdentifier {
+            public final String name;
+            public final String path;
+
+            public CookieIdentifier(String name, String path) {
+                this.name = (name != null) ? name.toLowerCase() : null;
+                this.path = path;
             }
         }
 
