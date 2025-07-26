@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2024 JServlet.com Franck Andriano.
+ * Copyright (C) 2001-2025 JServlet.com Franck Andriano.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /*
  * Web Security Configuration: HttpFirewall, FilterChain and Customizer
@@ -206,14 +207,27 @@ public class WebSecurityConfig {
     private int headerNamesValuesLength = 25000;
     @Value("${nexus.backend.security.predicate.hostNamesLength:255}")
     private int hostNamesLength = 255;
+    @Value("${nexus.backend.security.predicate.hostName.pattern:}")
+    private String hostNamesPattern;
+    @Value("${nexus.backend.security.predicate.userAgent.blocked:false}")
+    private boolean userAgentBlocked;
 
     @Bean
     public WAFPredicate wafPredicate() {
-        return new WAFPredicate(
-                parameterNamesLength, parameterValuesLength,
-                headerNamesLength, headerNamesValuesLength,
-                hostNamesLength
-        );
+        WAFPredicate wafPredicate = new WAFPredicate();
+        wafPredicate.setParameterNamesLength(parameterNamesLength);
+        wafPredicate.setParameterValuesLength(parameterValuesLength);
+        wafPredicate.setHeaderNamesLength(headerNamesLength);
+        wafPredicate.setHeaderValuesLength(headerNamesValuesLength);
+        wafPredicate.setHostNamesLength(hostNamesLength);
+
+        if (hostNamesPattern.isEmpty()) {
+            wafPredicate.setAllowedHostnames(Pattern.compile(hostNamesPattern,Pattern.CASE_INSENSITIVE));
+        }
+
+        wafPredicate.setBlockDisallowedUserAgents(userAgentBlocked);
+
+        return wafPredicate;
     }
 
     /**

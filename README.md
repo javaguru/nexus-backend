@@ -304,6 +304,8 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.security.predicate.headerNamesLength       | 255               | Header names length max     |   
 | nexus.backend.security.predicate.headerNamesValuesLength | 25000             | Header values length max    |   
 | nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max       |   
+| nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter     |   
+| nexus.backend.security.predicate.userAgent.blocked       | false             | Active UserAgent filter     |   
 
 
 ### Activated the Mutual Authentication or mTLS connection on the HttpFactory Client
@@ -502,7 +504,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.18**, released at 10/05/2025 Fix manage Cookie during a redirection 3xx
+* Last version **1.0.19**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate
+* Version **1.0.18**, released at 10/05/2025 Fix manage Cookie during a redirection 3xx
 * Version **1.0.17**, released at 04/05/2025 Fix manage Cookie, Gateway is stateless!
 * Version **1.0.16**, released at 03/11/2024 Fix CORS Security configuration Spring 5/6
 * Version **1.0.15**, released at 23/10/2024 Fix missing method addCorsMappings
@@ -535,5 +538,5 @@ To help **Nexus-Backend / ApiBackend / BackendService** development you are enco
 
 This project is an Open Source Software released under the [GPL-3.0 license](https://github.com/javaguru/nexus-backend/blob/master/LICENSE.txt).
 
-Copyright (c) 2001-2024 JServlet.com [Franck ANDRIANO.](http://jservlet.com)
+Copyright (c) 2001-2025 JServlet.com [Franck ANDRIANO.](http://jservlet.com)
 
