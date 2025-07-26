@@ -41,22 +41,16 @@ public class WAFUtils {
      * Covers various encoding, obfuscation, HTML tags, attributes, and JavaScript execution.
      */
     public static List<Pattern> xssPattern = new LinkedList<>(List.of(
-
             // Detects obfuscated characters: Unicode escape sequences, Hexadecimal HTML entities, HTML comment opening hide malicious script
             Pattern.compile("(?s)(?i)\\\\u[0-9a-fA-F]{4}|&#x[0-9a-fA-F]{2}|(?:\\x5cx[0-9a-fA-F]{2}|[\"']\\s*+>)|(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)!--", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL),
-
             // General XSS payloads: script tags, common event handlers, javascript: URIs, data: URIs, HTML entities, various encodings (unicode, URL, hex), and common JavaScript functions.
             Pattern.compile("(?s)(?i)(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)" + // "This is the way... Hacker!"
-                    "(?:script|body|html|table|xss|style|bgsound|portal|picture|fencedframe|a|template|track|canvas|video|source|audio|object|embed|applet|i?frame|form|input|option|blockquote|area|map|link|base|layer|div|span|img|meta)|" +  // HTML tags
-                    "(?:afterprint|beforeprint|beforeunload|abort|blur|change|click|contextmenu|popstate|copy|cut|dblclick|drag|dragend|dragenter|dragexit|dragleave|dragover|dragstart|drop|error|focus|hashchange|input|invalid|keydown|keypress|keyup|load|dragdrop|message|mousedown|mouseenter|mouseleave|mousemove|mouseout|mouseover|mouseup|mousewheel|offline|online|pagehide|line|pageshow|paste|pause|play|playing|progress|ratechange|reset|resize|scroll|search|seeked|seeking|select|show|stalled|submit|suspend|move|timeupdate|toggle|unload|volumechange|waiting|wheel|on" + // Event handlers // WARN |on ?
-                    "(?:before)?unload)\\s*+=|\\.cookie|\\.location(?:\\s*+\\.\\s*+href)?|" + // JS cookie + Location
-                    "(?:execScript|escape|unescape|alert|confirm|prompt|msgbox|eval|expression|function|onload|onerror|onclick)\\s*+\\(|" + // JS functions/properties
-                    "(?:^|\\s+|\\.)(?:this|top|parent|document)\\.[a-zA-Z0-9_%]+|" + // JS functions target
-                    "(?:java|vb)script|data|view-source\\s*+:|" + // URI schemes
-                    "(?:dyn|low)src|void\\s*+\\(0\\)|http-equiv|text/" + // Misc/Scanner HTML tags + script
-                    "(?:x-)?scriptlet|fromCharCode|\\.\\s*+href\\s*+=|getElements?By(?:Tag)?(?:Name|Id)\\s*+\\(|\\.\\s*+captureEvents\\s*+\\(|\\.\\s*+create" + // DOM access JS functions
-                    "(?:Attribute|Element|TextNode)\\s*+\\(|\\.\\s*+write(?:ln)?\\s*+\\(|\\.\\s*+re" +  // JS manipulate HTML elements or attributes based
-                    "(?:place|load)?\\s*+\\(|(?:style|class)\\s*+=|(?:href|src|source|action)\\s*+=\\s*+[\"']|@import|(?:behavior|image|binding)\\s*+:\\s*+url\\s*+\\(|background\\s*+=\\s*+['\"]|AllowScriptAccess\\s*+=|" + // Misc/Scanner Attribute-based, CSS/HTTP-equiv/Flash
+                    "(?:script|body|html|table|xss|style|bgsound|portal|picture|fencedframe|a|template|track|canvas|video|source|audio|object|embed|applet|i?frame|form|input|option|blockquote|area|map|link|base|layer|div|span|img|meta)|on" + // HTML tags
+                    "(?:afterprint|beforeprint|beforeunload|abort|blur|change|click|contextmenu|popstate|copy|cut|dblclick|drag|dragend|dragenter|dragexit|dragleave|dragover|dragstart|drop|error|focus|hashchange|input|invalid|keydown|keypress|keyup|load|dragdrop|message|mousedown|mouseenter|mouseleave|mousemove|mouseout|mouseover|mouseup|mousewheel|offline|online|pagehide|line|pageshow|paste|pause|play|playing|progress|ratechange|reset|resize|scroll|search|seeked|seeking|select|show|stalled|submit|suspend|move|timeupdate|toggle|unload|volumechange|waiting|wheel|" + // Event handlers
+                    "(?:before)?unload)\\s*+=|\\.cookie|\\.location(?:\\s*+\\.\\s*+href)?|(?:execScript|escape|unescape|alert|confirm|prompt|msgbox|eval|expression|function|onload|onerror|onclick)\\s*+\\(|(?:^|\\s+|\\.)" +  // JS cookie + Location + script attributes
+                    "(?:this|top|parent|document)\\.[a-zA-Z0-9_%]+|(?:java|vb)script\\s*+:|(?:dyn|low)src|void\\s*+\\(0\\)|http-equiv|text/" +  // URI schemes
+                    "(?:x-)?scriptlet|fromCharCode|\\.\\s*+href\\s*+=|getElements?By(?:Tag)?(?:Name|Id)\\s*+\\(|\\.\\s*+captureEvents\\s*+\\(|\\.\\s*+create(?:Attribute|Element|TextNode)\\s*+\\(|\\.\\s*+write(?:ln)?\\s*+\\(|\\.\\s*+re" +  // JS manipulate HTML elements or attributes based
+                    "(?:place|load)?\\s*+\\(|(?:style|class)\\s*+=|(?:href|src|source|action)\\s*+=\\s*+[\"']|@import|(?:behavior|image|binding)\\s*+:\\s*+url\\s*+\\(|background\\s*+=\\s*+['\"]|AllowScriptAccess\\s*+=|" + // Misc/Scanner HTML tags + script
                     "(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)[?!]\\s*+(?:import|entity|xml)|!\\[CDATA|DATA(?:SRC|FLD|FORMATAS)\\s*+=|Set-?Cookie|new\\s+(ActiveXObject|XMLHttpRequest)\\s*+\\(|schemas-microsoft-com|:namespace|Microsoft\\.XMLHTTP|window\\s*+.\\s*+open\\s*+\\(|\\.\\s*+action\\s*+=|;\\s*+url\\s*+=|acunetix\\s*+web\\s*+vulnerability\\s*+scanner|res://ieframe\\.dll", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL) // Misc/Scanner HTML entities + JS/ActiveX
     ));
 
