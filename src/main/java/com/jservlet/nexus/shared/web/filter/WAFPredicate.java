@@ -35,7 +35,6 @@ import java.util.regex.Pattern;
  * Checks for HeaderNames, HeaderValues, ParameterNames, ParameterValues and Hostnames, UserAgents<br>
  * Define Patterns XSS, SQL, Google, Command, File and Link injections.<br>
  * Define User-Agent filter and Suspicious Characters filter.<br>
- * </p>
  */
 public class WAFPredicate {
 
