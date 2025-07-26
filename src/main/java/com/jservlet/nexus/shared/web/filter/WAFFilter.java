@@ -52,14 +52,14 @@ import java.util.regex.Pattern;
  * and path parameters and duplicate slashes are removed for matching purposes.<br>
  * Noted the valid characters are defined in RFC 7230 and RFC 3986 are checked
  * by the Apache Coyote http11 processor (see coyote Error parsing HTTP request header)<br>
- * <br>
+ * <p>
  * Default reactive mode is STRICT mode
  * <ul>
  * <li>STRICT:  StrictHttpFirewall + Rejects requests with malicious patterns.</li>
  * <li>PASSIVE: StrictHttpFirewall + Cleans malicious patterns from request body and parameters.</li>
  * <li>UNSAFE:  StrictHttpFirewall + No checks on request body.</li>
  * </ul>
- * </p>
+ * <p>
  * Activated WebFilter by only 'nexus.api.backend.filter.waf.enabled=true' in the configuration
  */
 @Component
