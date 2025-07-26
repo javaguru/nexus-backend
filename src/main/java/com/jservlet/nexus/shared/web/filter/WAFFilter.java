@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2024 JServlet.com Franck Andriano.
+ * Copyright (C) 2001-2025 JServlet.com Franck Andriano.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
@@ -38,31 +38,28 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import static com.jservlet.nexus.shared.web.filter.WAFFilter.Reactive.*;
-
-
 /**
- * WebFilter class implements a secure WAF protection for request Body.
+ * WebFilter class implements a secure WAF protection for request Body.<br>
  * Http request Cookies, Headers, Parameters and Body can be filtered.
  * <p>
  * Un-normalized requests are automatically rejected by the StrictHttpFirewall,
- * and path parameters and duplicate slashes are removed for matching purposes.
- * <p>
+ * and path parameters and duplicate slashes are removed for matching purposes.<br>
  * Noted the valid characters are defined in RFC 7230 and RFC 3986 are checked
- * by the Apache Coyote http11 processor (see coyote Error parsing HTTP request header)
- * <p>
- *     Default reactive mode is STRICT mode
+ * by the Apache Coyote http11 processor (see coyote Error parsing HTTP request header)<br>
+ * <br>
+ * Default reactive mode is STRICT mode
  * <ul>
- *     <li>STRICT:  StrictHttpFirewall + RequestBody</li>
- *     <li>PASSIVE: StrictHttpFirewall + Clean RequestBody and parameters Map</li>
- *     <li>UNSAFE:  StrictHttpFirewall + No check RequestBody!</li>
+ * <li>STRICT:  StrictHttpFirewall + Rejects requests with malicious patterns.</li>
+ * <li>PASSIVE: StrictHttpFirewall + Cleans malicious patterns from request body and parameters.</li>
+ * <li>UNSAFE:  StrictHttpFirewall + No checks on request body.</li>
  * </ul>
- * <p>
+ * </p>
  * Activated WebFilter by only 'nexus.api.backend.filter.waf.enabled=true' in the configuration
  */
 @Component
@@ -71,25 +68,22 @@ public class WAFFilter extends ApiBase implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(WAFFilter.class);
 
-    FilterConfig filterConfig = null;
-
     private static final String SOURCE = "INTERNAL-REST-NEXUS-BACKEND";
 
     /**
-     * Default STRICT mode, PASSIVE or UNSAFE!
-     * STRICT:  Strict HttpFirewall + Json RequestBody
-     * PASSIVE: Strict HttpFirewall + Clean Json RequestBody and Parameters Map
-     * UNSAFE:  Strict HttpFirewall + No check Json RequestBody!
+     * Defines the operational mode of the WAF.
      */
+    public enum Reactive {
+        STRICT,  // Rejects requests with malicious patterns.
+        PASSIVE, // Cleans malicious patterns from the request.
+        UNSAFE   // Performs no checks on the request body.
+    }
+
     @Value("${nexus.api.backend.filter.waf.reactive.mode:STRICT}")
     private Reactive reactiveMode;
 
-    /**
-     * Deep Scan Cookie Keys/Values and Httponly
-     */
     @Value("${nexus.api.backend.filter.waf.deepscan.cookie:false}")
     private boolean isDeepScanCookie;
-
 
     private final WAFPredicate wafPredicate;
     private final ObjectMapper objectMapper;
@@ -102,151 +96,182 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-        this.filterConfig = filterConfig;
-        logger.info("Starting {}", filterConfig.getFilterName());
+    public void init(FilterConfig filterConfig) {
+        logger.info("Starting WAF Filter with reactive mode: {}", reactiveMode);
     }
 
     @Override
     public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain)
-            throws IOException, ServletException, RequestRejectedException {
+            throws IOException, ServletException {
         final HttpServletRequest req = (HttpServletRequest) request;
         final HttpServletResponse resp = (HttpServletResponse) response;
 
-        // WAFRequestWrapper come from with a FirewalledRequest!
-        WAFRequestWrapper wrappedRequest;
         try {
-            // WARN The Request ParameterNames/Values are validated by the WebHttpFirewall!
-            wrappedRequest = new WAFRequestWrapper(req);
-            if (STRICT == reactiveMode) {
-                // Check the cookies!
-                Cookie[] cookies = wrappedRequest.getCookies();
-                if (cookies !=  null) {
-                    if (cookies.length > 100) throw new RequestRejectedException("Cookie size reach the limit!");
-                    // Deep Scan Cookie and reject if not HttpOnly!
-                    if (isDeepScanCookie) {
-                        for (Cookie cookie : cookies) {
-                            rejectCookie(cookie);
-                        }
-                    }
-                }
-
-                // Check the Json body!
-                String body = IOUtils.toString(wrappedRequest.getReader());
-                if (!StringUtils.isBlank(body)) {
-                    rejectBody(body);
-                }
+            if (reactiveMode == Reactive.UNSAFE) { // WARN UNSAFE mode bypasses all checks.
+                chain.doFilter(req, resp);
+                return;
             }
 
-            if (PASSIVE == reactiveMode) {
-                // Just clean XSS pattern in the current parameters, no evasion !
-                Map<String, String[]> map = cleanerParameterMap(wrappedRequest.getParameterMap()) ;
-                wrappedRequest.setParameterMap(map);
+            WAFRequestWrapper wrappedRequest = new WAFRequestWrapper(req);
 
-                // Just clean XSS pattern in the Json body!
-                String body = IOUtils.toString(wrappedRequest.getReader());
-                if (!StringUtils.isBlank(body)) {
-                    wrappedRequest.setInputStream(stripWAFPattern(body, wafPredicate.getXSSPatterns()).getBytes());
-                }
+            validateUserAgent(wrappedRequest);
+
+            if (reactiveMode == Reactive.STRICT) {
+                handleStrict(wrappedRequest);
+            } else if (reactiveMode == Reactive.PASSIVE) {
+                handlePassive(wrappedRequest);
             }
 
-            // And continue the chain filter with the wrappedRequest!
+            // Continue the filter chain with the (potentially wrapped) request.
             chain.doFilter(wrappedRequest, response);
-        }
-        catch (RequestRejectedException ex) {
-            logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                    LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // No truncated in debug mode!
-                    request.getRemoteHost(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
 
-            // Request rejected! WARN Default ISO-8859-1 !? Force writeValueAsBytes in UTF-8!
-            resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            resp.setStatus(HttpStatus.BAD_REQUEST.value());
-            resp.getOutputStream().write(objectMapper.writeValueAsBytes(
-                    new Message("400", "ERROR", SOURCE, "Request rejected!")));
-
-            // Forces any content in the buffer to be written to the client.
-            // A call to this method automatically commits the response, meaning the status code and headers will be written.
-            resp.flushBuffer();
-
-            resp.getOutputStream().flush();
-            resp.getOutputStream().close();
-         }
-    }
-
-    public enum Reactive {
-        STRICT(0),  // StrictHttpFirewall + RequestBody
-        PASSIVE(1), // StrictHttpFirewall + Clean RequestBody and parameters Map
-        UNSAFE(2);  // StrictHttpFirewall + No check RequestBody!
-
-        private final int value;
-
-        Reactive(int value) { this.value = value; }
-
-        public int getValue() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return this.name();
+        } catch (RequestRejectedException ex) {
+            handleRequestRejected(ex, req, resp);
         }
     }
 
     /**
-     * Just clean the current parameters, no evasion !
-     * @return Map  Parameters
+     * Handles WAF logic for STRICT mode. Rejects requests on pattern match.
      */
-    private Map<String, String[]> cleanerParameterMap(Map<String, String[]> modifiableParameters) {
-        Map<String, String[]> parameters = new TreeMap<>();
-        for (Map.Entry<String, String[]> entry : modifiableParameters.entrySet()) {
+    private void handleStrict(WAFRequestWrapper wrappedRequest) throws IOException {
+        // Check cookies if deep scan is enabled.
+        if (isDeepScanCookie) {
+            validateCookies(wrappedRequest);
+        }
+
+        // Check the request body for malicious patterns.
+        String body = IOUtils.toString(wrappedRequest.getReader());
+        if (!StringUtils.isBlank(body)) {
+            rejectBodyIfInvalid(body);
+        }
+    }
+
+    /**
+     * Handles WAF logic for PASSIVE mode. Cleans the request on pattern match.
+     */
+    private void handlePassive(WAFRequestWrapper wrappedRequest) throws IOException {
+        // Clean XSS patterns from request parameters.
+        Map<String, String[]> cleanedParameters = cleanParameterMap(wrappedRequest.getParameterMap());
+        wrappedRequest.setParameterMap(cleanedParameters);
+
+        // Clean XSS patterns from the request body.
+        String body = IOUtils.toString(wrappedRequest.getReader());
+        if (!StringUtils.isBlank(body)) {
+            String cleanedBody = stripWAFPatterns(body, wafPredicate.getXSSPatterns());
+            wrappedRequest.setInputStream(cleanedBody.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    /**
+     * Validates all cookies in the request if deep scan is enabled.
+     */
+    private void validateCookies(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            if (cookies.length > 100) {
+                throw new RequestRejectedException("Request rejected: Exceeded cookie limit (100).");
+            }
+            for (Cookie cookie : cookies) {
+                rejectCookieIfInvalid(cookie);
+            }
+        }
+    }
+
+    /**
+     * Validates the User-Agent header if configured to do so.
+     */
+    private void validateUserAgent(HttpServletRequest request) {
+        if (wafPredicate.isBlockDisallowedUserAgents()) {
+            String userAgent = request.getHeader("User-Agent");
+            if (wafPredicate.isUserAgentBlocked(userAgent)) {
+                throw new RequestRejectedException("Request rejected: Disallowed User-Agent.");
+            }
+        }
+    }
+
+    /**
+     * Centralized handler for sending a rejection response.
+     */
+    private void handleRequestRejected(RequestRejectedException ex, HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
+                LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // No truncated in debug mode!
+                req.getRemoteHost(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
+
+        resp.setStatus(HttpStatus.BAD_REQUEST.value());
+        resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+        // Write a standard error message to the response body.
+        byte[] responseBody = objectMapper.writeValueAsBytes(
+                new Message("400", "ERROR", SOURCE, "Request rejected due to security policy violation.")
+        );
+        resp.getOutputStream().write(responseBody);
+        resp.flushBuffer();
+    }
+
+    /**
+     * Cleans malicious patterns from all values in a parameter map.
+     * @return A new map with cleaned parameter values.
+     */
+    private Map<String, String[]> cleanParameterMap(Map<String, String[]> originalParameters) {
+        Map<String, String[]> cleanedParameters = new TreeMap<>();
+        for (Map.Entry<String, String[]> entry : originalParameters.entrySet()) {
             String key = entry.getKey();
             String[] values = entry.getValue();
-            int len = values.length;
-            String[] encodedValues = new String[len];
-            for (int i = 0; i < len; i++)
-                encodedValues[i] = stripWAFPattern(values[i], wafPredicate.getXSSPatterns());
-            parameters.put(key, encodedValues);
+            String[] cleanedValues = new String[values.length];
+            for (int i = 0; i < values.length; i++) {
+                cleanedValues[i] = stripWAFPatterns(values[i], wafPredicate.getXSSPatterns());
+            }
+            cleanedParameters.put(key, cleanedValues);
         }
-        return parameters;
+        return cleanedParameters;
     }
 
-    private static String stripWAFPattern(String value, List<Pattern> patterns) {
+    /**
+     * Removes all occurrences of the given patterns from a string.
+     */
+    private String stripWAFPatterns(String value, List<Pattern> patterns) {
         if (value == null) return null;
-        if (value.length() > 10000) { // Prevent RegExp Denial of Service - ReDoS!
-            throw new RequestRejectedException("Input value is too long!");
+        // Prevent Regular Expression Denial of Service (ReDoS) attacks.
+        if (value.length() > 100000) {
+            throw new RequestRejectedException("Input value is too long for pattern stripping.");
         }
-        // matcher xssPattern replaceAll ?
-        for (Pattern pattern : patterns)
-            value = pattern.matcher(value).replaceAll(""); // Cut!
-        return value;
+        String strippedValue = value;
+        for (Pattern pattern : patterns) {
+            strippedValue = pattern.matcher(strippedValue).replaceAll("");
+        }
+        return strippedValue;
     }
 
-    private void rejectBody(String body) {
+    /**
+     * Throws RequestRejectedException if the request body contains disallowed patterns.
+     */
+    private void rejectBodyIfInvalid(String body) {
         if (!wafPredicate.getWAFParameterValues().test(body)) {
-            throw new RequestRejectedException(
-                    "The request was rejected because the Body value \"" + body + "\" is not allowed.");
+            throw new RequestRejectedException("Request rejected: Disallowed pattern found in request body.");
         }
     }
-    private void rejectCookie(Cookie cookie) {
-        if (!cookie.isHttpOnly()) {
-            throw new RequestRejectedException(
-                    "The request was rejected because the Cookie \"" + cookie.getName()+ "\" is not HttpOnly.");
-        }
-        if (!wafPredicate.getWAFParameterNames().test(cookie.getName())) {
-            throw new RequestRejectedException(
-                    "The request was rejected because the Cookie name \"" + cookie.getName()+ "\" is not allowed.");
-        }
 
+    /**
+     * Throws RequestRejectedException if a cookie is invalid.
+     */
+    private void rejectCookieIfInvalid(Cookie cookie) {
+        // Enforce HttpOnly flag for security.
+        if (!cookie.isHttpOnly()) {
+            throw new RequestRejectedException("Request rejected: Cookie '" + cookie.getName() + "' is not HttpOnly.");
+        }
+        // Validate cookie name against patterns.
+        if (!wafPredicate.getWAFParameterNames().test(cookie.getName())) {
+            throw new RequestRejectedException("Request rejected: Disallowed pattern in cookie name '" + cookie.getName() + "'.");
+        }
+        // Validate cookie value against patterns.
         if (!wafPredicate.getWAFParameterValues().test(cookie.getValue())) {
-            throw new RequestRejectedException(
-               "The request was rejected because the Cookie value \"" + cookie.getValue()
-                            + "\" with the Cookie name \"" + cookie.getName()+ "\" is not allowed.");
+            throw new RequestRejectedException("Request rejected: Disallowed pattern in value for cookie '" + cookie.getName() + "'.");
         }
     }
 
     @Override
     public void destroy() {
-        this.filterConfig = null;
+        logger.info("Shutting down WAF Filter.");
     }
-
 }
