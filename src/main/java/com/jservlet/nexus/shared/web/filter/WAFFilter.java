@@ -131,7 +131,7 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Handles WAF logic for STRICT mode. Rejects requests on pattern match.
+     * Handles STRICT mode. Rejects requests on pattern match.
      */
     private void handleStrict(WAFRequestWrapper wrappedRequest) throws IOException {
         // Check cookies if deep scan is enabled.
@@ -147,7 +147,7 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Handles WAF logic for PASSIVE mode. Cleans the request on pattern match.
+     * Handles PASSIVE mode. Cleans the request on pattern match.
      */
     private void handlePassive(WAFRequestWrapper wrappedRequest) throws IOException {
         // Clean XSS patterns from request parameters.

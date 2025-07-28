@@ -57,7 +57,7 @@ public class WAFPredicate {
     private int headerValuesLength = 25000;
     private int hostNamesLength = 255;
 
-    private Pattern allowedHostnames = Pattern.compile(".*"); // Default: allow all
+    private Pattern allowedHostnames = Pattern.compile(""); // Default: allow all
 
     private boolean blockDisallowedUserAgents = true;
 
@@ -108,7 +108,7 @@ public class WAFPredicate {
             logger.warn("Blocked: Parameter name exceeds max length ({}): {}", parameterNamesLength, param);
             return false;
         }
-        String normalized = new String(param.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+        String normalized = getNormalized(param);
         return xssPredicate.test(normalized) && sqlPredicate.test(normalized) && cmdPredicate.test(normalized) &&
                 filePredicate.test(normalized) && linkPredicate.test(normalized);
     };
@@ -122,72 +122,83 @@ public class WAFPredicate {
             logger.warn("Blocked: Parameter value exceeds max length ({})", parameterValuesLength);
             return false;
         }
-        String normalized = new String(value.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+        String normalized = getNormalized(value);
         return xssPredicate.test(normalized) && sqlPredicate.test(normalized) && cmdPredicate.test(normalized) &&
                 filePredicate.test(normalized) && linkPredicate.test(normalized);
     };
 
     /**
      * Predicate for validating HTTP header names.
-     * Checks for length, XSS, SQLi, and suspicious User-Agent patterns.
+     * Checks for length, XSS and suspicious User-Agent patterns.
      */
     public final Predicate<String> forHeaderNames = (header) -> {
         if (header.length() > headerNamesLength) {
             logger.warn("Blocked: Header name exceeds max length ({}): {}", headerNamesLength, header);
             return false;
         }
-        String normalized = new String(header.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
-        return xssPredicate.test(normalized) && sqlPredicate.test(normalized);
+        String normalized = getNormalized(header);
+        return xssPredicate.test(normalized);
     };
 
     /**
      * Predicate for validating HTTP header values.
-     * Checks for length, XSS, SQLi, and blocks disallowed User-Agents.
+     * Checks for length, XSS and blocks disallowed User-Agents.
      */
     public final Predicate<String> forHeaderValues = (header) -> {
         if (header.length() > headerValuesLength) {
             logger.warn("Blocked: Header value exceeds max length ({})", headerValuesLength);
             return false;
         }
-        String normalized = new String(header.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+        String normalized = getNormalized(header);
         // Special handling for User-Agent
         if (isBlockDisallowedUserAgents() && !userAgentPredicate.test(normalized)) {
             logger.warn("Blocked: User-Agent is disallowed: {}", header);
             return false;
         }
         // Special referrer header injection
-        return xssPredicate.test(normalized) && sqlPredicate.test(normalized);
+        return xssPredicate.test(normalized);
     };
 
     /**
      * Predicate for validating hostnames.
-     * Checks for length, allowed hostnames, XSS, and SQLi patterns.
+     * Checks for length and allowed hostnames, Filter Suspicious and XSS.
      */
     public final Predicate<String> forHostnames = (hostname) -> {
         if (hostname.length() > hostNamesLength) {
             logger.warn("Blocked: Hostname exceeds max length ({}): {}", hostNamesLength, hostname);
             return false;
         }
-        if (!allowedHostnames.matcher(hostname).matches()) {
-            logger.warn("Blocked: Hostname {} is not in the allowed list.", hostname);
-            // Even if not in the allowed list, we still check for SQLi as a fallback.
-            return sqlPredicate.test(hostname);
+        String normalized = getNormalized(hostname);
+        if (!"".equals(allowedHostnames.pattern()) && !allowedHostnames.matcher(normalized).matches()) {
+            logger.warn("Blocked: Hostname {} is not in the allowed list.", normalized);
+            return false;
         }
-        // Check for XSS even on allowed hostnames.
-        return suspiciousPredicate.test(hostname) && xssPredicate.test(hostname);
+        // Check suspicious and XSS even on allowed hostnames.
+        return suspiciousPredicate.test(normalized) && xssPredicate.test(normalized);
     };
 
+    /**
+     * Is an UserAgent Blocked ?
+     */
     public boolean isUserAgentBlocked(String userAgent) {
         if (!isBlockDisallowedUserAgents() || userAgent == null || userAgent.isEmpty()) {
             return false;
         }
-        String normalized = new String(userAgent.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
-         boolean isDisallowed = !userAgentPredicate.test(normalized);
+        String normalized = getNormalized(userAgent);
+        boolean isDisallowed = !userAgentPredicate.test(normalized);
         if (isDisallowed) {
             logger.warn("Blocked: User-Agent is disallowed: {}", userAgent);
         }
         return isDisallowed;
     }
+
+    /**
+     * Get a normalized String!
+     */
+    private static String getNormalized(String param) {
+        return new String(param.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+    }
+
 
     public List<Pattern> getXSSPatterns() { return xssPredicate.getPatterns(); }
 

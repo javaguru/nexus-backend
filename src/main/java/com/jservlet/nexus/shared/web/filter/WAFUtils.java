@@ -41,17 +41,19 @@ public class WAFUtils {
      * Covers various encoding, obfuscation, HTML tags, attributes, and JavaScript execution.
      */
     public static List<Pattern> xssPattern = new LinkedList<>(List.of(
-            // Detects obfuscated characters: Unicode escape sequences, Hexadecimal HTML entities, HTML comment opening hide malicious script
+            // Detects obfuscated characters: Unicode escape sequences, Hexadecimal HTML entities, ASCII tag "< 60 0x3C" HTML Car Déc Hex, HTML comment opening hide malicious script
             Pattern.compile("(?s)(?i)\\\\u[0-9a-fA-F]{4}|&#x[0-9a-fA-F]{2}|(?:\\x5cx[0-9a-fA-F]{2}|[\"']\\s*+>)|(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)!--", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL),
             // General XSS payloads: script tags, common event handlers, javascript: URIs, data: URIs, HTML entities, various encodings (unicode, URL, hex), and common JavaScript functions.
-            Pattern.compile("(?s)(?i)(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)" + // "This is the way... Hacker!"
-                    "(?:script|body|html|table|xss|style|bgsound|portal|picture|fencedframe|a|template|track|canvas|video|source|audio|object|embed|applet|i?frame|form|input|option|blockquote|area|map|link|base|layer|div|span|img|meta)|on" + // HTML tags
-                    "(?:afterprint|beforeprint|beforeunload|abort|blur|change|click|contextmenu|popstate|copy|cut|dblclick|drag|dragend|dragenter|dragexit|dragleave|dragover|dragstart|drop|error|focus|hashchange|input|invalid|keydown|keypress|keyup|load|dragdrop|message|mousedown|mouseenter|mouseleave|mousemove|mouseout|mouseover|mouseup|mousewheel|offline|online|pagehide|line|pageshow|paste|pause|play|playing|progress|ratechange|reset|resize|scroll|search|seeked|seeking|select|show|stalled|submit|suspend|move|timeupdate|toggle|unload|volumechange|waiting|wheel|" + // Event handlers
-                    "(?:before)?unload)\\s*+=|\\.cookie|\\.location(?:\\s*+\\.\\s*+href)?|(?:execScript|escape|unescape|alert|confirm|prompt|msgbox|eval|expression|function|onload|onerror|onclick)\\s*+\\(|(?:^|\\s+|\\.)" +  // JS cookie + Location + script attributes
-                    "(?:this|top|parent|document)\\.[a-zA-Z0-9_%]+|(?:java|vb)script\\s*+:|(?:dyn|low)src|void\\s*+\\(0\\)|http-equiv|text/" +  // URI schemes
-                    "(?:x-)?scriptlet|fromCharCode|\\.\\s*+href\\s*+=|getElements?By(?:Tag)?(?:Name|Id)\\s*+\\(|\\.\\s*+captureEvents\\s*+\\(|\\.\\s*+create(?:Attribute|Element|TextNode)\\s*+\\(|\\.\\s*+write(?:ln)?\\s*+\\(|\\.\\s*+re" +  // JS manipulate HTML elements or attributes based
-                    "(?:place|load)?\\s*+\\(|(?:style|class)\\s*+=|(?:href|src|source|action)\\s*+=\\s*+[\"']|@import|(?:behavior|image|binding)\\s*+:\\s*+url\\s*+\\(|background\\s*+=\\s*+['\"]|AllowScriptAccess\\s*+=|" + // Misc/Scanner HTML tags + script
-                    "(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)[?!]\\s*+(?:import|entity|xml)|!\\[CDATA|DATA(?:SRC|FLD|FORMATAS)\\s*+=|Set-?Cookie|new\\s+(ActiveXObject|XMLHttpRequest)\\s*+\\(|schemas-microsoft-com|:namespace|Microsoft\\.XMLHTTP|window\\s*+.\\s*+open\\s*+\\(|\\.\\s*+action\\s*+=|;\\s*+url\\s*+=|acunetix\\s*+web\\s*+vulnerability\\s*+scanner|res://ieframe\\.dll", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL) // Misc/Scanner HTML entities + JS/ActiveX
+            Pattern.compile("(?s)(?i)" +
+                    "(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)" + // Detect ASCII tag "< 60 0x3C" HTML Car Déc Hex
+                    "(?:script|body|html|table|xss|style|bgsound|portal|picture|fencedframe|a|template|track|canvas|video|source|audio|object|embed|applet|i?frame|form|input|option|blockquote|area|map|link|base|layer|div|span|img|meta)|" + // HTML tags
+                    "on(?:afterprint|beforeprint|beforeunload|hashchange|message|offline|line|pagehide|pageshow|popstate|storage|unload|contextmenu|input|invalid|search|mousewheel|wheel|drag|dragend|dragenter|dragleave|dragover|dragstart|drop|scroll|copy|cut|paste|abort|blur|change|click|dblclick|dragdrop|error|focus|keydown|keypress|keyup|load|mousedown|mousemove|mouseout|mouseover|mouseup|move|reset|resize|select|submit|(?:before)?unload)" + // Event handlers
+                    "\\s*+=|\\.cookie|" + // matches any whitespace + cookie  + scheduler |sessionStorage|sharedStorage|WindowSharedStorage
+                    "(?:execScript|escape|unescape|alert|confirm|prompt|msgbox|eval|expression)\\s*+\\(|(?:^|\\s+|\\.)(?:this|top|parent|document)\\.[a-zA-Z0-9_%]+|" + //  JS functions
+                    "(?:java|vb)script\\s*+:|(?:dyn|low)src|void\\s*+\\(0\\)|http-equiv|text/" + // URI schemes
+                    "(?:x-)?scriptlet|fromCharCode|\\.\\s*+href\\s*+=|getElements?By(?:Tag)?(?:Name|Id)\\s*+\\(|\\.\\s*+captureEvents\\s*+\\(|\\.\\s*+create(?:Attribute|Element|TextNode)\\s*+\\(|\\.\\s*+write(?:ln)?\\s*+\\(|\\.\\s*+re(?:place|load)?\\s*+\\(|" + // JS manipulate HTML elements or attributes based
+                    "(?:style|class)\\s*+=|(?:href|src|source|action)\\s*+=\\s*+[\"']|@import|(?:behavior|image|binding)\\s*+:\\s*+url\\s*+\\(|background\\s*+=\\s*+['\"]|" + // Location Resources and CSS
+                    "AllowScriptAccess\\s*+=|(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)[?!]\\s*+(?:import|entity|xml)|!\\[CDATA|DATA(?:SRC|FLD|FORMATAS)\\s*+=|Set-?Cookie|new\\s+(ActiveXObject|XMLHttpRequest)\\s*+\\(|schemas-microsoft-com|:namespace|Microsoft\\.XMLHTTP|window\\s*+.\\s*+open\\s*+\\(|\\.\\s*+action\\s*+=|;\\s*+url\\s*+=|acunetix\\s*+web\\s*+vulnerability\\s*+scanner|res://ieframe\\.dll", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL) // Misc/Scanner HTML entities + JS/ActiveX
     ));
 
     /**
@@ -90,16 +92,68 @@ public class WAFUtils {
             Pattern.compile("(?i)mailto:|ftp://", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL)
     ));
 
+
     /**
-     * Potential User-Agent patterns indicating scanners, bots, or malicious activity.
+     * Patterns for detecting potential Cross-Site Scripting (XSS) attempts
      */
-    public static List<Pattern> userAgentPattern = new LinkedList<>(List.of(
-            Pattern.compile(
-                    "(?i)(?:acunetix|nikto|sqlmap|nmap|nessus|w3af|openvas|zap|burp(?:suite)?|commix|arachni|grendel-scan|netsparker|vega|skipfish|dirbuster|gobuster|ffuf|wfuzz|testphp\\.vulnweb\\.com|webinspect|dotdotpwn|havij|xss-proxy|masscan|hydra|medusa|patator|john|hashcat|cewl|enum4linux|sublist3r|theharvester|amass|crt\\.sh|shodan|censys|metasploit|msfconsole|exploit-db|searchsploit|nuclei|httpx|ffuf|dirb|dirbuster|wpscan|joomscan|droopescan|whatweb|cmsmap|sn1per|recon-ng|sparta|legion|maltego|spiderfoot|osint-framework|dmitry|fierce|dnsenum|dnsrecon|subfinder|assetfinder|waybackurls|gau|katana|hakrawler|paramspider|qsreplace|kxss|dalfox|xss-hunter|bounty-hunter|cve-|exploit-|vulnerability-|scan-|bot-|crawler-|spider-|wget|curl|python-requests|go-http-client|java/\\d+\\.\\d+\\.\\d+|php/\\d+\\.\\d+\\.\\d+|ruby/\\d+\\.\\d+\\.\\d+|perl/\\d+\\.\\d+\\.\\d+)",
-                    Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL
-            )
+    public static List<Pattern> xssPatterns = new LinkedList<>(List.of(
+            // Basic script tags
+            Pattern.compile(".*<script[^>]*>.*</script>.*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
+            // img src onerror/onload
+            Pattern.compile(".*<img[^>]*src=[^>]*onerror=[^>]*>.*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
+            Pattern.compile(".*<img[^>]*src=[^>]*onload=[^>]*>.*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
+            // Event handlers
+            Pattern.compile(".*on(?:abort|blur|change|click|dblclick|error|focus|keydown|keypress|keyup|load|mousedown|mousemove|mouseout|mouseover|mouseup|reset|resize|scroll|select|submit|unload)=.*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
+            // HTML entities for script tags (double encoded, etc.)
+            Pattern.compile(".*(?:&lt;|%3c).*script.*(?:&gt;|%3e).*"),
+            // JavaScript URIs
+            Pattern.compile(".*javascript:.*", Pattern.CASE_INSENSITIVE)
     ));
 
+    /**
+     * Patterns for detecting potential SQL injection attempts
+     */
+    public static List<Pattern> sqlInjectionPatterns = new LinkedList<>(List.of(
+            // Common SQL keywords and operators often used in injection
+            Pattern.compile(".*(?:'|;|=|--|/\\*|\\*/|xp_cmdshell|union|select|insert|update|delete|drop|alter|truncate|exec|declare|cast|convert).*"),
+            // Boolean-based blind SQL injection patterns
+            Pattern.compile(".*(?:and|or)\\s+[0-9]=[0-9].*"),
+            // Time-based blind SQL injection (e.g., for MySQL/PostgreSQL)
+            Pattern.compile(".*(?:pg_sleep|sleep)\\(.*\\).*"),
+            // Error-based SQL injection (e.g., SQL Server, Oracle)
+            Pattern.compile(".*(?:convert|cast)\\s*\\(.*\\s*as\\s*int\\).*")
+    ));
+
+    /**
+     * Patterns for detecting potential command injection attempts (e.g., shell metacharacters)
+     */
+    public static List<Pattern> commandInjectionPatterns = new LinkedList<>(List.of(
+            // Common shell metacharacters
+            Pattern.compile(".*(&&|\\|\\||;|`|\\$\\(|\\$\\{|\\|>|<|\\|).*"),
+            // Backtick command substitution
+            Pattern.compile(".*`.*`.*"),
+            // Semicolon separated commands
+            Pattern.compile(".*;.*"),
+            // Newline characters (can be used to separate commands)
+            Pattern.compile(".*\\n.*")
+    ));
+
+    /**
+     * Patterns for detecting potential path traversal attempts
+     */
+    public static List<Pattern> pathTraversalPatterns = new LinkedList<>(List.of(
+            // Common path traversal sequences
+            Pattern.compile(".*(?:\\.\\./|\\.\\.\\\\|%2e%2e%2f|%2e%2e%5c).*"),
+            // Absolute paths (depending on expected input)
+            Pattern.compile(".*(?:/|\\\\).*") // May need refinement based on context
+    ));
+
+    /**
+     * Pattern for detecting null byte injection attempts
+     */
+    public static List<Pattern> nullBytePattern = new LinkedList<>(List.of(
+            Pattern.compile(".*\\x00.*") // Null byte
+    ));
 
     /**
      * Generic suspicious patterns (e.g., excessive special characters, unusual length/structure)
@@ -110,8 +164,19 @@ public class WAFUtils {
                             "(?:[\\x00-\\x1F\\x7F]){2,}|" + // Control characters (2 or more)
                             "\\.{5,}|" + // Excessive dots (e.g., path traversal attempts)
                             "\\s{10,}|" + // Excessive whitespace
-                            "(?:%[0-9a-fA-F]{2}){5,}" // Excessive URL encoding
+                            "(?:%[0-9a-fA-F]{2}){5,}|" + // Excessive URL encoding
+                            "([\"'`=\\(\\)\\[\\]{};:])\\1{2,}" // Repetition of special characters
                     , Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL
+            )
+    ));
+
+    /**
+     * Potential User-Agent patterns indicating scanners, bots, or malicious activity.
+     */
+    public static List<Pattern> userAgentPattern = new LinkedList<>(List.of(
+            Pattern.compile(
+                    "(?i)(?:acunetix|nikto|sqlmap|nmap|nessus|w3af|openvas|zap|burp(?:suite)?|commix|arachni|grendel-scan|netsparker|vega|skipfish|dirbuster|gobuster|ffuf|wfuzz|testphp\\.vulnweb\\.com|webinspect|dotdotpwn|havij|xss-proxy|masscan|hydra|medusa|patator|john|hashcat|cewl|enum4linux|sublist3r|theharvester|amass|crt\\.sh|shodan|censys|metasploit|msfconsole|exploit-db|searchsploit|nuclei|httpx|ffuf|dirb|dirbuster|wpscan|joomscan|droopescan|whatweb|cmsmap|sn1per|recon-ng|sparta|legion|maltego|spiderfoot|osint-framework|dmitry|fierce|dnsenum|dnsrecon|subfinder|assetfinder|waybackurls|gau|katana|hakrawler|paramspider|qsreplace|kxss|dalfox|xss-hunter|bounty-hunter|cve-|exploit-|vulnerability-|scan-|bot-|crawler-|spider-|wget|curl|python-requests|go-http-client|java/\\d+\\.\\d+\\.\\d+|php/\\d+\\.\\d+\\.\\d+|ruby/\\d+\\.\\d+\\.\\d+|perl/\\d+\\.\\d+\\.\\d+)",
+                    Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL
             )
     ));
 
