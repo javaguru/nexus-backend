@@ -7,7 +7,7 @@
     <groupId>com.jservlet.nexus.backend</groupId>
     <artifactId>nexus-backend</artifactId>
     <packaging>${packaging}</packaging>
-    <version>1.0.21-SNAPSHOT</version>
+    <version>1.0.21</version>
 
     <name>nexus-backend</name>
     <description>The Java Nexus BackendService, an advanced and secure Rest Backend Gateway</description>
