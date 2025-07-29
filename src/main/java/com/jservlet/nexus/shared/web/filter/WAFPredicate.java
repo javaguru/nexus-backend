@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -40,7 +41,7 @@ public class WAFPredicate {
 
     private static final Logger logger = LoggerFactory.getLogger(WAFPredicate.class);
 
-    // Predicate instances for different attack patterns
+    // Predicate instances for different attack patterns, initialized with patterns from WAFUtils
     private final WafPatternPredicate xssPredicate = new WafPatternPredicate(WAFUtils.xssPattern);
     private final WafPatternPredicate sqlPredicate = new WafPatternPredicate(WAFUtils.sqlPattern);
     private final WafPatternPredicate googlePredicate = new WafPatternPredicate(WAFUtils.googlePattern);
@@ -50,25 +51,30 @@ public class WAFPredicate {
     private final WafPatternPredicate userAgentPredicate = new WafPatternPredicate(WAFUtils.userAgentPattern);
     private final WafPatternPredicate suspiciousPredicate = new WafPatternPredicate(WAFUtils.suspiciousPattern);
 
-    // Configurable length limits
+    // Configurable length limits for various request components
     private int parameterNamesLength = 255;
     private int parameterValuesLength = 1000000;
     private int headerNamesLength = 255;
     private int headerValuesLength = 25000;
     private int hostNamesLength = 255;
 
-    private Pattern allowedHostnames = Pattern.compile(""); // Default: allow all
+    // Pattern for allowed hostnames (default allows all if empty pattern)
+    private Pattern allowedHostnames = Pattern.compile("");
 
+    // Flag to control blocking of disallowed User-Agents
     private boolean blockDisallowedUserAgents = true;
 
     /**
      * A reusable predicate that tests a string against a list of compiled regex patterns.
+     * This predicate returns {@code true} if the input string is considered "safe" (i.e.,
+     * it does NOT match any of the configured malicious patterns).
      */
     public static class WafPatternPredicate implements Predicate<String> {
         private final List<Pattern> patterns;
 
         /**
          * Constructs a predicate with a specific list of patterns.
+         *
          * @param patterns The list of {@link Pattern} to test against.
          */
         public WafPatternPredicate(List<Pattern> patterns) {
@@ -77,9 +83,11 @@ public class WAFPredicate {
 
         /**
          * Tests the input string against the configured patterns.
-         * The test passes (returns true) if NO patterns match.
+         * The test passes (returns true) if NO patterns match, meaning the string is considered safe.
+         * If any pattern matches, it returns false, indicating a potential threat.
+         *
          * @param value The string to test.
-         * @return {@code false} if the string matches any pattern, {@code true} otherwise.
+         * @return {@code false} if the string matches any pattern, {@code true} otherwise (safe).
          */
         @Override
         public boolean test(String value) {
@@ -104,13 +112,16 @@ public class WAFPredicate {
      * Checks for length, XSS, SQLi, Command, File, and Link injection patterns.
      */
     public final Predicate<String> forParameterNames = (param) -> {
+        if (param == null) return true; // Null is safe
         if (param.length() > parameterNamesLength) {
             logger.warn("Blocked: Parameter name exceeds max length ({}): {}", parameterNamesLength, param);
             return false;
         }
-        String normalized = getNormalized(param);
-        return xssPredicate.test(normalized) && sqlPredicate.test(normalized) && cmdPredicate.test(normalized) &&
-                filePredicate.test(normalized) && linkPredicate.test(normalized);
+        return xssPredicate.test(param) &&
+                sqlPredicate.test(param) &&
+                cmdPredicate.test(param) &&
+                filePredicate.test(param) &&
+                linkPredicate.test(param);
     };
 
     /**
@@ -118,26 +129,29 @@ public class WAFPredicate {
      * Checks for length, XSS, SQLi, Command, File, and Link injection patterns.
      */
     public final Predicate<String> forParameterValues = (value) -> {
+        if (value == null) return true; // Null is safe
         if (value.length() > parameterValuesLength) {
             logger.warn("Blocked: Parameter value exceeds max length ({})", parameterValuesLength);
             return false;
         }
-        String normalized = getNormalized(value);
-        return xssPredicate.test(normalized) && sqlPredicate.test(normalized) && cmdPredicate.test(normalized) &&
-                filePredicate.test(normalized) && linkPredicate.test(normalized);
+        return xssPredicate.test(value) &&
+                sqlPredicate.test(value) &&
+                cmdPredicate.test(value) &&
+                filePredicate.test(value) &&
+                linkPredicate.test(value);
     };
 
     /**
      * Predicate for validating HTTP header names.
-     * Checks for length, XSS and suspicious User-Agent patterns.
+     * Checks for length and XSS
      */
     public final Predicate<String> forHeaderNames = (header) -> {
+        if (header == null) return true; // Null is safe
         if (header.length() > headerNamesLength) {
             logger.warn("Blocked: Header name exceeds max length ({}): {}", headerNamesLength, header);
             return false;
         }
-        String normalized = getNormalized(header);
-        return xssPredicate.test(normalized);
+        return xssPredicate.test(header);
     };
 
     /**
@@ -145,18 +159,13 @@ public class WAFPredicate {
      * Checks for length, XSS and blocks disallowed User-Agents.
      */
     public final Predicate<String> forHeaderValues = (header) -> {
+        if (header == null) return true; // Null is safe
         if (header.length() > headerValuesLength) {
             logger.warn("Blocked: Header value exceeds max length ({})", headerValuesLength);
             return false;
         }
-        String normalized = getNormalized(header);
-        // Special handling for User-Agent
-        if (isBlockDisallowedUserAgents() && !userAgentPredicate.test(normalized)) {
-            logger.warn("Blocked: User-Agent is disallowed: {}", header);
-            return false;
-        }
         // Special referrer header injection
-        return xssPredicate.test(normalized);
+        return xssPredicate.test(header);
     };
 
     /**
@@ -164,41 +173,36 @@ public class WAFPredicate {
      * Checks for length and allowed hostnames, Filter Suspicious and XSS.
      */
     public final Predicate<String> forHostnames = (hostname) -> {
+        if (hostname == null) return true; // Null is safe
         if (hostname.length() > hostNamesLength) {
             logger.warn("Blocked: Hostname exceeds max length ({}): {}", hostNamesLength, hostname);
             return false;
         }
-        String normalized = getNormalized(hostname);
-        if (!"".equals(allowedHostnames.pattern()) && !allowedHostnames.matcher(normalized).matches()) {
-            logger.warn("Blocked: Hostname {} is not in the allowed list.", normalized);
+        // Check against allowed hostnames if a pattern is configured
+        if (!"".equals(allowedHostnames.pattern()) && !allowedHostnames.matcher(hostname).matches()) {
+            logger.warn("Blocked: Hostname {} is not in the allowed list.", hostname);
             return false;
         }
         // Check suspicious and XSS even on allowed hostnames.
-        return suspiciousPredicate.test(normalized) && xssPredicate.test(normalized);
+        return suspiciousPredicate.test(hostname) && xssPredicate.test(hostname);
     };
 
     /**
-     * Is an UserAgent Blocked ?
+     * Checks if a User-Agent string is blocked based on the configured patterns.
+     *
+     * @param userAgent The User-Agent string to check.
+     * @return {@code true} if the User-Agent is blocked, {@code false} otherwise.
      */
     public boolean isUserAgentBlocked(String userAgent) {
         if (!isBlockDisallowedUserAgents() || userAgent == null || userAgent.isEmpty()) {
             return false;
         }
-        String normalized = getNormalized(userAgent);
-        boolean isDisallowed = !userAgentPredicate.test(normalized);
+        boolean isDisallowed = !userAgentPredicate.test(userAgent);
         if (isDisallowed) {
             logger.warn("Blocked: User-Agent is disallowed: {}", userAgent);
         }
         return isDisallowed;
     }
-
-    /**
-     * Get a normalized String!
-     */
-    private static String getNormalized(String param) {
-        return new String(param.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
-    }
-
 
     public List<Pattern> getXSSPatterns() { return xssPredicate.getPatterns(); }
 

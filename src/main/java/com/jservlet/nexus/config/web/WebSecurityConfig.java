@@ -209,7 +209,7 @@ public class WebSecurityConfig {
     private int hostNamesLength = 255;
     @Value("${nexus.backend.security.predicate.hostName.pattern:}")
     private String hostNamesPattern;
-    @Value("${nexus.backend.security.predicate.userAgent.blocked:false}")
+    @Value("${nexus.backend.security.predicate.userAgent.blocked:true}")
     private boolean userAgentBlocked;
 
     @Bean

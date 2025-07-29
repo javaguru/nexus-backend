@@ -112,8 +112,10 @@ public class WAFFilter extends ApiBase implements Filter {
                 return;
             }
 
+            // Wrap the request to allow reading input stream multiple times and modifying parameters
             WAFRequestWrapper wrappedRequest = new WAFRequestWrapper(req);
 
+            // Validate User-Agent
             validateUserAgent(wrappedRequest);
 
             if (reactiveMode == Reactive.STRICT) {
