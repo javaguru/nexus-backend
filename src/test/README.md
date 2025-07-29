@@ -10,7 +10,7 @@ It provides endpoints for GET, POST, PUT, PATCH various auth mechanisms and othe
 The documentation for the endpoints as well as example responses can be found at https://postman-echo.com 
 [Mocking with examples](https://learning.postman.com/docs/designing-and-developing-your-api/mocking-data/mocking-with-examples/) 
 
-© 2024 Postman, Inc.
+© 2025 Postman, Inc.
 
 
 ## Nexus-Backend Url Backend Server configuration
@@ -149,4 +149,19 @@ curl  http://localhost:8082/nexus-backend/api/deflate  --output test-deflate.txt
 {"deflated":true,"headers":{"host":"localhost","x-request-start":"t=1721077334.286","x-forwarded-proto":"https","x-forwarded-port":"443","x-amzn-trace-id":"Root=1-66958e56-102ca75c0702fd3d71b5dbf2","origin":"http://localhost:8082/nexus-backend/api/deflate","user-agent":"curl/7.66.0","accept":"*/*","accept-encoding":"gzip,deflate"},"method":"GET"}
 ```
 
-Copyright (c) 2001-2024 JServlet.com [Franck ANDRIANO.](http://jservlet.com)
+## Nexus-Backend Service / Postman Echo Service - Performance Report
+
+#### Local Performance localhost / remote postman-echo.com
+
+Performance Nexus-Backend under Spring 5, Jdk13, Tomcat 9 during one minute.
+
+### Report Performance:
+
+![Postman-Echo-performance-report-2025.png](https://github.com/javaguru/nexus-backend/blob/master/src/test/resources/Postman-Echo-performance-report-2025.png)
+
+#### Download full report PDF
+
+[Download Postman-Echo-performance-report-2025.pdf](https://github.com/javaguru/nexus-backend/blob/master/src/test/resources/Postman-Echo-performance-report-2025.pdf)
+
+
+Copyright (c) 2001-2025 JServlet.com [Franck ANDRIANO.](http://jservlet.com)

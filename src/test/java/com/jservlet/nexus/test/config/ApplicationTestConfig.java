@@ -3,27 +3,41 @@ package com.jservlet.nexus.test.config;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl;
+import com.jservlet.nexus.shared.web.interceptor.CookieRedirectInterceptor;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
+import org.apache.http.ParseException;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.HttpConnectionFactory;
+import org.apache.http.conn.ManagedHttpClientConnection;
+import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.cookie.CookieSpecProvider;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
+import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.apache.http.impl.conn.DefaultHttpResponseParserFactory;
+import org.apache.http.impl.conn.ManagedHttpClientConnectionFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.cookie.IgnoreSpecProvider;
+import org.apache.http.impl.io.DefaultHttpRequestWriterFactory;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicLineParser;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.PrivateKeyDetails;
 import org.apache.http.ssl.PrivateKeyStrategy;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.http.util.CharArrayBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -94,7 +108,13 @@ public class ApplicationTestConfig {
     @Bean
     public RestOperations backendRestOperations(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) throws Exception {
         RestTemplate restTemplate = new RestTemplate(httpRequestFactory());
-        mappingJackson2HttpMessageConverter.setSupportedMediaTypes(Collections.singletonList(MediaType.APPLICATION_JSON));
+        restTemplate.setInterceptors(List.of(new CookieRedirectInterceptor(maxRedirects)));
+
+        // No DefaultUriBuilderFactory! Let display the security policy violation...
+
+        // MediaType.ALL now! Json + Json wildcard, pdf, gif etc...
+        mappingJackson2HttpMessageConverter.setSupportedMediaTypes(List.of(MediaType.ALL));
+
         restTemplate.setMessageConverters(Arrays.asList(
                 new StringHttpMessageConverter(UTF_8),
                 new FormHttpMessageConverter(),
@@ -217,12 +237,18 @@ public class ApplicationTestConfig {
     @Bean
     public ClientHttpRequestFactory httpRequestFactory() throws Exception {
 
-        DefaultConnectionKeepAliveStrategy myStrategy = new DefaultConnectionKeepAliveStrategy() {
+        final DefaultConnectionKeepAliveStrategy myStrategy = new DefaultConnectionKeepAliveStrategy() {
             @Override
             public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
                 return super.getKeepAliveDuration(response, context);
             }
         };
+
+        final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory =
+                new ManagedHttpClientConnectionFactory(
+                        new DefaultHttpRequestWriterFactory(),
+                        new DefaultHttpResponseParserFactory(
+                                new CompliantLineParser(), new DefaultHttpResponseFactory()));
 
         final PoolingHttpClientConnectionManager cm;
 
@@ -258,9 +284,9 @@ public class ApplicationTestConfig {
             cm = new PoolingHttpClientConnectionManager(RegistryBuilder.<ConnectionSocketFactory>create()
                     .register("http", PlainConnectionSocketFactory.getSocketFactory())
                     .register("https", sslConnectionSocketFactory)
-                    .build());
+                    .build(), connFactory);
         } else {
-            cm = new PoolingHttpClientConnectionManager();
+            cm = new PoolingHttpClientConnectionManager(connFactory);
         }
 
         cm.setDefaultMaxPerRoute(defaultMaxConnectionsPerRoute);
@@ -271,11 +297,14 @@ public class ApplicationTestConfig {
         return new HttpComponentsClientHttpRequestFactory(HttpClientBuilder.create()
                 .setUserAgent(userAgent)
                 .setConnectionManager(cm)
+                .setDefaultCookieSpecRegistry(RegistryBuilder.<CookieSpecProvider>create()
+                        .register(CookieSpecs.IGNORE_COOKIES, new IgnoreSpecProvider()) // Forced IGNORE_COOKIES for a Gateway stateless!
+                        .build())
                 .setDefaultRequestConfig(RequestConfig.custom()
                         .setConnectTimeout(connectTimeout * 1000)
                         .setConnectionRequestTimeout(requestTimeout * 1000)
                         .setSocketTimeout(socketTimeout * 1000)
-                        .setRedirectsEnabled(redirectsEnabled)
+                        .setRedirectsEnabled(redirectsEnabled) // mandatory disabled by default!
                         .setMaxRedirects(maxRedirects)
                         .setAuthenticationEnabled(authenticationEnabled)
                         .setCircularRedirectsAllowed(circularRedirectsAllowed)
@@ -284,11 +313,27 @@ public class ApplicationTestConfig {
                 .setKeepAliveStrategy(myStrategy)
                 .setRedirectStrategy(new LaxRedirectStrategy())
                 .setRetryHandler(new DefaultHttpRequestRetryHandler(retryCount, requestSentRetryEnabled))
-                .disableCookieManagement()
+                .disableRedirectHandling()
+                //.disableCookieManagement() // Cookie manually managed, the Gateway is Stateless!
                 .disableAuthCaching()
                 .disableConnectionState()
                 .build());
     }
 
+    /**
+     * Force HttpClient into accepting malformed response heads in order to salvage the content of the messages.
+     * (Deal non-standard and non-compliant behaviours!)
+     */
+    static class CompliantLineParser extends BasicLineParser {
+        @Override
+        public Header parseHeader(CharArrayBuffer buffer) throws ParseException {
+            try {
+                return super.parseHeader(buffer);
+            } catch (ParseException ex) {
+                // Suppress ParseException exception
+                return new BasicHeader(buffer.toString(), null);
+            }
+        }
+    }
 }
 

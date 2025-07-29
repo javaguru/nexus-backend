@@ -504,7 +504,9 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.19**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate
+* Last version **1.0.21**, released at 29/07/2025 Fix Predicate for Hostnames, Shared CookieRedirectInterceptor, Postman-Echo performance
+* Version **1.0.20**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate - Bis
+* Version **1.0.19**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate
 * Version **1.0.18**, released at 10/05/2025 Fix manage Cookie during a redirection 3xx
 * Version **1.0.17**, released at 04/05/2025 Fix manage Cookie, Gateway is stateless!
 * Version **1.0.16**, released at 03/11/2024 Fix CORS Security configuration Spring 5/6

@@ -163,12 +163,12 @@ public class WebConfig implements WebMvcConfigurer, ResourceLoaderAware, Servlet
         converters.add(new MappingJackson2HttpMessageConverter(objectMapper));
     }*/
 
-    @Override
+    /*@Override
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/error").setViewName("error");
         registry.addViewController("/forbidden").setViewName("forbidden");
         registry.addViewController("/notfound").setViewName("notfound");
-    }
+    }*/
 
 
     @Value("${nexus.backend.filter.forwardedHeader.removeOnly:true}")
