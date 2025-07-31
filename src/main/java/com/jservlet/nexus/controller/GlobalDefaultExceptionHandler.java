@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2024 JServlet.com Franck Andriano.
+ * Copyright (C) 2001-2025 JServlet.com Franck Andriano.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
@@ -19,6 +19,7 @@
 package com.jservlet.nexus.controller;
 
 import com.jservlet.nexus.shared.web.controller.ApiBase;
+import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -55,13 +56,16 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
     @ExceptionHandler(value = { RestClientException.class })
     public ResponseEntity<?> handleResourceAccessException(HttpServletRequest request, RestClientException e) {
         logger.error("Intercepted RestClientException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+                e.getMessage(), request.getRemoteHost(), request.getMethod(),
+                request.getServletPath(), request.getHeader("User-Agent"));
         // ByeArray Resource request could not be completed due to a conflict with the current state of the target resource!
         if (Objects.requireNonNull(e.getMessage()).startsWith("Error while extracting response for type [class java.lang.Object] and content type")) {
             String msg = "No ResourceMatchers configured. Open the Method '" + request.getMethod() + "' and the Uri '" + request.getServletPath() + "' as ByteArray Resource!";
             return super.getResponseEntity("409", "ERROR", msg, CONFLICT);
         }
-        return super.getResponseEntity("503", "ERROR", "Remote Service Unavailable: " + e.getMessage(), SERVICE_UNAVAILABLE);
+        String errorMsg = e.getMessage();
+        return super.getResponseEntity("503", "ERROR", "Remote Service Unavailable: " +
+                errorMsg.substring(0, Math.min(errorMsg.length(), 1000)), SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(value = { HttpMessageNotReadableException.class })
@@ -105,9 +109,17 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
      *  Any other's error
      */
     @ExceptionHandler(value = { Exception.class })
-    public ResponseEntity<?> handleResourceAccessException(HttpServletRequest request, Exception e) {
-        logger.error("Intercepted Exception: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
+    public ResponseEntity<?> handleGlobalException(HttpServletRequest request, Exception e) {
+        // Special case ClientAbort
+        if (e instanceof ClientAbortException || (e.getCause() != null && e.getCause() instanceof ClientAbortException)) {
+            logger.warn("Intercepted ClientAbortException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
+                    e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+            return null; // Spring will do nothing we manage the response!
+        }
+        logger.error("Intercepted GlobalException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
                 e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
-        return getResponseEntity("500",  e);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON); // Mandatory forced ContentType can be null or application/octet-stream
+        return super.getResponseEntity("500",  "ERROR", e, headers, INTERNAL_SERVER_ERROR);
     }
 }

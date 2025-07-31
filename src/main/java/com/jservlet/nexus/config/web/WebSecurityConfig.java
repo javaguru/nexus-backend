@@ -34,6 +34,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.firewall.*;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -81,17 +82,29 @@ public class WebSecurityConfig {
                 .setServletContext(servletContext);
     }
 
+    @Value("${nexus.spring.web.security.csp.policy:default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; object-src 'none';}")
+    private String cspPolicyDirectives;
+
+    @Value("${nexus.spring.web.security.hsts.maxAgeInSeconds:31536000}")
+    private long maxAgeInSeconds;
+    @Value("${nexus.spring.web.security.hsts.includeSubDomains:false}")
+    private boolean includeSubDomains;
+
+    @Value("${nexus.spring.web.security.referrer.policy:NO_REFERRER}")
+    private String referrerPolicy;
+
     /**
      * SecurityFilterChain
      *
      * @param http The HttpSecurity
+     * @param corsConfigurationSource  The Cors config
      * @throws Exception An exception
-     * @return A WebSecurity customizer!
+     * @return SecurityFilterChain A WebSecurity customizer!
      */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         // cors config, csrf disable
-        http.cors(c -> c.configurationSource(corsConfigurationSource()))
+        http.cors(c -> c.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable);
         // session STATELESS
         http.sessionManagement(session ->
@@ -103,11 +116,23 @@ public class WebSecurityConfig {
                                 "/api/**").permitAll());
         // security headers
         http.headers(headers -> {
-              headers.contentTypeOptions();
-              headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin);
-              headers.cacheControl();
-              headers.xssProtection();
-              headers.httpStrictTransportSecurity();
+            headers.contentTypeOptions(); // X-Content-Type-Options: nosniff
+            headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin); // X-Frame-Options: SAMEORIGIN
+            headers.cacheControl(); // Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+            headers.xssProtection(); // X-XSS-Protection: 1; mode=block
+            if (!cspPolicyDirectives.isEmpty()) { // Content Security Policy: default-src 'none'; frame-ancestors 'none';
+                headers.contentSecurityPolicy(csp -> csp
+                        .policyDirectives(cspPolicyDirectives)
+                );
+            }
+            headers.httpStrictTransportSecurity(
+                    hsts -> { // Strict-Transport-Security: max-age=31536000; includeSubDomains
+                        hsts.maxAgeInSeconds(maxAgeInSeconds);
+                        hsts.includeSubDomains(includeSubDomains);
+                    }
+            );
+            // Referrer-Policy: no-referrer
+            headers.referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.valueOf(referrerPolicy));
         });
         return http.build();
     }
@@ -209,7 +234,7 @@ public class WebSecurityConfig {
     private int hostNamesLength = 255;
     @Value("${nexus.backend.security.predicate.hostName.pattern:}")
     private String hostNamesPattern;
-    @Value("${nexus.backend.security.predicate.userAgent.blocked:true}")
+    @Value("${nexus.backend.security.predicate.userAgent.blocked:false}")
     private boolean userAgentBlocked;
 
     @Bean
@@ -289,4 +314,5 @@ public class WebSecurityConfig {
             }
         };
     }
+
 }

@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  */
 public class CookieRedirectInterceptor implements ClientHttpRequestInterceptor {
 
-    private static final Logger Logger = LoggerFactory.getLogger(CookieRedirectInterceptor.class);
+    private static final Logger logger = LoggerFactory.getLogger(CookieRedirectInterceptor.class);
 
     private final int maxRedirects;
 
@@ -60,7 +60,7 @@ public class CookieRedirectInterceptor implements ClientHttpRequestInterceptor {
     private ClientHttpResponse executeWithRedirectHandling(HttpRequest request, byte[] body,
                                                            ClientHttpRequestExecution execution, List<String> setCookies, int redirectCount) throws IOException {
 
-        Logger.debug("Execute request to " + request.getURI() + " (Redirect count: " + redirectCount + ")");
+        logger.debug("Execute request to " + request.getURI() + " (Redirect count: " + redirectCount + ")");
 
         ClientHttpResponse response = execution.execute(request, body);
         HttpStatus statusCode = response.getStatusCode();
@@ -79,7 +79,7 @@ public class CookieRedirectInterceptor implements ClientHttpRequestInterceptor {
 
             // Correctly resolve the location URI against the current request URI
             URI redirectUri = request.getURI().resolve(location);
-            Logger.debug("Interceptor: Redirecting from {} to {}", request.getURI(), redirectUri);
+            logger.debug("Interceptor: Redirecting from {} to {}", request.getURI(), redirectUri);
 
             // Get Set-Cookie
             List<String> setCookieHeaders = response.getHeaders().get(HttpHeaders.SET_COOKIE);
@@ -138,10 +138,10 @@ public class CookieRedirectInterceptor implements ClientHttpRequestInterceptor {
                     try {
                         List<HttpCookie> parsedCookies = HttpCookie.parse(existingHeader);
                         for (HttpCookie cookie : parsedCookies) {
-                            cookieIdentifiers.add(new CookieIdentifier(cookie.getName(), cookie.getPath()));
+                            cookieIdentifiers.add(new CookieIdentifier(cookie.getName(), cookie.getPath(), cookie.getDomain()));
                         }
                     } catch (IllegalArgumentException e) {
-                        Logger.warn(String.format("Failed to parse existing Set-Cookie header '%s': %s", existingHeader, e.getMessage()));
+                        logger.warn(String.format("Failed to parse existing Set-Cookie header '%s': %s", existingHeader, e.getMessage()));
                     }
                 }
             }
@@ -156,18 +156,18 @@ public class CookieRedirectInterceptor implements ClientHttpRequestInterceptor {
                 try {
                     parsedCookies = HttpCookie.parse(cookieHeader);
                     if (parsedCookies.isEmpty()) {
-                        Logger.warn(String.format("Candidate Set-Cookie header '%s' parsed into zero cookies.", cookieHeader));
+                        logger.warn(String.format("Candidate Set-Cookie header '%s' parsed into zero cookies.", cookieHeader));
                         continue;
                     }
                 } catch (IllegalArgumentException e) {
-                    Logger.warn(String.format("Failed to parse candidate Set-Cookie header '%s': %s", cookieHeader, e.getMessage()));
+                    logger.warn(String.format("Failed to parse candidate Set-Cookie header '%s': %s", cookieHeader, e.getMessage()));
                     continue; // Skip malformed candidate header
                 }
 
                 // Match cookie candidate
                 boolean foundMatch = false;
                 for (HttpCookie cookie : parsedCookies) {
-                    CookieIdentifier id = new CookieIdentifier(cookie.getName(), cookie.getPath());
+                    CookieIdentifier id = new CookieIdentifier(cookie.getName(), cookie.getPath(), cookie.getDomain());
                     if (cookieIdentifiers.contains(id)) {
                         foundMatch = true;
                         break;
@@ -187,10 +187,12 @@ public class CookieRedirectInterceptor implements ClientHttpRequestInterceptor {
     private static class CookieIdentifier {
         public final String name;
         public final String path;
+        public final String domain;
 
-        public CookieIdentifier(String name, String path) {
+        public CookieIdentifier(String name, String path, String domain) {
             this.name = (name != null) ? name.toLowerCase() : null;
             this.path = path;
+            this.domain = domain;
         }
     }
 

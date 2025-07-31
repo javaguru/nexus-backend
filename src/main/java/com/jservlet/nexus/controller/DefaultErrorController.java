@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2024 JServlet.com Franck Andriano.
+ * Copyright (C) 2001-2025 JServlet.com Franck Andriano.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
@@ -56,11 +56,14 @@ public class DefaultErrorController extends ApiBase implements ErrorController {
     }
 
     @ResponseBody
-    @RequestMapping(value = {"/error"}, method = {RequestMethod.POST, RequestMethod.GET}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = {"/error"}, method = {
+            RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
+            RequestMethod.DELETE, RequestMethod.PATCH }, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> error(HttpServletRequest request) {
         Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
         final HttpStatus status = getStatus(request);
-        return super.getResponseEntity(String.valueOf(status.value()), "ERROR", String.valueOf(body.get("message")), status);
+        return super.getResponseEntity(String.valueOf(status.value()), "ERROR",
+                String.valueOf(body.get("message")), status);
     }
 
     private boolean getTraceParameter(HttpServletRequest request) {
@@ -87,12 +90,6 @@ public class DefaultErrorController extends ApiBase implements ErrorController {
         }
         return HttpStatus.INTERNAL_SERVER_ERROR;
     }
-
-
-    /*@GetMapping(path = "/error")
-    public String error() {
-        return "error/error500"; // error is also a 404 with SpringBoot !?
-    }*/
 
     @GetMapping(path = "/notfound")
     public String notfound() {
