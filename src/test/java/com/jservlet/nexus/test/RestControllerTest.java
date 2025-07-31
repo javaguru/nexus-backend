@@ -60,7 +60,7 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
     private ResponseType<List<Data>> DATA_LIST_RESPONSE_TYPE;
     private ResponseType<HttpStatus> STATUS_RESPONSE_TYPE;
     private ResponseType<Boolean> BOOL_RESPONSE_TYPE;
-    private ResponseType<Object> ERROR_RESPONSE_TYPE;
+    private ResponseType<Object> OBJECT_RESPONSE_TYPE;
     private ResponseType<byte[]> BYTES_RESPONSE_TYPE;
 
     private ResourceLoader resourceLoader;
@@ -83,7 +83,7 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
         DATA_LIST_RESPONSE_TYPE = backendService.createResponseType(new ParameterizedTypeReference<>(){});
         BOOL_RESPONSE_TYPE = backendService.createResponseType(Boolean.class);
         STATUS_RESPONSE_TYPE = backendService.createResponseType(HttpStatus.class);
-        ERROR_RESPONSE_TYPE = backendService.createResponseType(Object.class);
+        OBJECT_RESPONSE_TYPE = backendService.createResponseType(Object.class);
         BYTES_RESPONSE_TYPE = backendService.createResponseType(byte[].class);
     }
 
@@ -224,7 +224,7 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
     public void testGetXssBackend() throws NexusResourceNotFoundException {
         try {
             String url = "/mock/v1/dataXss?param1=<script>alert('info1')</script>"; //
-            backendService.get(url, ERROR_RESPONSE_TYPE);
+            backendService.get(url, OBJECT_RESPONSE_TYPE);
         } catch (NexusGetException e) {
             testException(e);
         }
@@ -242,12 +242,12 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
     }
 
     @Test
-    public void testPostXssBackend() throws NexusCreationException, NexusResourceExistsException {
+    public void testPostXssBackend() throws NexusResourceExistsException {
         try {
             // try also security exception \\<script> or <script> only!
             String url = "/mock/v1/dataPostXss?param1=test";
             Data data = new Data("<script>alert('info1')</script>","info2", 0.0006);
-            backendService.post(url, data, ERROR_RESPONSE_TYPE);
+            backendService.post(url, data, OBJECT_RESPONSE_TYPE);
         } catch (NexusCreationException e) {
             assertNotNull(e.getMessage());
             logger.debug("Error: {}", e.getCause().getMessage());
@@ -258,7 +258,7 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
     public void testXErrorBackend400() throws NexusResourceNotFoundException {
         try {
            String url = "/mock/v1/dataError400";
-           backendService.get(url, ERROR_RESPONSE_TYPE);
+           backendService.get(url, OBJECT_RESPONSE_TYPE);
         } catch (NexusGetException e) {
             testException(e);
         }
@@ -268,17 +268,17 @@ public class RestControllerTest extends TestCase implements ResourceLoaderAware 
     public void testXErrorBackend500() throws NexusResourceNotFoundException {
         try {
             String url = "/mock/v1/dataError500";
-            backendService.get(url, ERROR_RESPONSE_TYPE);
+            backendService.get(url, OBJECT_RESPONSE_TYPE);
         } catch (NexusGetException e) {
             testException(e);
         }
     }
 
     @Test
-    public void testXErrorBackend401() throws  NexusGetException, NexusResourceNotFoundException {
+    public void testXErrorBackend401() throws NexusResourceNotFoundException {
         try {
             String url = "/mock/v1/dataError401";
-            backendService.get(url, ERROR_RESPONSE_TYPE);
+            backendService.get(url, OBJECT_RESPONSE_TYPE);
         } catch (NexusGetException e) {
             testException(e);
         }

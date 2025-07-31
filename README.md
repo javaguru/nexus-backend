@@ -40,9 +40,11 @@ Requests to a RestApi Backend Server.**
  * Implements an **EntityBackend** Json Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
  * Implements a **HttpFirewall** filter protection against evasion, rejected any suspicious Requests, Headers, Parameters, and log IP address at fault.
  * Implements a **WAF** filter protection against evasion on the Http Json BodyRequest, and log IP address at fault.
- * Implements a **CORS Security Request** filter, Authorize request based on Origin Domains and Methods.
+ * Implements a **CORS Security Request** filter, authorize request based on Origin Domains and Methods.
+ * Implements a **Content Security Policy** filter, define your own policy rules CSP.
+ * Implements a **RateLimit** interceptor, allows 1000 requests per minutes and per-IP-address.
  * Implements a **Fingerprint** for each Http header Request, generate a unique trackable Token APP-REQUEST-ID in the access logs.
- * Implements a **Method Override** filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override
+ * Implements a **Method Override** filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override.
  * Implements a **Forwarded Header** filter, set removeOnly at true by default, remove "Forwarded" and "X-Forwarded-*" headers.
  * Implements a **FormContent** filter, parses form data for Http PUT, PATCH, and DELETE requests and exposes it as Servlet request parameters.
  * Implements a **Compressing** filter Gzip compression for the Http Responses.
@@ -63,17 +65,18 @@ Requests to a RestApi Backend Server.**
 
  **SpringBoot keys application.properties:**
 
-| **Keys**                                      | **Default value** | **Descriptions**                                   |
-|-----------------------------------------------|:------------------|:---------------------------------------------------|
-| nexus.api.backend.enabled                     | true              | Activated the Nexus-Backend Service                |   
-| nexus.api.backend.filter.waf.enabled          | true              | Activated the WAF filter Json RequestBody          |   
-| nexus.api.backend.listener.requestid.enabled  | true              | Activated the Fingerprint for each Http Request    |   
-| nexus.api.backend.filter.httpoverride.enabled | true              | Activated the Http Override Method                 | 
-| nexus.backend.filter.forwardedHeader.enabled  | true              | Activated the ForwardedHeader filter               |   
-| nexus.backend.filter.gzip.enabled             | true              | Activated the Gzip compression filter              |   
-| spring.mvc.formcontent.filter.enabled         | true              | Activated the FormContent parameterMap Support     |   
-| nexus.backend.tomcat.connector.https.enable   | false             | Activated a Connector TLS/SSL in a Embedded Tomcat | 
-| nexus.backend.tomcat.accesslog.valve.enable   | false             | Activated an Accesslog in a Embedded Tomcat        | 
+| **Keys**                                         | **Default value** | **Descriptions**                                   |
+|--------------------------------------------------|:------------------|:---------------------------------------------------|
+| nexus.api.backend.enabled                        | true              | Activated the Nexus-Backend Service                |   
+| nexus.api.backend.filter.waf.enabled             | true              | Activated the WAF filter Json RequestBody          |   
+| nexus.api.backend.listener.requestid.enabled     | true              | Activated the Fingerprint for each Http Request    |   
+| nexus.api.backend.filter.httpoverride.enabled    | true              | Activated the Http Override Method                 | 
+| nexus.api.backend.interceptor.ratelimit.enabled  | true              | Activated the RateLimit                            | 
+| nexus.backend.filter.forwardedHeader.enabled     | true              | Activated the ForwardedHeader filter               |   
+| nexus.backend.filter.gzip.enabled                | true              | Activated the Gzip compression filter              |   
+| spring.mvc.formcontent.filter.enabled            | true              | Activated the FormContent parameterMap Support     |   
+| nexus.backend.tomcat.connector.https.enable      | false             | Activated a Connector TLS/SSL in a Embedded Tomcat | 
+| nexus.backend.tomcat.accesslog.valve.enable      | false             | Activated an Accesslog in a Embedded Tomcat        | 
 
 #### Noted the Spring config location can be overridden
 
@@ -121,7 +124,7 @@ Requests to a RestApi Backend Server.**
 
 **ApiBackend ResponseType** can be now a **ByteArray Resource.** 
 
-**Download** any content in a **ByteArray** included commons extensions files (see **MediaTypes** section)  
+**Download** any content in a **ByteArray** included commons extensions files (see **[MediaTypes](#The-MediaTypes-safe-extensions-configuration)** section)  
 
 The **ResourceMatchers** Config can be configured on specific ByteArray Resources path
 and on specific Methods **GET, POST, PUT, PATCH** and Ant Path pattern: 
@@ -152,8 +155,11 @@ And the Http Responses didn't come back with a HttpHeader **"Transfer-Encoding: 
 | nexus.backend.api-backend-resource.matchers.matchers1.pattern | /api/**           |
 
 **Noted bis:** For remove the Http header **"Transfer-Encoding: chunked"** the header Content-Length need to be calculated.
-enable the **ShallowEtagHeader Filter** in the configuration for force to calculate the header **Content-Length**
+
+Enable the **ShallowEtagHeader Filter** in the configuration for force to calculate the header **Content-Length**
 for all the **Response Json Entity Object**, no more HttpHeader **"Transfer-Encoding: chunked"**.
+
+### The MediaTypes safe extensions configuration
 
 **MediaTypes safe extensions**
 
@@ -178,13 +184,15 @@ Default Header ContentNegotiation Strategy:
 | nexus.backend.content.negotiation.commonMediaTypes            | true              | Enabled                     |   
 
 
+### The CORS Security configuration
+
 **CORS Security configuration, allow Control Request on Domains and Methods**
 
 **Settings keys settings.properties:**
 
 The default Cors Configuration:
 
-| **Cors Configuration**                            | **Default value**              | **Example value**                           | **Descriptions  **     |
+| **Cors Configuration**                            | **Default value**              | **Example value**                           | **Descriptions**       |
 |---------------------------------------------------|:-------------------------------|:--------------------------------------------|:-----------------------|
 | nexus.backend.security.cors.credentials           | false                          | true                                        | Enable credentials     |  
 | nexus.backend.security.cors.allowedHttpMethods    | GET,POST,PUT,HEAD,DELETE,PATCH | GET,POST,PUT                                | List Http Methods      |  
@@ -195,6 +203,22 @@ The default Cors Configuration:
 | nexus.backend.security.cors.maxAge                | 3600                           | 1800                                        | Max Age cached         |  
 
 **Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
+
+### The RateLimit Configuration
+
+**Rate limit** 1000 per minutes and per-IP-address.
+
+**StringBoot key** *nexus.api.backend.interceptor.ratelimit.enabled* at **true** for activated the RateLimit.
+
+**Settings keys settings.properties:**
+
+The default Cors Configuration:
+
+| **Cors Configuration**                                 | **Default value** | **Example value** | **Descriptions** |
+|--------------------------------------------------------|:------------------|:------------------|:-----------------|
+| nexus.backend.interceptor.ratelimit.refillToken        | 1000              | 100               | Filled tokens    |  
+| nexus.backend.interceptor.ratelimit.refillMinutes      | 1                 | 1                 | Duration minutes |  
+| nexus.backend.interceptor.ratelimit.bandwidthCapacity  | 1000              | 100               | Bucket capacity  |  
 
 
 ### The Nexus-Backend provides a full support MultipartRequest and Map parameters inside a form-data HttpRequest
@@ -211,6 +235,7 @@ The default Cors Configuration:
 | spring.servlet.multipart.max-request-size    | 15MB              | 150MB             | Max request size    |   
 
 **Noted** All the HttpRequests with a **Content-Type multipart/form-data** will be managed by a temporary **BackendResource**.
+
 This BackendResource can convert a **MultipartFile** to a temporary **Resource**, ready to be sent to the **Backend Server**.
 
 
@@ -282,6 +307,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
  * Header Names / Header Values
  * Parameter Names / Parameter Values
  * Hostnames
+ * UserAgent
 
 **And check for Buffer Overflow evasion by the Length:**
 
@@ -305,7 +331,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.security.predicate.headerNamesValuesLength | 25000             | Header values length max    |   
 | nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max       |   
 | nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter     |   
-| nexus.backend.security.predicate.userAgent.blocked       | false             | Active UserAgent filter     |   
+| nexus.backend.security.predicate.userAgent.blocked       | true              | Active UserAgent filter     |   
 
 
 ### Activated the Mutual Authentication or mTLS connection on the HttpFactory Client

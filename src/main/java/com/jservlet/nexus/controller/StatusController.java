@@ -18,6 +18,7 @@
 
 package com.jservlet.nexus.controller;
 
+import com.jservlet.nexus.config.web.WebConfig;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -116,7 +118,6 @@ public class StatusController implements ResourceLoaderAware {
                 }
             }
         }
-       //System.getProperties().list(System.out);
     }
 
     @GetMapping(value = "/health/status", produces = MimeTypeUtils.TEXT_PLAIN_VALUE)
@@ -128,6 +129,10 @@ public class StatusController implements ResourceLoaderAware {
     private ResponseEntity<?> createHealthStatusResponseEntity(HttpServletRequest request, boolean withServices) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String now = sdf.format(System.currentTimeMillis());
+        long currentTime = System.currentTimeMillis();
+        long startup = WebConfig.getApplicationContext().getStartupDate();
+        String started = sdf.format(startup);
+        long days = getDaysBetween(currentTime, startup);
 
         final Health health = checkBackendServiceHealth() ? Health.OK : Health.ERROR;
         final Health lbHealth = health != Health.ERROR ? Health.OK : Health.ERROR;
@@ -136,6 +141,8 @@ public class StatusController implements ResourceLoaderAware {
         status.put("Status timestamp", now);
         status.put("Application", application);
         status.put("Version", version);
+        status.put("Startup date", started);
+        status.put("Startup days", String.valueOf(days));
         status.put("Build profile", profile);
         status.put("Build number", build);
         status.put("Build timestamp", buildTime);
@@ -170,6 +177,11 @@ public class StatusController implements ResourceLoaderAware {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, new MimeType(MimeTypeUtils.TEXT_PLAIN, UTF_8).toString())
                 .body(sb.toString());
+    }
+
+    private long getDaysBetween(long startTimeMillis, long endTimeMillis) {
+        long diffInMillis = Math.abs(endTimeMillis - startTimeMillis);
+        return TimeUnit.MILLISECONDS.toDays(diffInMillis);
     }
 
     @Override
