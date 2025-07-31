@@ -208,7 +208,7 @@ The default Cors Configuration:
 
 **Rate limit** 1000 per minutes and per-IP-address.
 
-**StringBoot key** *nexus.api.backend.interceptor.ratelimit.enabled* at **true** for activated the RateLimit.
+**SpringBoot key** *nexus.api.backend.interceptor.ratelimit.enabled* at **true** for activated the RateLimit.
 
 **Settings keys settings.properties:**
 
@@ -370,7 +370,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
  **Settings keys settings.properties:**
 
- **StringBoot key** *nexus.backend.tomcat.accesslog.valve.enable* at **true** for activated the Accesslogs
+ **SpringBoot key** *nexus.backend.tomcat.accesslog.valve.enable* at **true** for activated the Accesslogs
 
 | **Keys**                                      | **Default value**                                                                                                                          | **Descriptions**       |
 |-----------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------|
