@@ -230,7 +230,7 @@ The default Cors Configuration:
 | **Keys**                                     | **Default value** | **Example value** | **Descriptions**    |
 |----------------------------------------------|:------------------|:------------------|:--------------------|
 | spring.servlet.multipart.enabled             | true              | true              | Enabled multipart   |   
-| spring.servlet.multipart.file-size-threshold | 10MB              | 25MB              | File size threshold |   
+| spring.servlet.multipart.file-size-threshold | 2MB               | 5MB               | File size threshold |   
 | spring.servlet.multipart.max-file-size       | 15MB              | 150MB             | Max file size       |   
 | spring.servlet.multipart.max-request-size    | 15MB              | 150MB             | Max request size    |   
 
