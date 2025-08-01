@@ -29,7 +29,6 @@ public class WebFilterConfig implements ServletContextAware {
     @Value("${nexus.backend.filter.forwardedHeader.removeOnly:true}")
     private boolean forwardedHeaderRemoveOnly;
 
-    @Autowired
     public WebFilterConfig(Environment env) {
         this.env = env;
     }

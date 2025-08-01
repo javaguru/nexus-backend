@@ -48,7 +48,6 @@ public class DefaultErrorController extends ApiBase implements ErrorController {
 
     private static final String SOURCE = "ERROR-REST-NEXUS-BACKEND";
 
-    @Autowired
     public DefaultErrorController(ErrorAttributes errorAttributes) {
         super(SOURCE);
         Assert.notNull(errorAttributes, "ErrorAttributes must not be null");

@@ -37,13 +37,16 @@ import javax.servlet.ServletContextEvent;
 /**
  *  NexusBackend ServletContext Listener
  */
-@Component // @WebListener // replaced cause @Autowired
+@Component
 public class JServletContextListener extends ContextCleanupListener {
 
     private final static Logger logger = LoggerFactory.getLogger(JServletContextListener.class);
 
-    @Autowired
-    JServletBanner jServletBanner;
+    private final JServletBanner jServletBanner;
+
+    public JServletContextListener(JServletBanner jServletBanner) {
+         this.jServletBanner = jServletBanner;
+    }
 
     @Override
     public void contextInitialized(@NonNull ServletContextEvent event) {

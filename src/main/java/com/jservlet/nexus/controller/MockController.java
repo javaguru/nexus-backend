@@ -70,19 +70,15 @@ public class MockController extends ApiBase {
 
     private static final String ENV_VAR = "environment";
 
-    private Environment env;
+    private final Environment env;
 
     private static final String SOURCE = "MOCK-REST-NEXUS-BACKEND";
 
     private static final String fileName = "logo-marianne.svg";
     private static final String fileTest = System.getProperty("java.io.tmpdir") + fileName;
 
-    public MockController() {
+    public MockController(Environment env) {
         super(SOURCE);
-    }
-
-    @Autowired
-    public void setEnv(Environment env) {
         this.env = env;
     }
 

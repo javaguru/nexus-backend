@@ -81,7 +81,6 @@ public class StatusController implements ResourceLoaderAware {
 
     private static final String ENV_VAR = "environment";
 
-    @Autowired
     public StatusController(BackendService backendService, Environment env) {
         this.backendService = backendService;
         this.env = env;

@@ -88,7 +88,6 @@ public class WAFFilter extends ApiBase implements Filter {
     private final WAFPredicate wafPredicate;
     private final ObjectMapper objectMapper;
 
-    @Autowired
     public WAFFilter(WAFPredicate wafPredicate, ObjectMapper objectMapper) {
         super(SOURCE);
         this.wafPredicate = wafPredicate;

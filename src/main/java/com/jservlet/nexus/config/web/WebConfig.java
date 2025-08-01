@@ -61,7 +61,6 @@ public class WebConfig implements ApplicationContextAware {
 
     private final ObjectMapper objectMapper;
 
-    @Autowired
     public WebConfig(Environment env, ObjectMapper objectMapper) {
         this.env = env;
         this.objectMapper = objectMapper;

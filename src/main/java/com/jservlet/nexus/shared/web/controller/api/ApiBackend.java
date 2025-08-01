@@ -111,16 +111,14 @@ public class ApiBackend extends ApiBase {
 
     private static final String SOURCE = "REST-API-NEXUS-BACKEND";
 
-    public ApiBackend() { super(SOURCE); }
+    private final BackendService backendService;
 
-    private BackendService backendService;
-
-    private ResourceMatchersConfig matchersConfig;
+    private final ResourceMatchersConfig matchersConfig;
 
     private OrRequestMatcher orRequestResourceMatcher;
 
-    @Autowired
-    public final void setBackendService(BackendService backendService, ResourceMatchersConfig matchersConfig) {
+    public ApiBackend(BackendService backendService, ResourceMatchersConfig matchersConfig) {
+        super(SOURCE);
         this.backendService = backendService;
         this.matchersConfig = matchersConfig;
     }

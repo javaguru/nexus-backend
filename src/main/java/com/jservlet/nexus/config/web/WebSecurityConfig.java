@@ -60,7 +60,6 @@ public class WebSecurityConfig {
     @Value("${nexus.spring.web.security.debug:false}")
     private boolean webSecurityDebug;
 
-    @Autowired
     public WebSecurityConfig(ServletContext servletContext) {
         this.servletContext = servletContext;
     }
@@ -261,7 +260,7 @@ public class WebSecurityConfig {
      * @return HttpFirewall
      */
     @Bean
-    public HttpFirewall webHttpFirewall() {
+    public HttpFirewall webHttpFirewall(WAFPredicate waf) {
         WebHttpFirewall firewall = new WebHttpFirewall();
 
         firewall.setAllowedHttpMethods(allowedHttpMethods);
@@ -277,8 +276,6 @@ public class WebSecurityConfig {
         firewall.setAllowUrlEncodedLineFeed(isAllowUrlEncodedLineFeed);
         firewall.setAllowUrlEncodedParagraphSeparator(isAllowUrlEncodedParagraphSeparator);
         firewall.setAllowUrlEncodedLineSeparator(isAllowUrlEncodedLineSeparator);
-
-        WAFPredicate waf = wafPredicate();
 
         // Predicate Parameter Name/Value
         firewall.setAllowedParameterNames(waf.getWAFParameterNames());
