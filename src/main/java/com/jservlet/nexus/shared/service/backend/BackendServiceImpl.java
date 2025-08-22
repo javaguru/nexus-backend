@@ -74,6 +74,27 @@ public final class BackendServiceImpl implements BackendService {
         this.isHandleBackendEntity = isHandleBackendEntity;
     }
 
+    public BackendServiceImpl(String backendURL, RestOperations restOperations, ObjectMapper objectMapper) {
+        this.backendURL = backendURL;
+        this.restOperations = restOperations;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * Constructor complete
+     *
+     * @param backendURL        The targeted backend URL
+     * @param restOperations    The RestOperations
+     * @param objectMapper      The ObjectMapper
+     * @param isHandleBackendEntity  True a Generics Object, false a Json Entity Object or a Resource
+     */
+    public BackendServiceImpl(String backendURL, RestOperations restOperations, ObjectMapper objectMapper, boolean isHandleBackendEntity) {
+        this.backendURL = backendURL;
+        this.restOperations = restOperations;
+        this.objectMapper = objectMapper;
+        this.isHandleBackendEntity = isHandleBackendEntity;
+    }
+
     public void setBackendURL(String backendURL) {
         this.backendURL = backendURL;
     }
@@ -477,4 +498,45 @@ public final class BackendServiceImpl implements BackendService {
         }
     }
 
+    /* Setter */
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setCookie(String cookie) {
+        this.cookie = cookie;
+    }
+
+    public void setBearer(String bearer) {
+        this.bearer = bearer;
+    }
+
+    public void setRemoveHeaders(boolean removeHeaders) {
+        this.removeHeaders = removeHeaders;
+    }
+
+    public void setRemoveHostHeader(boolean removeHostHeader) {
+        this.removeHostHeader = removeHostHeader;
+    }
+
+    public void setRemoveOriginHeader(boolean removeOriginHeader) {
+        this.removeOriginHeader = removeOriginHeader;
+    }
+
+    public void setTruncated(boolean truncated) {
+        this.truncated = truncated;
+    }
+
+    public void setMaxLengthTruncated(int maxLengthTruncated) {
+        this.maxLengthTruncated = maxLengthTruncated;
+    }
+
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2024 JServlet.com Franck Andriano.
+ * Copyright (C) 2001-2025 JServlet.com Franck Andriano.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
@@ -22,14 +22,10 @@ import com.jservlet.nexus.config.web.WebConfig;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ResourceLoaderAware;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.*;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
@@ -51,11 +47,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * The Status Controller
  */
 @Controller
-public class StatusController implements ResourceLoaderAware {
+public class StatusController {
 
     private static final Logger logger = LoggerFactory.getLogger(StatusController.class);
-
-    private ResourceLoader resourceLoader;
 
     private String application;
     private String version;
@@ -81,7 +75,6 @@ public class StatusController implements ResourceLoaderAware {
 
     private static final String ENV_VAR = "environment";
 
-    @Autowired
     public StatusController(BackendService backendService, Environment env) {
         this.backendService = backendService;
         this.env = env;
@@ -89,7 +82,7 @@ public class StatusController implements ResourceLoaderAware {
 
     @PostConstruct
     public void postConstruct() throws IOException {
-        Resource resource = resourceLoader.getResource("classpath:META-INF/version.properties");
+        Resource resource = WebConfig.getApplicationContext().getResource("classpath:META-INF/version.properties");
         if (!resource.exists())
             throw new MissingResourceException("Unable to find \"version.properties\" on classpath!",
                     getClass().getName(), "version.properties");
@@ -182,11 +175,6 @@ public class StatusController implements ResourceLoaderAware {
     private long getDaysBetween(long startTimeMillis, long endTimeMillis) {
         long diffInMillis = Math.abs(endTimeMillis - startTimeMillis);
         return TimeUnit.MILLISECONDS.toDays(diffInMillis);
-    }
-
-    @Override
-    public void setResourceLoader(@NonNull ResourceLoader resourceLoader) {
-        this.resourceLoader = resourceLoader;
     }
 
     private boolean checkBackendServiceHealth() {

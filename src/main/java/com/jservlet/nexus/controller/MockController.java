@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2024 JServlet.com Franck Andriano.
+ * Copyright (C) 2001-2025 JServlet.com Franck Andriano.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
@@ -32,7 +32,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
@@ -70,19 +69,15 @@ public class MockController extends ApiBase {
 
     private static final String ENV_VAR = "environment";
 
-    private Environment env;
+    private final Environment env;
 
     private static final String SOURCE = "MOCK-REST-NEXUS-BACKEND";
 
     private static final String fileName = "logo-marianne.svg";
     private static final String fileTest = System.getProperty("java.io.tmpdir") + fileName;
 
-    public MockController() {
+    public MockController(Environment env) {
         super(SOURCE);
-    }
-
-    @Autowired
-    public void setEnv(Environment env) {
         this.env = env;
     }
 
@@ -157,6 +152,109 @@ public class MockController extends ApiBase {
         dataList.add(new Data("info4","info5",10.05));
         return new ResponseEntity<>(dataList, HttpStatus.OK);
     }
+
+    /* Personal John Doe */
+    @Operation(summary = "Get Personal Joe ", description = "Get data Joe List")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = DataJoe.class))}),
+    })
+    @GetMapping(path = "/v1/dataJoe", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getListJoe() {
+        DataJoe dataJoe = new DataJoe();
+        HashMap<String, Object> hashJoe = new HashMap<>();
+        hashJoe.put("userid", 123);
+        hashJoe.put("name", "John Doe");
+        hashJoe.put("email", "john.doe@example.com");
+        hashJoe.put("phone", "+1-555-123-4567");
+        hashJoe.put("address", "123 Fake Street");
+        dataJoe.setDataJoe(hashJoe);
+        return new ResponseEntity<>(dataJoe, HttpStatus.OK);
+    }
+    @Operation(summary = "Get a data Joe2", description = "Get a data Joe2")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = HashMap.class))}),
+    })
+    @GetMapping(path = "/v1/dataJoe2", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getDataJoe2() {
+        HashMap<String, Object> hashJoe = new HashMap<>();
+        hashJoe.put("user_id", 123);
+        hashJoe.put("name", "John Doe");
+        hashJoe.put("age", 25);
+        hashJoe.put("akia_key", "AKIAQWERTYUIOPASDF");
+
+        return new ResponseEntity<>(hashJoe, HttpStatus.OK);
+    }
+    @Operation(summary = "Get a data Joe2", description = "Get a data Joe2")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = HashMap.class))}),
+    })
+    @GetMapping(path = "/v1/dataJoe3", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getDataJoe3() {
+        HashMap<String, Object> dataJoe = new HashMap<>(); // no user_id!
+        dataJoe.put("name", "Joe");
+        dataJoe.put("age", 25);
+        dataJoe.put("AKIAQWERTYUIOPASDF", "AKIAQWERTYUIOPASDF");
+        return new ResponseEntity<>(dataJoe, HttpStatus.OK);
+    }
+    @Operation(summary = "Get Financial Data Joe", description = "Returns mock financial data including IBAN and Credit Card numbers.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Request successful", content = {@Content(schema = @Schema(implementation = HashMap.class))}),
+    })
+    @GetMapping(path = "/v1/financialDataJoe", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getFinancialData() {
+      /*  List<Data> dataList = new ArrayList<>();
+        dataList.add(new Data("transaction_id", "TXN-12345", 150.75));
+        dataList.add(new Data("beneficiary_iban", "FR7630006000011234567890189", 0.0));
+        dataList.add(new Data("payment_method", "credit_card", 0.0));
+        dataList.add(new Data("card_number", "4971 1234 5678 9010", 0.0));*/
+        HashMap<String, Object> hashJoe = new HashMap<>();
+        hashJoe.put("transaction_id", "TXN-12345");
+        hashJoe.put("beneficiary_iban", "00:1A:2B:3C:4D:5E");
+        hashJoe.put("payment_method", "credit_card");
+        hashJoe.put("card_number", "4971 1234 5678 9010");
+        return new ResponseEntity<>(hashJoe, HttpStatus.OK);
+    }
+    @Operation(summary = "Get Identity Data", description = "Returns mock identity data including Passport and SSN.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Request successful", content = {@Content(schema = @Schema(implementation = HashMap.class))}),
+    })
+    @GetMapping(path = "/v1/identityData", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getIdentityData() {
+        List<Data> dataList = new ArrayList<>();
+        dataList.add(new Data("user_name", "Jane Doe", 0.0));
+        dataList.add(new Data("passport_number", "AB123456", 0.0));
+        dataList.add(new Data("ssn", "123-45-6789", 0.0));
+        return new ResponseEntity<>(dataList, HttpStatus.OK);
+    }
+    @Operation(summary = "Get Technical Data", description = "Returns mock technical data with IP and MAC addresses.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Request successful", content = {@Content(schema = @Schema(implementation = HashMap.class))}),
+    })
+    @GetMapping(path = "/v1/techData", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getTechData() {
+        HashMap<String, Object> hashJoe = new HashMap<>();
+        hashJoe.put("last_login_ip", "8.8.8.8");
+        hashJoe.put("device_mac_address", "00:1A:2B:3C:4D:5E");
+         return new ResponseEntity<>(hashJoe, HttpStatus.OK);
+    }
+    @Operation(summary = "Get Vehicle Data", description = "Returns mock vehicle data with French and US license plates.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Request successful", content = {@Content(schema = @Schema(implementation = HashMap.class))}),
+    })
+    @GetMapping(path = "/v1/vehicleData", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getVehicleData() {
+        HashMap<String, Object> hashJoe = new HashMap<>();
+        hashJoe.put("vehicle_fr", "Peugeot 208");
+        hashJoe.put("license_plate_fr", "AB-123-CD");
+        hashJoe.put("vehicle_us", "ABC 1234");
+        hashJoe.put("license_plate_us", "ABC 1234");
+        return new ResponseEntity<>(hashJoe, HttpStatus.OK);
+    }
+
+
+
+    /* end John Doe */
+
 
     @Operation(summary = "Post and get data List", description = "Post and get data List")
     @ApiResponses(value = {
@@ -360,6 +458,34 @@ public class MockController extends ApiBase {
                     ", data3='" + data3 + '\'' +
                     ", data4='" + data4 + '\'' +
                     '}';
+        }
+    }
+
+    @Schema
+    public static class DataJoe {
+
+        @Parameter(name = "dataJoe", description = "dataJoe field")
+        public Map dataJoe ;
+
+
+        public DataJoe() {
+        }
+        public DataJoe(Map dataJoe, String data2, double data3) {
+            this.dataJoe = dataJoe;
+        }
+        @Override
+        public String toString() {
+            return "Data{" +
+                    "dataJoe='" + dataJoe + '\'' +
+                    '}';
+        }
+
+        public Map getDataJoe() {
+            return dataJoe;
+        }
+
+        public void setDataJoe(Map dataJoe) {
+            this.dataJoe = dataJoe;
         }
     }
 

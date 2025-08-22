@@ -88,30 +88,30 @@ Requests to a RestApi Backend Server.**
 
  **Settings keys settings.properties:**
 
-| **Keys**                                        | **Default value**            | **Example value**               | **Descriptions**                                |
-|-------------------------------------------------|:-----------------------------|:--------------------------------|:------------------------------------------------|
-| **nexus.backend.url**                           | https://postman-echo.com     | https://nexus6.jservlet.com/api | The API Backend Server targeted                 |   
-| **nexus.backend.uri.alive**                     | /get                         | /health/info                    | The endpoint alive Backend Server               |   
-| nexus.backend.http.response.truncated           | false                        | true                            | Truncated the Json output in the logs           |   
-| nexus.backend.http.response.truncated.maxLength | 1000                         | 100                             | MaxLength truncated                             |   
-| **WAF**                                         |                              |                                 |                                                 |
-| nexus.api.backend.filter.waf.reactive.mode      | STRICT                       | PASSIVE                         | Default Strict HttpFirewall + Json RequestBody  |
-| nexus.api.backend.filter.waf.deepscan.cookie    | false                        | true                            | Activated Deep Scan Cookie                      |
-| **Headers**                                     |                              |                                 |                                                 |
-| nexus.backend.header.remove                     | false                        | true                            | Remove all Headers                              |   
-| nexus.backend.header.host.remove                | false                        | false                           | Remove just host Header                         |   
-| nexus.backend.header.origin.remove              | false                        | false                           | Remove just origin Header                       |   
-| nexus.backend.header.cookie                     | -                            | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX  | Set a Cookie Request Header                     |   
-| nexus.backend.header.bearer                     | -                            | eyJhbGciO                       | Activated Bearer Authorization request          |   
-| nexus.backend.header.user-agent                 | JavaNexus                    | Apache HttpClient/4.5           | User Agent header                               |
-| nexus.backend.header.authorization.username     | -                            | XUsername                       | Activated Basic Authorization request           |   
-| nexus.backend.header.authorization.password     | -                            | XPassword                       | "                                               |
-| **Backend Headers**                             |                              |                                 |                                                 |
-| nexus.api.backend.transfer.headers              | test                         | test,...                        | Headers list back from Backend Server           |  
-| **Mapper**                                      |                              |                                 |                                                 |
-| nexus.backend.mapper.indentOutput               | false                        | true                            | Indent Output Json                              |   
-| **Debug**                                       |                              |                                 |                                                 |
-| nexus.spring.web.security.debug                 | false                        | true                            | Debug the Spring FilterChain                    |
+| **Keys**                                        | **Default value**            | **Example value**                | **Descriptions**                                    |
+|-------------------------------------------------|:-----------------------------|:---------------------------------|:----------------------------------------------------|
+| **nexus.backend.url**                           | https://postman-echo.com     | https://nexus6.jservlet.com/api  | The API Backend<br/> Server targeted                |   
+| **nexus.backend.uri.alive**                     | /get                         | /health/info                     | The endpoint alive <br/>Backend Server              |   
+| nexus.backend.http.response.truncated           | false                        | true                             | Truncated the Json<br/> output in the logs          |   
+| nexus.backend.http.response.truncated.maxLength | 1000                         | 100                              | MaxLength truncated                                 |   
+| **WAF**                                         |                              |                                  |                                                     |
+| nexus.api.backend.filter.waf.reactive.mode      | STRICT                       | PASSIVE                          | Default Strict HttpFirewall <br/>+ Json RequestBody |
+| nexus.api.backend.filter.waf.deepscan.cookie    | false                        | true                             | Activated Deep Scan Cookie                          |
+| **Headers**                                     |                              |                                  |                                                     |
+| nexus.backend.header.remove                     | false                        | true                             | Remove all Headers                                  |   
+| nexus.backend.header.host.remove                | false                        | false                            | Remove just host Header                             |   
+| nexus.backend.header.origin.remove              | false                        | false                            | Remove just origin Header                           |   
+| nexus.backend.header.cookie                     | -                            | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX   | Set a Cookie Request Header                         |   
+| nexus.backend.header.bearer                     | -                            | eyJhbGciO                        | Activated Bearer <br/>Authorization request         |   
+| nexus.backend.header.user-agent                 | JavaNexus                    | Apache HttpClient/4.5            | User Agent header                                   |
+| nexus.backend.header.authorization.username     | -                            | XUsername                        | Activated Basic <br/>Authorization request          |   
+| nexus.backend.header.authorization.password     | -                            | XPassword                        | "                                                   |
+| **Backend Headers**                             |                              |                                  |                                                     |
+| nexus.api.backend.transfer.headers              | test                         | test,...                         | Headers list back <br/>from Backend Server          |  
+| **Mapper**                                      |                              |                                  |                                                     |
+| nexus.backend.mapper.indentOutput               | false                        | true                             | Indent Output Json                                  |   
+| **Debug**                                       |                              |                                  |                                                     |
+| nexus.spring.web.security.debug                 | false                        | true                             | Debug the Spring FilterChain                        |
 
 
 #### Noted the settings.properties can be overridden by a file Path config.properties
@@ -192,15 +192,15 @@ Default Header ContentNegotiation Strategy:
 
 The default Cors Configuration:
 
-| **Cors Configuration**                            | **Default value**              | **Example value**                           | **Descriptions**       |
-|---------------------------------------------------|:-------------------------------|:--------------------------------------------|:-----------------------|
-| nexus.backend.security.cors.credentials           | false                          | true                                        | Enable credentials     |  
-| nexus.backend.security.cors.allowedHttpMethods    | GET,POST,PUT,HEAD,DELETE,PATCH | GET,POST,PUT                                | List Http Methods      |  
-| nexus.backend.security.cors.allowedOriginPatterns |                                |                                             | Regex Patterns domains |  
-| nexus.backend.security.cors.allowedOrigins        | *                              | http://localhost:4042,http://localhost:4083 | List domains           |  
-| nexus.backend.security.cors.allowedHeaders        |                                | Authorization,Cache-Control,Content-Type    | List Allowed Headers   |  
-| nexus.backend.security.cors.exposedHeaders        |                                | Authorization                               | List Exposed Headers   |  
-| nexus.backend.security.cors.maxAge                | 3600                           | 1800                                        | Max Age cached         |  
+| **Cors Configuration**                            | **Default value**                                                          | **Example value**                                  | **Descriptions**       |
+|---------------------------------------------------|:---------------------------------------------------------------------------|:---------------------------------------------------|:-----------------------|
+| nexus.backend.security.cors.credentials           | false                                                                      | true                                               | Enable credentials     |  
+| nexus.backend.security.cors.allowedHttpMethods    | GET,POST,PUT<br/>,OPTIONS,HEAD,<br/>DELETE,PATCH                           | GET,POST,PUT,OPTIONS                               | List Http Methods      |  
+| nexus.backend.security.cors.allowedOriginPatterns |                                                                            |                                                    | Regex Patterns domains |  
+| nexus.backend.security.cors.allowedOrigins        | *                                                                          | http://localhost:4042,<br/>http://localhost:4083   | List domains           |  
+| nexus.backend.security.cors.allowedHeaders        | Authorization,Cache-Control,<br/>Content-Type,<br/>X-Requested-With,Accept | Authorization,<br/>Cache-Control,<br/>Content-Type | List Allowed Headers   |  
+| nexus.backend.security.cors.exposedHeaders        |                                                                            | Authorization                                      | List Exposed Headers   |  
+| nexus.backend.security.cors.maxAge                | 3600                                                                       | 1800                                               | Max Age cached         |  
 
 **Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
 
@@ -208,7 +208,7 @@ The default Cors Configuration:
 
 **Rate limit** 1000 per minutes and per-IP-address.
 
-**StringBoot key** *nexus.api.backend.interceptor.ratelimit.enabled* at **true** for activated the RateLimit.
+**SpringBoot key** *nexus.api.backend.interceptor.ratelimit.enabled* at **true** for activated the RateLimit.
 
 **Settings keys settings.properties:**
 
@@ -230,7 +230,7 @@ The default Cors Configuration:
 | **Keys**                                     | **Default value** | **Example value** | **Descriptions**    |
 |----------------------------------------------|:------------------|:------------------|:--------------------|
 | spring.servlet.multipart.enabled             | true              | true              | Enabled multipart   |   
-| spring.servlet.multipart.file-size-threshold | 10MB              | 25MB              | File size threshold |   
+| spring.servlet.multipart.file-size-threshold | 2MB               | 5MB               | File size threshold |   
 | spring.servlet.multipart.max-file-size       | 15MB              | 150MB             | Max file size       |   
 | spring.servlet.multipart.max-request-size    | 15MB              | 150MB             | Max request size    |   
 
@@ -278,20 +278,20 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
  **Settings keys settings.properties:**
  
-| **Keys**                                                   | **Default value**                      | **Descriptions**                      |
-|------------------------------------------------------------|:---------------------------------------|:--------------------------------------|
-| nexus.backend.security.allowedHttpMethods                  | GET,POST,PUT,OPTIONS,HEAD,DELETE,PATCH | Allowed Http Methods                  |
-| nexus.backend.security.allowSemicolon                      | false                                  | Allowed Semi Colon                    |                                
-| nexus.backend.security.allowUrlEncodedSlash                | false                                  | Allow url encoded Slash               |                              
-| nexus.backend.security.allowUrlEncodedDoubleSlash          | false                                  | Allow url encoded double Slash        |                             
-| nexus.backend.security.allowUrlEncodedPeriod               | false                                  | Allow url encoded Period              |                            
-| nexus.backend.security.allowBackSlash                      | false                                  | Allow BackSlash                       |                            
-| nexus.backend.security.allowNull                           | false                                  | Allow Null                            |                           
-| nexus.backend.security.allowUrlEncodedPercent              | false                                  | Allow url encoded Percent             |                          
-| nexus.backend.security.allowUrlEncodedCarriageReturn       | false                                  | Allow url encoded Carriage Return     |                         
-| nexus.backend.security.allowUrlEncodedLineFeed             | false                                  | Allow url encoded Line Feed           |                        
-| nexus.backend.security.allowUrlEncodedParagraphSeparator   | false                                  | Allow url encoded Paragraph Separator |                       
-| nexus.backend.security.allowUrlEncodedLineSeparator        | false                                  | Allow url encoded Line Separator      |                           
+| **Keys**                                                   | **Default value**                           | **Descriptions**                      |
+|------------------------------------------------------------|:--------------------------------------------|:--------------------------------------|
+| nexus.backend.security.allowedHttpMethods                  | GET,POST,PUT,OPTIONS,<br/>HEAD,DELETE,PATCH | Allowed Http Methods                  |
+| nexus.backend.security.allowSemicolon                      | false                                       | Allowed Semi Colon                    |                                
+| nexus.backend.security.allowUrlEncodedSlash                | false                                       | Allow url encoded Slash               |                              
+| nexus.backend.security.allowUrlEncodedDoubleSlash          | false                                       | Allow url encoded double Slash        |                             
+| nexus.backend.security.allowUrlEncodedPeriod               | false                                       | Allow url encoded Period              |                            
+| nexus.backend.security.allowBackSlash                      | false                                       | Allow BackSlash                       |                            
+| nexus.backend.security.allowNull                           | false                                       | Allow Null                            |                           
+| nexus.backend.security.allowUrlEncodedPercent              | false                                       | Allow url encoded Percent             |                          
+| nexus.backend.security.allowUrlEncodedCarriageReturn       | false                                       | Allow url encoded Carriage Return     |                         
+| nexus.backend.security.allowUrlEncodedLineFeed             | false                                       | Allow url encoded Line Feed           |                        
+| nexus.backend.security.allowUrlEncodedParagraphSeparator   | false                                       | Allow url encoded Paragraph Separator |                       
+| nexus.backend.security.allowUrlEncodedLineSeparator        | false                                       | Allow url encoded Line Separator      |                           
 
 **The WAF Utilities Predicates checked for potential evasion:**
 
@@ -370,19 +370,19 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
  **Settings keys settings.properties:**
 
- **StringBoot key** *nexus.backend.tomcat.accesslog.valve.enable* at **true** for activated the Accesslogs
+ **SpringBoot key** *nexus.backend.tomcat.accesslog.valve.enable* at **true** for activated the Accesslogs
 
-| **Keys**                                      | **Default value**                                                                                                                          | **Descriptions**       |
-|-----------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------|
-| nexus.backend.tomcat.accesslog.directory      | /tmp/logs/tomcat-nexus                                                                                                                     | Directory access log   |   
-| nexus.backend.tomcat.accesslog.suffix         | .log                                                                                                                                       | The suffix             |   
-| nexus.backend.tomcat.accesslog.encoding       | UTF-8                                                                                                                                      | The suffix             |   
-| nexus.backend.tomcat.accesslog.pattern        | date time x-threadname c-ip cs-method cs-uri sc-status bytes x-H(contentLength) time-taken x-H(authType) cs(Authorization) cs(User-Agent)  | The pattern            |   
-| nexus.backend.tomcat.accesslog.checkExists    | true                                                                                                                                       | Check if file exists   |   
-| nexus.backend.tomcat.accesslog.asyncSupported | true                                                                                                                                       | Support async requests |   
-| nexus.backend.tomcat.accesslog.renameOnRotate | true                                                                                                                                       | Rename on rotate       |   
-| nexus.backend.tomcat.accesslog.throwOnFailure | true                                                                                                                                       | Throw on failure       |   
-| nexus.backend.tomcat.accesslog.maxDay         | -1                                                                                                                                         | Max day file retention |   
+| **Keys**                                      | **Default value**                                                                                                                                  | **Descriptions**       |
+|-----------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------|
+| nexus.backend.tomcat.accesslog.directory      | /tmp/logs/tomcat-nexus                                                                                                                             | Directory access log   |   
+| nexus.backend.tomcat.accesslog.suffix         | .log                                                                                                                                               | The suffix             |   
+| nexus.backend.tomcat.accesslog.encoding       | UTF-8                                                                                                                                              | The suffix             |   
+| nexus.backend.tomcat.accesslog.pattern        | date time x-threadname c-ip cs-method cs-uri <br/>sc-status bytes x-H(contentLength)time-taken <br/>x-H(authType) cs(Authorization) cs(User-Agent) | The pattern            |   
+| nexus.backend.tomcat.accesslog.checkExists    | true                                                                                                                                               | Check if file exists   |   
+| nexus.backend.tomcat.accesslog.asyncSupported | true                                                                                                                                               | Support async requests |   
+| nexus.backend.tomcat.accesslog.renameOnRotate | true                                                                                                                                               | Rename on rotate       |   
+| nexus.backend.tomcat.accesslog.throwOnFailure | true                                                                                                                                               | Throw on failure       |   
+| nexus.backend.tomcat.accesslog.maxDay         | -1                                                                                                                                                 | Max day file retention |   
 
 **Noted** the Full access logs are available with the **CommonsRequestLoggingFilter**, included the **RequestBody**.
 
@@ -530,7 +530,9 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.21**, released at 29/07/2025 Fix Predicate for Hostnames, Shared CookieRedirectInterceptor, Postman-Echo performance
+* Last version **1.0.23**, released at 22/08/2025 Reorganize WAFFilter Multipart, CorsConfiguration, Cookie client stateful
+* Version **1.0.22**, released at 31/07/2025 Fix Security RateLimit, Content Security Policy and Referrer-Policy
+* Version **1.0.21**, released at 29/07/2025 Fix Predicate for Hostnames, Shared CookieRedirectInterceptor, Postman-Echo performance
 * Version **1.0.20**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate - Bis
 * Version **1.0.19**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate
 * Version **1.0.18**, released at 10/05/2025 Fix manage Cookie during a redirection 3xx

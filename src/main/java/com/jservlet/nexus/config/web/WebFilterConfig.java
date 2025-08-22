@@ -1,7 +1,6 @@
 package com.jservlet.nexus.config.web;
 
 import com.github.ziplet.filter.compression.CompressingFilter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -29,7 +28,6 @@ public class WebFilterConfig implements ServletContextAware {
     @Value("${nexus.backend.filter.forwardedHeader.removeOnly:true}")
     private boolean forwardedHeaderRemoveOnly;
 
-    @Autowired
     public WebFilterConfig(Environment env) {
         this.env = env;
     }

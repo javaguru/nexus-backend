@@ -21,7 +21,6 @@ package com.jservlet.nexus.config;
 import ch.qos.logback.classic.LoggerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.context.ApplicationContext;
@@ -37,13 +36,16 @@ import javax.servlet.ServletContextEvent;
 /**
  *  NexusBackend ServletContext Listener
  */
-@Component // @WebListener // replaced cause @Autowired
+@Component
 public class JServletContextListener extends ContextCleanupListener {
 
     private final static Logger logger = LoggerFactory.getLogger(JServletContextListener.class);
 
-    @Autowired
-    JServletBanner jServletBanner;
+    private final JServletBanner jServletBanner;
+
+    public JServletContextListener(JServletBanner jServletBanner) {
+         this.jServletBanner = jServletBanner;
+    }
 
     @Override
     public void contextInitialized(@NonNull ServletContextEvent event) {
