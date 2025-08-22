@@ -40,14 +40,12 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.cookie.CookieSpecProvider;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.DefaultHttpResponseParserFactory;
 import org.apache.http.impl.conn.ManagedHttpClientConnectionFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.impl.cookie.IgnoreSpecProvider;
 import org.apache.http.impl.io.DefaultHttpRequestWriterFactory;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicLineParser;
@@ -282,10 +280,8 @@ public class ApplicationConfig  {
         return new HttpComponentsClientHttpRequestFactory(HttpClientBuilder.create()
                 .setUserAgent(userAgent)
                 .setConnectionManager(cm)
-                .setDefaultCookieSpecRegistry(RegistryBuilder.<CookieSpecProvider>create()
-                        .register(CookieSpecs.IGNORE_COOKIES, new IgnoreSpecProvider()) // Forced IGNORE_COOKIES for a Gateway stateless!
-                        .build())
                 .setDefaultRequestConfig(RequestConfig.custom()
+                    .setCookieSpec(CookieSpecs.STANDARD) // Optional specs standard!
                     .setConnectTimeout(connectTimeout * 1000)
                     .setConnectionRequestTimeout(requestTimeout * 1000)
                     .setSocketTimeout(socketTimeout * 1000)
@@ -299,7 +295,8 @@ public class ApplicationConfig  {
                 .setRedirectStrategy(new LaxRedirectStrategy())
                 .setRetryHandler(new DefaultHttpRequestRetryHandler(retryCount, requestSentRetryEnabled))
                 .disableRedirectHandling()
-                //.disableCookieManagement() // Cookie manually managed, the Gateway is Stateless!
+                // Cookie client stateful managed, the Gateway is Stateless! Session state is temporary and only affects the transaction!
+                //.disableCookieManagement()
                 .disableAuthCaching()
                 .disableConnectionState()
                 .build());

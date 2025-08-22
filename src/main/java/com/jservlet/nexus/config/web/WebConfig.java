@@ -30,10 +30,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.EnumerablePropertySource;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.PropertySource;
+import org.springframework.core.env.*;
 import org.springframework.lang.NonNull;
 
 import java.util.LinkedHashMap;
@@ -88,14 +85,20 @@ public class WebConfig implements ApplicationContextAware {
         return appContext;
     }
 
-    /* Stuff, get loaded Application Properties */
+    /* Stuff, get loaded SpringBoot Application Properties */
     private static Map<String, Object> getApplicationProperties(Environment env) {
         Map<String, Object> map = new LinkedHashMap<>(); // keep order!
         if (env instanceof ConfigurableEnvironment) {
             for (PropertySource<?> propertySource : ((ConfigurableEnvironment) env).getPropertySources()) {
-                // WARN all tracked springboot config file *.properties!
+                // WARN all tracked SpringBoot config file *.properties!
                 if (propertySource instanceof OriginTrackedMapPropertySource) {
                     for (String key : ((EnumerablePropertySource<?>) propertySource).getPropertyNames()) {
+                        map.put(key, propertySource.getProperty(key));
+                    }
+                }
+                // Include Spring devtools
+                if (propertySource instanceof MapPropertySource && "devtools".equals(propertySource.getName())) {
+                    for (String key : ((MapPropertySource) propertySource).getPropertyNames()) {
                         map.put(key, propertySource.getProperty(key));
                     }
                 }

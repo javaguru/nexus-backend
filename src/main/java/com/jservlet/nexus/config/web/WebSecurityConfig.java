@@ -140,7 +140,7 @@ public class WebSecurityConfig {
      * Spring EL reads allow method delimited with a comma and splits into a List of Strings (or an empty List)
      */
     // Provide a List of HttpMethods
-    @Value("#{T(java.util.Arrays).asList('${nexus.backend.security.cors.allowedHttpMethods:GET,POST,PUT,HEAD,DELETE,PATCH}')}")
+    @Value("#{T(java.util.Arrays).asList('${nexus.backend.security.cors.allowedHttpMethods:GET,POST,PUT,OPTION,HEAD,DELETE,PATCH}')}")
     private List<String> allowedCorsHttpMethods;
     // Provide a Regex Patterns domains
     @Value("${nexus.backend.security.cors.allowedOriginPatterns:#{null}")
@@ -148,8 +148,8 @@ public class WebSecurityConfig {
     // Provide a List of domains
     @Value("#{T(java.util.Arrays).asList('${nexus.backend.security.cors.allowedOrigins:*}')}")
     private List<String> allowedOrigins;
-    // Headers: Authorization,Cache-Control,Content-Type
-    @Value("#{T(java.util.Arrays).asList('${nexus.backend.security.cors.allowedHeaders:}')}")
+    // Headers: Authorization,Cache-Control,Content-Type,X-Requested-With,Accept
+    @Value("#{T(java.util.Arrays).asList('${nexus.backend.security.cors.allowedHeaders:Authorization,Cache-Control,Content-Type,X-Requested-With,Accept}')}")
     private List<String> allowedHeaders;
     // At true Origin cannot be a wildcard '*' a list of domains need to be provided.
     @Value("${nexus.backend.security.cors.credentials:false}")
@@ -164,25 +164,25 @@ public class WebSecurityConfig {
     /*
      * CORS Security configuration, allow Control Request by Headers <br>
      * Access-Control-Allow-Origin: * <br>
-     * Access-Control-Allow-Methods: GET,POST,PUT,HEAD,DELETE,PATCH <br>
+     * Access-Control-Allow-Methods: GET,POST,PUT,OPTION,HEAD,DELETE,PATCH <br>
      * Access-Control-Max-Age: 3600 <br>
      * Test OPTIONS request on the local domain:
-     *
+     * <br>
      * curl -v -H "Access-Control-Request-Method: GET" -H "Origin: http://localhost:8082" -X OPTIONS http://localhost:8082/nexus-backend/api/get
      * or -H "Origin: http://localhost:4200"
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
-        if (!allowedOriginPatterns.isEmpty()) configuration.addAllowedOriginPattern(allowedOriginPatterns);
-        if (!allowedOrigins.isEmpty()) configuration.setAllowedOrigins(allowedOrigins);
-        if (!allowedCorsHttpMethods.isEmpty()) configuration.setAllowedMethods(allowedCorsHttpMethods);
+        if (allowedOriginPatterns != null && !allowedOriginPatterns.isEmpty()) configuration.addAllowedOriginPattern(allowedOriginPatterns);
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) configuration.setAllowedOrigins(allowedOrigins);
+        if (allowedCorsHttpMethods != null && !allowedCorsHttpMethods.isEmpty()) configuration.setAllowedMethods(allowedCorsHttpMethods);
         // setAllowCredentials(true) is important, otherwise:
         // The value of the 'Access-Control-Allow-Origin' header in the response must not be the wildcard '*' when the request's credentials mode is 'include'.
         configuration.setAllowCredentials(credentials);
         // setAllowedHeaders is important! Without it, OPTIONS preflight request will fail with 403 Invalid CORS request
-        if (!allowedHeaders.isEmpty()) configuration.setAllowedHeaders(allowedHeaders);  // "Authorization", "Cache-Control", "Content-Type"
-        if (!exposedHeaders.isEmpty()) configuration.setExposedHeaders(exposedHeaders); // "Authorization"
+        if (allowedHeaders != null && !allowedHeaders.isEmpty()) configuration.setAllowedHeaders(allowedHeaders);  // "Authorization", "Cache-Control", "Content-Type"
+        if (exposedHeaders != null && !exposedHeaders.isEmpty()) configuration.setExposedHeaders(exposedHeaders); // "Authorization"
         configuration.setMaxAge(maxAgeCors);
         // register source Cors pattern
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -255,7 +255,7 @@ public class WebSecurityConfig {
 
     /**
      * Web HttpFirewall, allow semicolon by example
-     *
+     * @param waf WAFPredicate
      * @return HttpFirewall
      */
     @Bean

@@ -31,11 +31,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.core.io.AbstractResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -49,11 +47,7 @@ import org.springframework.http.HttpHeaders;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -74,29 +68,29 @@ import java.util.*;
  * Full support Streaming Http Response Json Entity Object: application/octet-stream, accept header Range bytes
  * </p>
  * <p>
- *     ApiBackend ResponseType is now a Resource ByteArray by default (see settings.properties). All is Bytes!
- *     <br>
- *     The ResourceMatchers Config can be configured on specific ByteArray Resources path <br>
- *     and on specific methods GET, POST, PUT, PATCH and Ant paths pattern: <br>
- *      nexus.backend.api-backend-resource.matchers.matchers1.method=GET <br>
- *      nexus.backend.api-backend-resource.matchers.matchers1.pattern=/api/encoding/** <br>
- *      nexus.backend.api-backend-resource.matchers.matchers2.method=GET <br>
- *      nexus.backend.api-backend-resource.matchers.matchers2.pattern=/api/decoding/** <br>
- *      etc...
+ * ApiBackend ResponseType is now a Resource ByteArray by default (see settings.properties). All is Bytes!
+ * <br>
+ * The ResourceMatchers Config can be configured on specific ByteArray Resources path <br>
+ * and on specific methods GET, POST, PUT, PATCH and Ant paths pattern: <br>
+ * nexus.backend.api-backend-resource.matchers.matchers1.method=GET <br>
+ * nexus.backend.api-backend-resource.matchers.matchers1.pattern=/api/encoding/** <br>
+ * nexus.backend.api-backend-resource.matchers.matchers2.method=GET <br>
+ * nexus.backend.api-backend-resource.matchers.matchers2.pattern=/api/decoding/** <br>
+ * etc...
  * </p>
  * <p>
- *      The Http Responses can be considerate as Resources, the Http header "Accept-Ranges: bytes" is injected and allow you to use
- *      the Http header 'Range:bytes=-1000' in the request and by example grabbed the last 1000 bytes (or a range of Bytes). <br>
- *      And the Http Responses will come back without a "Transfer-Encoding: chunked" HttpHeader cause now the header Content-Length
- *      is calculated.
- *      <br><br>
- *      For configure all the Responses in Resource put eh Method empty and use the path pattern=/api/** <br>
- *      nexus.backend.api-backend-resource.matchers.matchers1.method= <br>
- *      nexus.backend.api-backend-resource.matchers.matchers1.pattern=/api/** <br>
- *      <br><br>
- *      For remove the Http header "Transfer-Encoding: chunked" the header Content-Length need to be calculated,
- *      enable the ShallowEtagHeader Filter in the configuration for force to calculate the header Content-Length
- *      for all the Response Json Entity Object.
+ * The Http Responses can be considerate as Resources, the Http header "Accept-Ranges: bytes" is injected and allow you to use
+ * the Http header 'Range:bytes=-1000' in the request and by example grabbed the last 1000 bytes (or a range of Bytes). <br>
+ * And the Http Responses will come back without a "Transfer-Encoding: chunked" HttpHeader cause now the header Content-Length
+ * is calculated.
+ * <br><br>
+ * For configure all the Responses in Resource put eh Method empty and use the path pattern=/api/** <br>
+ * nexus.backend.api-backend-resource.matchers.matchers1.method= <br>
+ * nexus.backend.api-backend-resource.matchers.matchers1.pattern=/api/** <br>
+ * <br><br>
+ * For remove the Http header "Transfer-Encoding: chunked" the header Content-Length need to be calculated,
+ * enable the ShallowEtagHeader Filter in the configuration for force to calculate the header Content-Length
+ * for all the Response Json Entity Object.
  * </p>
  * Activated by the key <b>'nexus.api.backend.enabled=true'</b> in the Configuration properties.
  */
@@ -192,18 +186,19 @@ public class ApiBackend extends ApiBase {
      * <br>
      * For a @RequestMapping allow headers is set to GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS
      *
-     * @param body                          String representing the RequestBody Object, just transfer the RequestBody
-     * @param method                        HttpMethod GET, POST, PUT, PATCH or DELETE
-     * @param request                       The current HttpServletRequest
-     * @param nativeWebRequest              The current NativeWebRequest for get the MultipartRequest
-     * @return Object                       Return a ResponseEntity Object or a ByteArray Resource
-     * @throws NexusHttpException           Exception when a http request to the backend fails
-     * @throws NexusIllegalUrlException     Exception when an illegal url will be requested
+     * @param body String representing the RequestBody Object, just transfer the RequestBody
+     * @param method HttpMethod GET, POST, PUT, PATCH or DELETE
+     * @param request The current HttpServletRequest
+     * @param nativeWebRequest The current NativeWebRequest for get the MultipartRequest
+     * @return Object Return a ResponseEntity Object or a ByteArray Resource
+     * @throws IOException IO Exception when a MultiPartFiles fails
+     * @throws NexusHttpException Exception when a http request to the backend fails
+     * @throws NexusIllegalUrlException Exception when an illegal url will be requested
      */
     @RequestMapping(value = "/**")
     public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method,
                                       HttpServletRequest request, NativeWebRequest nativeWebRequest)
-            throws NexusHttpException, NexusIllegalUrlException {
+            throws NexusHttpException, NexusIllegalUrlException, IOException {
         // MultiValueMap store the MultiPartFiles and the Parameters Map
         MultiValueMap<String, Object> map = null;
         try {
@@ -244,9 +239,6 @@ public class ApiBackend extends ApiBase {
         } catch (NexusResourceNotFoundException e) {
             // Return an error Message NOT_FOUND
             return super.getResponseEntity("404", "ERROR", e, HttpStatus.NOT_FOUND);
-        } finally {
-            // Clean all the Backend Resources inside the MultiValueMap
-            if (map != null && !map.isEmpty()) cleanResources(map);
         }
     }
 
@@ -400,22 +392,28 @@ public class ApiBackend extends ApiBase {
     }
 
     /**
-     * Prepare a LinkedMultiValueMap from a MultipartRequest, convert a MultipartFile to a Backend Resource.
+     * Prepare a LinkedMultiValueMap from a MultipartRequest
      * And inject the parameterMap inside the LinkedMultiValueMap from a multipart HttpRequest.
+     *
+     * @param multipartRequest The MultipartRequest from the request.
+     * @param mapParams        The parameter map from the request.
+     * @return A MultiValueMap containing the resources and parameters.
+     * @throws IOException If there is an issue reading the file content.
      */
-    private static MultiValueMap<String, Object> processMapResources(MultipartRequest multipartRequest, Map<String, String[]> mapParams) {
+    private static MultiValueMap<String, Object> processMapResources(MultipartRequest multipartRequest, Map<String, String[]> mapParams) throws IOException {
         MultiValueMap<String, Object> linkedMap = new LinkedMultiValueMap<>();
         if (multipartRequest != null) {
-            MultiValueMap<String, MultipartFile> multiFileMap = multipartRequest.getMultiFileMap(); // MultiValue
+            MultiValueMap<String, MultipartFile> multiFileMap = multipartRequest.getMultiFileMap();
             for (Map.Entry<String, List<MultipartFile>> entry : multiFileMap.entrySet()) {
                 List<MultipartFile> files = entry.getValue();
                 for (MultipartFile file : files) {
-                    try {
-                        Resource resource = new BackendResource(file);
-                        linkedMap.add(entry.getKey(), resource);
-                    } catch (IOException io) {
-                        logger.error("Multipart to Resource file: '{}' Error: {}", file.getOriginalFilename(), io.getMessage());
-                    }
+                     ByteArrayResource resource = new ByteArrayResource(file.getBytes()) {
+                        @Override
+                        public String getFilename() {
+                            return file.getOriginalFilename();
+                        }
+                    };
+                    linkedMap.add(entry.getKey(), resource);
                 }
             }
             // Inject all the parameterMap now!
@@ -425,118 +423,4 @@ public class ApiBackend extends ApiBase {
         }
         return linkedMap;
     }
-
-    /**
-     * Clean all the BackendResource already sent to the BackendService
-     */
-    private void cleanResources(MultiValueMap<String, Object> map) {
-        for (Map.Entry<String, List<Object>> entry : map.entrySet()) {
-            List<Object> objects = entry.getValue(); // MultiValue
-            for (Object obj : objects) {
-                if (obj instanceof BackendResource) {
-                    BackendResource resource = (BackendResource) obj;
-                    if (resource.getFile().delete()) {
-                        if (logger.isDebugEnabled())
-                            logger.debug("Resource deleted: '{}' file: '{}'", entry.getKey(), resource.getFilename());
-                    } else {
-                        logger.warn("Resource not deleted: '{}' file: '{}'", entry.getKey(), resource.getFilename());
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Build a new BackendResource because the MultipartFile Resource will be deleted at the end of Request.
-     * The BackendResource can convert a MultipartFile to a temporary Resource, ready to be sent!
-     */
-    private static class BackendResource extends AbstractResource {
-
-        private final File fileUpload;
-        private final String originalFilename;
-
-        public BackendResource(MultipartFile multipartFile) throws IOException {
-            Assert.notNull(multipartFile, "MultipartFile must not be null");
-            // Create a temporary file in java.io.tmpdir
-            fileUpload = File.createTempFile(System.currentTimeMillis() + "_nexus_", ".tmp");
-
-            // Get original Filename
-            originalFilename = multipartFile.getOriginalFilename();
-
-            // Consume the input Stream and transfer it to a new local file
-            multipartFile.transferTo(fileUpload);
-
-            logger.debug("BackendResource created: {}", fileUpload.getAbsolutePath());
-        }
-
-        /**
-         * This implementation always returns {@code true}.
-         */
-        @Override
-        public boolean exists() {
-            return fileUpload.exists();
-        }
-
-        /**
-         * This implementation always returns {@code false}.
-         */
-        @Override
-        public boolean isOpen() {
-            return false;
-        }
-
-        @Override
-        public long contentLength() {
-            return this.fileUpload.length();
-        }
-
-        @Override
-        public @NonNull URL getURL() throws IOException {
-            return this.fileUpload.toPath().toUri().toURL();
-        }
-
-        @Override
-        public @NonNull File getFile() {
-            return this.fileUpload;
-        }
-
-        @Override
-        public @NonNull boolean isFile() {
-            return true;
-        }
-
-        @Override
-        public String getFilename() {
-            return this.originalFilename;
-        }
-
-        /**
-         * This implementation throws IllegalStateException if attempting to
-         * read the underlying stream multiple times.
-         */
-        @Override
-        public @NonNull InputStream getInputStream() throws IOException, IllegalStateException {
-            return new FileInputStream(fileUpload);
-        }
-
-        /**
-         * This implementation returns a description that has the Multipart name.
-         */
-        @Override
-        public @NonNull String getDescription() {
-            return "BackendResource [" + this.originalFilename + "]";
-        }
-
-        @Override
-        public boolean equals(@Nullable Object other) {
-             return (this == other || (other instanceof BackendResource &&
-                    this.fileUpload.equals(((BackendResource) other).fileUpload)));
-        }
-
-        @Override
-        public int hashCode() {
-            return this.fileUpload.hashCode();
-        }
-    }
-
 }
