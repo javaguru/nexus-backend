@@ -348,8 +348,8 @@ public final class BackendServiceImpl implements BackendService {
         HttpStatus httpStatus = exchange.getStatusCode();
         HttpHeaders httpHeaders = exchange.getHeaders();
         if (logger.isDebugEnabled()) logger(httpHeaders, responseBody, httpStatus, maxLengthTruncated, truncated);
-        if (responseBody == null) return (T) httpStatus;
         if (isHandleBackendEntity || isHandleHttpStatus(httpStatus)) return (T) new EntityBackend<>(responseBody, httpHeaders, httpStatus);
+        if (responseBody == null) return (T) httpStatus;
         return responseBody;
     }
 
