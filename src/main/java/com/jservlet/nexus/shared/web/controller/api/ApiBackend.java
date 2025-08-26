@@ -314,7 +314,12 @@ public class ApiBackend extends ApiBase {
                     if (!"chunked".equals(transferEncoding)) newHeaders.set(headerName, readHeaders.getFirst(headerName));
                 }
                 else {
-                    newHeaders.add(headerName, readHeaders.getFirst(headerName));
+                    List<String> list = readHeaders.get(headerName);
+                    if (list != null && !list.isEmpty()) {
+                        for (String value : list) {
+                            newHeaders.add(headerName, value);
+                        }
+                    }
                 }
             }
         }
