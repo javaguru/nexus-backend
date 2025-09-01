@@ -120,14 +120,20 @@ public class ApiBackend extends ApiBase {
      * Allow a list of headers transfer back from the Backend Server (see default headers ApiBackend.STATIC_TRANSFER_HEADERS)
      * SpEL reads allow method delimited with a comma (or other character) and splits into a List of Strings
      */
-    @Value("#{'${nexus.api.backend.transfer.headers:test,WWW-Authenticate,ETag}'.split(',')}") // 'test' for postman-echo
-    private List<String> TRANSFER_HEADERS;
+    @Value("#{'${nexus.api.backend.transfer.headers:}'.split(',')}")
+    private List<String> transferHeaders;
+
+    /**
+     * Forward some client infos to the Backend server
+     */
+    @Value("${nexus.api.backend.x-forwarded-headers:true}")
+    private boolean xForwardedHeaders;
 
     /**
      * Prepare matchers Methods and Ant paths pattern dedicated only for the Resources
      */
     @PostConstruct
-    private void postConstruct() {
+    public void postConstruct() {
         List<RequestMatcher> requestMatchers = new ArrayList<>();
         Map<String, ResourceMatchersConfig.Matcher> map = matchersConfig.getMatchers();
         for (Map.Entry<String, ResourceMatchersConfig.Matcher> entry : map.entrySet()) {
@@ -142,7 +148,7 @@ public class ApiBackend extends ApiBase {
         orRequestResourceMatcher = new OrRequestMatcher(requestMatchers);
 
         // Load transfer headers with preconfigured static headers
-        TRANSFER_HEADERS.addAll(STATIC_TRANSFER_HEADERS);
+        transferHeaders.addAll(STATIC_TRANSFER_HEADERS);
     }
 
     /**
@@ -225,7 +231,8 @@ public class ApiBackend extends ApiBase {
             }
 
             // Return an EntityBackend
-            Object obj = backendService.doRequest(url, method, responseType, !map.isEmpty() ? map : body, getAllHeaders(request));
+            Object obj = backendService.doRequest(url, method, responseType,
+                    !map.isEmpty() ? map : body, getAllHeaders(request, xForwardedHeaders));
 
             // Manage a Generics EntityBackend embedded a Json Entity Object or a Resource!
             EntityBackend<?> entityBackend = (EntityBackend<?>) obj;
@@ -243,24 +250,47 @@ public class ApiBackend extends ApiBase {
     }
 
     /**
-     * Get all Headers from the HttpServletRequest, apply ID headers set "X-ID"
+     * Get all Headers from the HttpServletRequest, apply ID headers set "X-ID" and inject headers X-Forwarded-*
      */
     private static final String REQUEST_ID_HEADER = "APP-REQUEST-ID";
 
-    private static HttpHeaders getAllHeaders(HttpServletRequest request) {
+    private static HttpHeaders getAllHeaders(HttpServletRequest request, boolean forwardHeaders) {
         HttpHeaders headers = new HttpHeaders();
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
             headers.add(headerName, request.getHeader(headerName));
         }
-        // Backup and remove the original Origin!
+        /*// Backup and remove the original Origin!
         if (headers.getOrigin() != null) {
             headers.set(HttpHeaders.ORIGIN + "-Client", headers.getOrigin());
             headers.setOrigin(null); // remove Origin
         }
+
         // Set the current Request as Origin
-        headers.setOrigin(request.getRequestURL().toString());
+        headers.setOrigin(request.getRequestURL().toString());*/
+
+        // Injection headers X-Forwarded-*
+        if (forwardHeaders) {
+            // X-Forwarded-For Ip client
+            String clientIp = request.getRemoteAddr();
+            String xffHeader = request.getHeader("X-Forwarded-For");
+            if (xffHeader != null) {
+                headers.set("X-Forwarded-For", xffHeader + ", " + clientIp);
+            } else {
+                headers.set("X-Forwarded-For", clientIp);
+            }
+
+            // X-Forwarded-Proto client
+            String protocol = request.getScheme(); // "http" ou "https"
+            headers.set("X-Forwarded-Proto", protocol);
+
+            // X-Forwarded-Host origin client
+            String hostHeader = request.getHeader("Host");
+            if (hostHeader != null) {
+                headers.set("X-Forwarded-Host", hostHeader);
+            }
+        }
 
         // Apply X-APP-REQUEST-ID
         if (request.getAttribute(REQUEST_ID_HEADER) != null) {
@@ -271,12 +301,16 @@ public class ApiBackend extends ApiBase {
 
 
     /**
-     * Default transfer List of Headers: transfer SERVER, transfer Date as Date-Backend, and TRANSFER_ENCODING
+     * Default transfer List of Headers
      */
-    private final static List<String> STATIC_TRANSFER_HEADERS =
-            List.of(HttpHeaders.SERVER,
-                    HttpHeaders.TRANSFER_ENCODING,
-                    HttpHeaders.DATE);
+    private final static List<String> STATIC_TRANSFER_HEADERS = List.of(
+            // Date server
+            HttpHeaders.DATE,
+            // Caching
+            HttpHeaders.ETAG,
+            // Authentication
+            HttpHeaders.WWW_AUTHENTICATE
+    );
 
     /**
      * Transfer some headers from the Backend RestOperations, including by default the original Backend CONTENT_TYPE Server.
@@ -302,16 +336,11 @@ public class ApiBackend extends ApiBase {
         }
 
         // Transfer static headers and the others from the config
-        for (String headerName : TRANSFER_HEADERS) {
+        for (String headerName : transferHeaders) {
             if (readHeaders.getFirst(headerName) != null) {
                 // add Date-Backend
                 if (HttpHeaders.DATE.equalsIgnoreCase(headerName)) {
                     newHeaders.add(HttpHeaders.DATE + "-Backend", readHeaders.getFirst(HttpHeaders.DATE));
-                }
-                // set Transfer-Encoding 'chunked' case stream content type and range bytes
-                else if (HttpHeaders.TRANSFER_ENCODING.equalsIgnoreCase(headerName)) {
-                    String transferEncoding = readHeaders.getFirst(HttpHeaders.TRANSFER_ENCODING);
-                    if (!"chunked".equals(transferEncoding)) newHeaders.set(headerName, readHeaders.getFirst(headerName));
                 }
                 else {
                     List<String> list = readHeaders.get(headerName);
@@ -428,4 +457,5 @@ public class ApiBackend extends ApiBase {
         }
         return linkedMap;
     }
+
 }

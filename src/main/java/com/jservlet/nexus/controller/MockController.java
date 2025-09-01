@@ -24,6 +24,7 @@ import com.jservlet.nexus.shared.web.controller.ApiBase;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,6 +38,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
@@ -153,7 +155,7 @@ public class MockController extends ApiBase {
         return new ResponseEntity<>(dataList, HttpStatus.OK);
     }
 
-    /* Personal John Doe */
+    /* VULNERABILITY Personal John Doe */
     @Operation(summary = "Get Personal Joe ", description = "Get data Joe List")
     @ApiResponses(value = {
             @ApiResponse(responseCode = $200, description = REQ_SUCCESSFULLY, content = {@Content(schema = @Schema(implementation = DataJoe.class))}),
@@ -202,11 +204,6 @@ public class MockController extends ApiBase {
     })
     @GetMapping(path = "/v1/financialDataJoe", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getFinancialData() {
-      /*  List<Data> dataList = new ArrayList<>();
-        dataList.add(new Data("transaction_id", "TXN-12345", 150.75));
-        dataList.add(new Data("beneficiary_iban", "FR7630006000011234567890189", 0.0));
-        dataList.add(new Data("payment_method", "credit_card", 0.0));
-        dataList.add(new Data("card_number", "4971 1234 5678 9010", 0.0));*/
         HashMap<String, Object> hashJoe = new HashMap<>();
         hashJoe.put("transaction_id", "TXN-12345");
         hashJoe.put("beneficiary_iban", "00:1A:2B:3C:4D:5E");
@@ -251,7 +248,168 @@ public class MockController extends ApiBase {
         return new ResponseEntity<>(hashJoe, HttpStatus.OK);
     }
 
+    private static final Map<String, UserProfile> userDatabase = new HashMap<>();
+    static {
+        userDatabase.put("122", new UserProfile("122", "Bob", "bob@example.com", "Secret de Bob"));
+        userDatabase.put("123", new UserProfile("123", "Alice", "alice@example.com", "Secret d'Alice"));
+        userDatabase.put("124", new UserProfile("124", "Joe", "joe@example.com", "Secret de Joe"));
+        userDatabase.put("125", new UserProfile("125", "Tina", "tina@example.com", "Secret de Joe"));
+    }
+    // BOLA
+    @Operation(summary = "Get User Profile by ID (BOLA Vulnerable)", description = "Get a user's profile by their ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Request successful", content = {@Content(schema = @Schema(implementation = UserProfile.class))}),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @GetMapping(path = "/v1/users/{userId}/profile", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getUserProfile(@PathVariable String userId) {
+        // No check to see if the authenticated user is the same as the requested userId!
+        UserProfile user = userDatabase.get(userId);
+        if (user != null) {
+            return new ResponseEntity<>(user, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+        }
+    }
+    //BFLA
+    @Operation(summary = "Delete a user by ID (BFLA Vulnerable)", description = "Deletes a user from the system. This endpoint should be restricted to administrators.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping(path = "/v1/admin/users/{userId}/delete", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> deleteUser(@PathVariable String userId) {
+        // VULNERABILITY: Check to see if the user is admin
+        if (userDatabase.containsKey(userId)) {
+            userDatabase.remove(userId);
+            return new ResponseEntity<>("User " + userId + " deleted.", HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("User not found.", HttpStatus.NOT_FOUND);
+        }
+    }
+    @Operation(summary = "Get Application Configuration (BFLA Vulnerable)", description = "Returns sensitive application configuration details. Should be admin-only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Request successful")
+    })
+    @GetMapping(path = "/v1/admin/config", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getAppConfig() {
+        // VULNERABILITY: No role check. A normal user can access this.
+        Map<String, String> config = new HashMap<>();
+        config.put("database.url", "jdbc:postgresql://prod-db.internal:5432/main");
+        config.put("payment.gateway.apikey", "sk_live_xxxxxxxxxxxxxx"); // Sensitive data!
+        config.put("log.level", "DEBUG");
 
+        return new ResponseEntity<>(config, HttpStatus.OK);
+    }
+    @Operation(summary = "Trigger Cache Refresh (BFLA Vulnerable)", description = "Forces a refresh of the application's internal cache. Should be admin-only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "202", description = "Cache refresh initiated")
+    })
+    @PostMapping(path = "/v1/admin/cache/refresh")
+    public ResponseEntity<?> refreshCache() {
+        // VULNERABILITY: No role check. A normal user can trigger this task.
+       System.out.println("INFO: Admin task 'refreshCache' triggered by user.");
+       // Refresh cache !?
+        return new ResponseEntity<>("Cache refresh initiated.", HttpStatus.ACCEPTED);
+    }
+    @Operation(summary = "Update User Status (BFLA Vulnerable)", description = "Updates a user's status. Should be admin-only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Status updated"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @PutMapping(path = "/v1/admin/users/{userId}/status")
+    public ResponseEntity<?> setUserStatus(@PathVariable String userId, @RequestBody Map<String, String> status) {
+        // No role check.
+        if (userDatabase.containsKey(userId)) {
+            System.out.println("INFO: User " + userId + " status changed to: " + status.get("status"));
+            return new ResponseEntity<>("Status updated for user " + userId, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("User not found.", HttpStatus.NOT_FOUND);
+        }
+    }
+    @Operation(summary = "Update current user profile (BOPLA Vulnerable)", description = "Updates the profile of the current user. Allows for mass assignment.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User updated successfully", content = {@Content(schema = @Schema(implementation = User.class))}),
+    })
+    @PutMapping(path = "/v1/users/me", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateUser(@RequestBody User updatedUserData) {
+        // VULNERABILITY: Mass Assignment.
+        currentUser.setUsername(updatedUserData.getUsername());
+        currentUser.setEmail(updatedUserData.getEmail());
+        // add "role": "admin" in the JSON for an elevation of privileges!
+        if (updatedUserData.getRole() != null) {
+            currentUser.setRole(updatedUserData.getRole());
+        }
+        System.out.println("INFO: User updated. New role: " + currentUser.getRole());
+        return new ResponseEntity<>(currentUser, HttpStatus.OK);
+    }
+    @Operation(summary = "Get a list of products (URC Vulnerable)", description = "Returns a list of products with unsafe pagination.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Request successful", content = {@Content(array = @ArraySchema(schema = @Schema(implementation = Product.class)))}),
+    })
+    @GetMapping(path = "/v1/products", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getProducts(@RequestParam(defaultValue = "100") int limit) {
+        // VULNERABILITY: No validation is performed on the 'limit' parameter.
+        // An attacker can provide a very large value (e.g., 999999) to trigger a DoS.
+        List<Product> productList = new ArrayList<>();
+        for (int i = 0; i < limit; i++) {
+            productList.add(new Product("prod-" + i, "Product Name " + i, 19.99));
+        }
+        try {
+            Thread.sleep(6000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return new ResponseEntity<>(productList, HttpStatus.OK);
+    }
+    // Joe Product
+    static class Product {
+        public String productId;
+        public String name;
+        public double price;
+        public Product() {}
+        public Product(String productId, String name, double price) {
+            this.productId = productId;
+            this.name = name;
+            this.price = price;
+        }
+    }
+    private static final User currentUser = new User("testuser", "test@example.com");
+    // Joe User
+    static class User {
+        public String username;
+        public String email;
+        public String role = "user";
+
+        public User() {}
+
+        public User(String username, String email) {
+            this.username = username;
+            this.email = email;
+        }
+        // Getters et Setters pour la sérialisation JSON
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getRole() { return role; }
+        public void setRole(String role) { this.role = role; }
+    }
+    // Joe profile
+    static class UserProfile {
+        public String userId;
+        public String name;
+        public String email;
+        public String secretInfo;
+
+        public UserProfile(String userId, String name, String email, String secretInfo) {
+            this.userId = userId;
+            this.name = name;
+            this.email = email;
+            this.secretInfo = secretInfo;
+        }
+    }
 
     /* end John Doe */
 

@@ -88,31 +88,32 @@ Requests to a RestApi Backend Server.**
 
  **Settings keys settings.properties:**
 
-| **Keys**                                        | **Default value**            | **Example value**                | **Descriptions**                                    |
-|-------------------------------------------------|:-----------------------------|:---------------------------------|:----------------------------------------------------|
-| **nexus.backend.url**                           | https://postman-echo.com     | https://nexus6.jservlet.com/api  | The API Backend<br/> Server targeted                |   
-| **nexus.backend.uri.alive**                     | /get                         | /health/info                     | The endpoint alive <br/>Backend Server              |   
-| nexus.backend.http.response.truncated           | false                        | true                             | Truncated the Json<br/> output in the logs          |   
-| nexus.backend.http.response.truncated.maxLength | 1000                         | 100                              | MaxLength truncated                                 |   
-| **WAF**                                         |                              |                                  |                                                     |
-| nexus.api.backend.filter.waf.reactive.mode      | STRICT                       | PASSIVE                          | Default Strict HttpFirewall <br/>+ Json RequestBody |
-| nexus.api.backend.filter.waf.deepscan.cookie    | false                        | true                             | Activated Deep Scan Cookie                          |
-| **Headers**                                     |                              |                                  |                                                     |
-| nexus.backend.header.remove                     | false                        | true                             | Remove all Headers                                  |   
-| nexus.backend.header.host.remove                | false                        | false                            | Remove just host Header                             |   
-| nexus.backend.header.origin.remove              | false                        | false                            | Remove just origin Header                           |   
-| nexus.backend.header.cookie                     | -                            | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX   | Set a Cookie Request Header                         |   
-| nexus.backend.header.bearer                     | -                            | eyJhbGciO                        | Activated Bearer <br/>Authorization request         |   
-| nexus.backend.header.user-agent                 | JavaNexus                    | Apache HttpClient/4.5            | User Agent header                                   |
-| nexus.backend.header.authorization.username     | -                            | XUsername                        | Activated Basic <br/>Authorization request          |   
-| nexus.backend.header.authorization.password     | -                            | XPassword                        | "                                                   |
-| **Backend Headers**                             |                              |                                  |                                                     |
-| nexus.api.backend.transfer.headers              | test                         | test,...                         | Headers list back <br/>from Backend Server          |  
-| **Mapper**                                      |                              |                                  |                                                     |
-| nexus.backend.mapper.indentOutput               | false                        | true                             | Indent Output Json                                  |   
-| **Debug**                                       |                              |                                  |                                                     |
-| nexus.spring.web.security.debug                 | false                        | true                             | Debug the Spring FilterChain                        |
+| **Keys**                                        | **Default value**        | **Example value**               | **Descriptions**                                    |
+|-------------------------------------------------|:-------------------------|:--------------------------------|:----------------------------------------------------|
+| **nexus.backend.url**                           | https://postman-echo.com | https://nexus6.jservlet.com/api | The API Backend<br/> Server targeted                |   
+| **nexus.backend.uri.alive**                     | /get                     | /health/info                    | The endpoint alive <br/>Backend Server              |   
+| nexus.backend.http.response.truncated           | false                    | true                            | Truncated the Json<br/> output in the logs          |   
+| nexus.backend.http.response.truncated.maxLength | 1000                     | 100                             | MaxLength truncated                                 |   
+| **WAF**                                         |                          |                                 |                                                     |
+| nexus.api.backend.filter.waf.reactive.mode      | STRICT                   | PASSIVE                         | Default Strict HttpFirewall <br/>+ Json RequestBody |
+| nexus.api.backend.filter.waf.deepscan.cookie    | false                    | true                            | Activated Deep Scan Cookie                          |
+| **Headers**                                     |                          |                                 |                                                     |
+| nexus.backend.header.remove                     | **true**                 | true                            | Remove all Headers                                  |   
+| nexus.backend.header.host.remove                | false                    | false                           | Remove just host Header                             |   
+| nexus.backend.header.origin.remove              | false                    | false                            | Remove just origin Header                           |   
+| nexus.backend.header.cookie                     | -                        | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX  | Set a Cookie Request Header                         |   
+| nexus.backend.header.bearer                     | -                        | eyJhbGciO                       | Activated Bearer <br/>Authorization request         |   
+| nexus.backend.header.user-agent                 | JavaNexus                | Apache HttpClient/4.5           | User Agent header                                   |
+| nexus.backend.header.authorization.username     | -                        | XUsername                       | Activated Basic <br/>Authorization request          |   
+| nexus.backend.header.authorization.password     | -                        | XPassword                       | "                                                   |
+| **Backend Headers**                             |                          |                                 |                                                     |
+| nexus.api.backend.transfer.headers              | test                     | test,Link,Content-Range         | Headers list back<br/>from Backend Server           |  
+| **Mapper**                                      |                          |                                 |                                                     |
+| nexus.backend.mapper.indentOutput               | false                    | true                            | Indent Output Json                                  |   
+| **Debug**                                       |                          |                                 |                                                     |
+| nexus.spring.web.security.debug                 | false                    | true                            | Debug the Spring FilterChain                        |
 
+**Noted**: About the list HttpHeaders transfer back, the CORS can expose these Headers see key security.cors.exposedHeaders
 
 #### Noted the settings.properties can be overridden by a file Path config.properties
  
@@ -199,10 +200,12 @@ The default Cors Configuration:
 | nexus.backend.security.cors.allowedOriginPatterns |                                                                            |                                                    | Regex Patterns domains |  
 | nexus.backend.security.cors.allowedOrigins        | *                                                                          | http://localhost:4042,<br/>http://localhost:4083   | List domains           |  
 | nexus.backend.security.cors.allowedHeaders        | Authorization,Cache-Control,<br/>Content-Type,<br/>X-Requested-With,Accept | Authorization,<br/>Cache-Control,<br/>Content-Type | List Allowed Headers   |  
-| nexus.backend.security.cors.exposedHeaders        |                                                                            | Authorization                                      | List Exposed Headers   |  
+| nexus.backend.security.cors.exposedHeaders        |                                                                            | Link,X-Custom-Header                               | List Exposed Headers   |  
 | nexus.backend.security.cors.maxAge                | 3600                                                                       | 1800                                               | Max Age cached         |  
 
 **Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
+
+Exposed headers
 
 ### The RateLimit Configuration
 
@@ -236,8 +239,9 @@ The default Cors Configuration:
 
 **Noted** All the HttpRequests with a **Content-Type multipart/form-data** will be managed by a temporary **BackendResource**.
 
-This BackendResource can convert a **MultipartFile** to a temporary **Resource**, ready to be sent to the **Backend Server**.
+~~This BackendResource can convert a **MultipartFile** to a temporary **Resource**, ready to be sent to the **Backend Server**.~~
 
+Since version 1.0.24 no more BackendResource and temporary file, all is in memory.  
 
 ### The BackendService HttpFactory Client Configuration
 
@@ -331,7 +335,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.security.predicate.headerNamesValuesLength | 25000             | Header values length max    |   
 | nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max       |   
 | nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter     |   
-| nexus.backend.security.predicate.userAgent.blocked       | true              | Active UserAgent filter     |   
+| nexus.backend.security.predicate.userAgent.blocked       | false             | Active UserAgent filter     |   
 
 
 ### Activated the Mutual Authentication or mTLS connection on the HttpFactory Client
@@ -530,7 +534,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.23**, released at 22/08/2025 Reorganize WAFFilter Multipart, CorsConfiguration, Cookie client stateful
+* Last version **1.0.24**, released at 01/09/2025  Forwarded headers Client and Transfer headers Backend Server, Cors headers exposed 
+* Version **1.0.23**, released at 22/08/2025 Reorganize WAFFilter Multipart, CorsConfiguration, Cookie client stateful
 * Version **1.0.22**, released at 31/07/2025 Fix Security RateLimit, Content Security Policy and Referrer-Policy
 * Version **1.0.21**, released at 29/07/2025 Fix Predicate for Hostnames, Shared CookieRedirectInterceptor, Postman-Echo performance
 * Version **1.0.20**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate - Bis

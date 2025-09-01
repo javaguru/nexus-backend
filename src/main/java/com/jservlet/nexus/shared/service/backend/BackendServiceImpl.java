@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2024 JServlet.com Franck Andriano.
+ * Copyright (C) 2001-2025 JServlet.com Franck Andriano.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
@@ -33,6 +33,7 @@ import org.springframework.util.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -75,6 +76,9 @@ public final class BackendServiceImpl implements BackendService {
     }
 
     public BackendServiceImpl(String backendURL, RestOperations restOperations, ObjectMapper objectMapper) {
+        Assert.hasText(backendURL, "Backend URL must not be empty.");
+        Assert.notNull(restOperations, "RestOperations must not be null.");
+        Assert.notNull(objectMapper, "ObjectMapper must not be null.");
         this.backendURL = backendURL;
         this.restOperations = restOperations;
         this.objectMapper = objectMapper;
@@ -89,6 +93,9 @@ public final class BackendServiceImpl implements BackendService {
      * @param isHandleBackendEntity  True a Generics Object, false a Json Entity Object or a Resource
      */
     public BackendServiceImpl(String backendURL, RestOperations restOperations, ObjectMapper objectMapper, boolean isHandleBackendEntity) {
+        Assert.hasText(backendURL, "Backend URL must not be empty.");
+        Assert.notNull(restOperations, "RestOperations must not be null.");
+        Assert.notNull(objectMapper, "ObjectMapper must not be null.");
         this.backendURL = backendURL;
         this.restOperations = restOperations;
         this.objectMapper = objectMapper;
@@ -107,6 +114,7 @@ public final class BackendServiceImpl implements BackendService {
         this.objectMapper = objectMapper;
     }
 
+
     @Value("${nexus.backend.header.authorization.username:}")
     private String username;
 
@@ -119,8 +127,12 @@ public final class BackendServiceImpl implements BackendService {
     @Value("${nexus.backend.header.bearer:}")
     private String bearer;
 
-    @Value("${nexus.backend.header.remove:false}")
+    @Value("${nexus.backend.header.remove:true}")
     private boolean removeHeaders;
+    @Value("${nexus.backend.forwarded.headers:true}")
+    private boolean forwardedHeaders;
+    @Value("#{'${nexus.backend.forwarded.client.headers:}'.split(',')}")
+    private List<String> forwardedClientHeaders;
 
     @Value("${nexus.backend.header.host.remove:false}")
     private boolean removeHostHeader;
@@ -134,6 +146,11 @@ public final class BackendServiceImpl implements BackendService {
 
     @Value("${nexus.backend.header.user-agent:JavaNexus}")
     private String userAgent = "JavaNexus";
+
+    @PostConstruct
+    public void init() {
+        forwardedClientHeaders.addAll(STATIC_FORWARDED_HEADERS);
+    }
 
 
     @Override
@@ -397,18 +414,62 @@ public final class BackendServiceImpl implements BackendService {
         }
     }
 
+
+    /**
+     * Default allowed List of Headers can be forwarded from the Client to the Backend Server
+     */
+    private final static List<String> STATIC_FORWARDED_HEADERS =
+            List.of(
+                    // X-Forwarding
+                    "X-Forwarded-For",
+                    "X-Forwarded-Proto",
+                    "X-Forwarded-Host",
+                    // Tracing & ID
+                    "X-APP-REQUEST-ID",
+                    HttpHeaders.AUTHORIZATION,
+                    // Body & Content Negotiation
+                    HttpHeaders.CONTENT_TYPE,
+                    HttpHeaders.ACCEPT,
+                    HttpHeaders.ACCEPT_LANGUAGE,
+                    // Partial content handling downloads & uploads (Client -> Server)
+                    HttpHeaders.RANGE,
+                    HttpHeaders.CONTENT_RANGE,
+                    // Caching
+                    HttpHeaders.IF_NONE_MATCH,
+                    HttpHeaders.IF_MODIFIED_SINCE
+            );
+
+
     /**
      * Create a new ${@link RequestEntity} with additional user and product headers
      *
      * @param body  Object
-     * @param headers HttpHeaders
+     * @param incomingHeaders HttpHeaders
      * @return RequestEntity
      */
-    public HttpEntity<Object> createRequestEntity(Object body, HttpHeaders headers) {
-        if (headers == null || removeHeaders) {
+    public HttpEntity<Object> createRequestEntity(Object body, HttpHeaders incomingHeaders) {
+        HttpHeaders headers;
+        if (removeHeaders) {
             headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON); // mandatory forced!
             headers.add(HttpHeaders.USER_AGENT, userAgent);  // mandatory forced, some RestApi filter the User-Agent!
+        } else {
+            headers = (incomingHeaders != null) ? new HttpHeaders(incomingHeaders) : new HttpHeaders();
+        }
+
+        // Transfer X-Forwarded headers and configured client headers
+        if (forwardedHeaders && incomingHeaders != null) {
+            for (String headerName : forwardedClientHeaders) {
+                if (incomingHeaders.containsKey(headerName)) {
+                    List<String> headerNames = incomingHeaders.get(headerName);
+                    if (headerNames != null) {
+                        headers.put(headerName, new ArrayList<>(headerNames));
+                    }
+                }
+            }
+        }
+
+        if (headers.getContentType() == null) {
+            headers.setContentType(MediaType.APPLICATION_JSON); // mandatory forced!
         }
 
         // Some RestApi can filter the Host header! (localhost)
@@ -498,45 +559,4 @@ public final class BackendServiceImpl implements BackendService {
         }
     }
 
-    /* Setter */
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public void setCookie(String cookie) {
-        this.cookie = cookie;
-    }
-
-    public void setBearer(String bearer) {
-        this.bearer = bearer;
-    }
-
-    public void setRemoveHeaders(boolean removeHeaders) {
-        this.removeHeaders = removeHeaders;
-    }
-
-    public void setRemoveHostHeader(boolean removeHostHeader) {
-        this.removeHostHeader = removeHostHeader;
-    }
-
-    public void setRemoveOriginHeader(boolean removeOriginHeader) {
-        this.removeOriginHeader = removeOriginHeader;
-    }
-
-    public void setTruncated(boolean truncated) {
-        this.truncated = truncated;
-    }
-
-    public void setMaxLengthTruncated(int maxLengthTruncated) {
-        this.maxLengthTruncated = maxLengthTruncated;
-    }
-
-    public void setUserAgent(String userAgent) {
-        this.userAgent = userAgent;
-    }
 }
