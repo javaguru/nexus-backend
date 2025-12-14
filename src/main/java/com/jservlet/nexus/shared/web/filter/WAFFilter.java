@@ -391,10 +391,18 @@ public class WAFFilter extends ApiBase implements Filter {
         if (!wafPredicate.getWAFParameterNames().test(cookie.getName())) {
             throw new RequestRejectedException("Request rejected: Disallowed pattern in cookie name '" + cookie.getName() + "'.");
         }
+
+
         // Validate cookie value against patterns.
         if (!wafPredicate.getWAFParameterValues().test(cookie.getValue())) {
-            throw new RequestRejectedException("Request rejected: Disallowed pattern in value for cookie '" + cookie.getName() + "'.");
+            String cookieValue = cookie.getValue();
+            if (cookieValue != null && cookieValue.length() > 100) {
+                cookieValue = cookieValue.substring(0, 100) + "(truncated...)";
+            }
+            throw new RequestRejectedException("Request rejected: Disallowed pattern in value for cookie '" +
+                    cookie.getName() + "' / " + cookieValue);
         }
+
     }
 
     @Override

@@ -58,7 +58,7 @@ public interface BackendService {
      *
      * @param <T>             The expected class of the value.
      * @param url             The url to the backend to be executed
-     * @param data            The entity to be create
+     * @param data            The entity to be created
      * @param responseType    The response type the result should be converted to
      * @return The parsed response as an instance of type specified using the responseType parameter
      * @throws NexusCreationException              When the backend returns a 500
@@ -71,7 +71,7 @@ public interface BackendService {
      *
      * @param <T>              The expected class of the value
      * @param url              The url to the backend to be executed
-     * @param resource         The file/data to be send
+     * @param resource         The file/data to be sent
      * @param responseType     The response type the result should be converted to
      * @return The parsed response as an instance of type specified using the responseType parameter
      * @throws NexusCreationException               When the backend returns a 500
@@ -100,7 +100,7 @@ public interface BackendService {
      *
      * @param <T>               The expected class of the value
      * @param url               The url to the backend to be executed
-     * @param resource          The file/data to be send
+     * @param resource          The file/data to be sent
      * @param responseType      The response type the result should be converted to
      * @return The parsed response as an instance of type specified using the responseType parameter
      * @throws NexusModificationException            When the backend returns a 500
@@ -140,7 +140,7 @@ public interface BackendService {
      *
      * @param <T>               The expected class of the value
      * @param url               The url to the backend to be executed
-     * @param resource          The file/data to be send
+     * @param resource          The file/data to be sent
      * @param responseType      The response type the result should be converted to
      * @return The parsed response as an instance of type specified using the responseType parameter
      * @throws NexusModificationException            When the backend returns a 500
@@ -162,7 +162,7 @@ public interface BackendService {
      * @return               The parsed response as an instance of type specified using the responseType parameter
      * @throws NexusResourceNotFoundException      When the backend returns a 404
      * @throws NexusHttpException                  When a http request to th backend fails.
-     * @throws NexusIllegalUrlException            When a illegal url will be requested.
+     * @throws NexusIllegalUrlException            When an illegal url will be requested.
      */
 
     <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers)

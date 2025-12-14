@@ -7,7 +7,7 @@
     <groupId>com.jservlet.nexus.backend</groupId>
     <artifactId>nexus-backend</artifactId>
     <packaging>${packaging}</packaging>
-    <version>1.0.24</version>
+    <version>1.0.25-SNAPSHOT</version>
 
     <name>nexus-backend</name>
     <description>The Java Nexus BackendService, an advanced and secure Rest Backend Gateway</description>
@@ -82,7 +82,7 @@
         <mainClass>com.jservlet.nexus.config.Application</mainClass>
 
         <!-- Update the last Tomcat 9.x.x version with springboot starter-parent-->
-        <tomcat.version>9.0.107</tomcat.version>
+        <tomcat.version>9.0.113</tomcat.version>
 
         <!-- Dependency version -->
         <spring-boot.version>2.7.18</spring-boot.version>
@@ -536,12 +536,12 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.13</version>
+            <version>1.5.19</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>1.5.13</version>
+            <version>1.5.19</version>
         </dependency>
 
         <!-- Configuration processor -->
