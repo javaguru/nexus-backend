@@ -83,7 +83,7 @@
     <logger name="com.jservlet.nexus.config.web.tomcat.TomcatCustomContainer" additivity="true" level="INFO"/>
 
     <!-- WARN set DEBUG to activate the Full access log -->
-    <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" additivity="false" level="DEBUG">
+    <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" additivity="false" level="OFF">
         <appender-ref ref="ASYNC_FULL_ACCESS"/>
     </logger>
 
