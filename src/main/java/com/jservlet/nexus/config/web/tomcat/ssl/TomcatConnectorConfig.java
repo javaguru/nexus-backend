@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2024 JServlet.com Franck Andriano.
+ * Copyright (C) 2001-2025 JServlet.com Franck Andriano.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
@@ -25,12 +25,12 @@ import org.apache.tomcat.util.net.SSLHostConfigCertificate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * Config Embedded Tomcat Connector TLS/SSL on the default port 8443 (HTTP/1.1)
@@ -51,7 +51,7 @@ import org.springframework.context.annotation.Configuration;
  *      &lt;Connector port="8009" protocol="AJP/1.3" redirectPort="8443"/&gt;
  * </pre>
  */
-@ConditionalOnExpression("#{environment.getProperty('spring.profiles.active').contains('withTomcat')}")
+@Profile("withTomcat")
 @ConditionalOnProperty(value = "nexus.backend.tomcat.connector.https.enable")
 @Configuration
 public class TomcatConnectorConfig {
