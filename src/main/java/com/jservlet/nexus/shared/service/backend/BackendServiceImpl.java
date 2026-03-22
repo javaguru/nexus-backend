@@ -21,6 +21,7 @@ package com.jservlet.nexus.shared.service.backend;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.exceptions.*;
 import com.jservlet.nexus.shared.service.backend.api.ErrorMessage;
+import com.jservlet.nexus.shared.service.backend.api.IBackendErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,6 +64,22 @@ public final class BackendServiceImpl implements BackendService {
 
     private ObjectMapper objectMapper;
 
+    @Value("${nexus.backend.error.message.class:com.jservlet.nexus.shared.service.backend.api.ErrorMessage}")
+    private String errorMessageClassName;
+
+    private Class<? extends IBackendErrorMessage> errorClass;
+
+    @PostConstruct
+    @SuppressWarnings("unchecked")
+    public void initErrorClass() {
+        try {
+            errorClass = (Class<? extends IBackendErrorMessage>) Class.forName(errorMessageClassName);
+        } catch (ClassNotFoundException e) {
+            logger.error("Configured error message class not found: " + errorMessageClassName + ". Falling back to default.", e);
+            errorClass = ErrorMessage.class;
+        }
+    }
+
     /**
      * Return by the default a Json Entity Object or Resource, else if true a Generics Object.
      */
@@ -82,6 +99,7 @@ public final class BackendServiceImpl implements BackendService {
         this.backendURL = backendURL;
         this.restOperations = restOperations;
         this.objectMapper = objectMapper;
+        initErrorClass();
     }
 
     /**
@@ -100,6 +118,7 @@ public final class BackendServiceImpl implements BackendService {
         this.restOperations = restOperations;
         this.objectMapper = objectMapper;
         this.isHandleBackendEntity = isHandleBackendEntity;
+        initErrorClass();
     }
 
     public void setBackendURL(String backendURL) {
@@ -400,7 +419,7 @@ public final class BackendServiceImpl implements BackendService {
             case INTERNAL_SERVER_ERROR:
                 try {
                     // ErrorMessage from the Backend!
-                    final ErrorMessage errorMessage = objectMapper.readValue(e.getResponseBodyAsByteArray(), ErrorMessage.class);
+                    final IBackendErrorMessage errorMessage = objectMapper.readValue(e.getResponseBodyAsByteArray(), errorClass);
                     logger.info("The request to the backend failed. Reason id '{}: {}' Details: {} ", e.getStatusCode(), e.getStatusText(), errorMessage);
                 } catch (Exception jx) {
                     // Unable to parse response body

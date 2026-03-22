@@ -68,8 +68,8 @@ public final class WebHttpFirewall extends StrictHttpFirewall {
         try {
             return super.getFirewalledRequest(request);
         } catch (RequestRejectedException ex) {
-           logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                    ex.getMessage(), request.getRemoteHost(), request.getMethod(),
+            logger.error("Intercepted RequestRejectedException: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
+                    ex.getMessage(), request.getRemoteAddr(), request.getMethod(),
                    request.getServletPath(), request.getHeader("User-Agent"));
 
             // Wrap in a new RequestRejectedException with request metadata and a shallower stack trace.

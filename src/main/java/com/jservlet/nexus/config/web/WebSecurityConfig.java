@@ -240,10 +240,12 @@ public class WebSecurityConfig {
     private int headerNamesValuesLength = 25000;
     @Value("${nexus.backend.security.predicate.hostNamesLength:255}")
     private int hostNamesLength = 255;
-    @Value("${nexus.backend.security.predicate.hostName.pattern:}")
+    @Value("${nexus.backend.security.predicate.hostName.pattern:}") // "^(www\\.)?nexus\\.jservlet\\.com(:[0-9]+)?$"
     private String hostNamesPattern;
     @Value("${nexus.backend.security.predicate.userAgent.blocked:false}")
     private boolean userAgentBlocked;
+    @Value("${nexus.backend.security.predicate.aiUserAgent.blocked:true}")
+    private boolean aiUserAgentBlocked;
 
     @Bean
     public WAFPredicate wafPredicate() {
@@ -255,10 +257,12 @@ public class WebSecurityConfig {
         wafPredicate.setHostNamesLength(hostNamesLength);
 
         if (hostNamesPattern.isEmpty()) {
-            wafPredicate.setAllowedHostnames(Pattern.compile(hostNamesPattern,Pattern.CASE_INSENSITIVE));
+            wafPredicate.setAllowedHostnames(Pattern.compile(hostNamesPattern,Pattern.CASE_INSENSITIVE | Pattern.DOTALL));
         }
 
+        //
         wafPredicate.setBlockDisallowedUserAgents(userAgentBlocked);
+        wafPredicate.setBlockDisallowedAIUserAgents(aiUserAgentBlocked);
 
         return wafPredicate;
     }

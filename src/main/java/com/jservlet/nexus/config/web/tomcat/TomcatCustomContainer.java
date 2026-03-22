@@ -121,7 +121,7 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     private boolean showServerInfo;
 
     // Default Security constraint properties
-    @Value("${nexus.backend.tomcat.security.patterns:/actuator/*,/actuator/*}")
+    @Value("${nexus.backend.tomcat.security.patterns:/actuator/*,/health/*}")
     private String[] securityPatterns;
     @Value("${nexus.backend.tomcat.security.admin.acl.enable:false}")
     private boolean adminAclEnabled;

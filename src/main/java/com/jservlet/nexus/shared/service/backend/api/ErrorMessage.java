@@ -27,7 +27,7 @@ import java.util.Map;
  * ErrorMessage from the Backend, example 401: {"code":"401","level":"ERROR","source":"MOCK-REST","message":"Unauthorized"}
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ErrorMessage {
+public class ErrorMessage implements IBackendErrorMessage {
 
     private String code;
     private String level;
