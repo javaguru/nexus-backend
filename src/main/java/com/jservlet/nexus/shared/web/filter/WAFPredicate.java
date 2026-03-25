@@ -40,14 +40,18 @@ public class WAFPredicate {
     private static final Logger logger = LoggerFactory.getLogger(WAFPredicate.class);
 
     // Predicate instances for different attack patterns, initialized with patterns from WAFUtils
-    private final WafPatternPredicate xssPredicate = new WafPatternPredicate(WAFUtils.xssPattern);
-    private final WafPatternPredicate sqlPredicate = new WafPatternPredicate(WAFUtils.sqlPattern);
-    private final WafPatternPredicate googlePredicate = new WafPatternPredicate(WAFUtils.googlePattern);
-    private final WafPatternPredicate cmdPredicate = new WafPatternPredicate(WAFUtils.commandPattern);
-    private final WafPatternPredicate filePredicate = new WafPatternPredicate(WAFUtils.filePattern);
-    private final WafPatternPredicate linkPredicate = new WafPatternPredicate(WAFUtils.linkPattern);
-    private final WafPatternPredicate userAgentPredicate = new WafPatternPredicate(WAFUtils.userAgentPattern);
-    private final WafPatternPredicate suspiciousPredicate = new WafPatternPredicate(WAFUtils.suspiciousPattern);
+    private final WafPatternPredicate xssPredicate = new WafPatternPredicate(WAFUtils.XSS_PATTERNS, "XSS");
+    private final WafPatternPredicate sqlPredicate = new WafPatternPredicate(WAFUtils.SQL_PATTERNS, "SQL");
+    private final WafPatternPredicate googlePredicate = new WafPatternPredicate(WAFUtils.GOOGLE_PATTERNS, "GOOGLE");
+    private final WafPatternPredicate cmdPredicate = new WafPatternPredicate(WAFUtils.COMMAND_PATTERNS, "COMMAND");
+    private final WafPatternPredicate filePredicate = new WafPatternPredicate(WAFUtils.FILE_PATTERNS, "FILE");
+    private final WafPatternPredicate linkPredicate = new WafPatternPredicate(WAFUtils.LINK_PATTERNS, "LINK");
+    private final WafPatternPredicate suspiciousPredicate = new WafPatternPredicate(WAFUtils.SUSPICIOUS_PATTERNS, "SUSPICIOUS");
+    private final WafPatternPredicate javarcePredicate = new WafPatternPredicate(WAFUtils.JAVA_RCE_PATTERNS, "JAVA_RCE");
+    private final WafPatternPredicate xxePredicate = new WafPatternPredicate(WAFUtils.XXE_PATTERNS, "XXE");
+
+    private final WafPatternPredicate userAgentPredicate = new WafPatternPredicate(WAFUtils.USER_AGENT_PATTERNS, "USER_AGENT");
+    private final WafPatternPredicate aiUserAgentPredicate = new WafPatternPredicate(WAFUtils.AI_USER_AGENT_PATTERNS, "AI_USER_AGENT");
 
     // Configurable length limits for various request components
     private int parameterNamesLength = 255;
@@ -61,6 +65,7 @@ public class WAFPredicate {
 
     // Flag to control blocking of disallowed User-Agents
     private boolean blockDisallowedUserAgents = true;
+    private boolean blockDisallowedAIUserAgents = true;
 
     /**
      * A reusable predicate that tests a string against a list of compiled regex patterns.
@@ -69,14 +74,16 @@ public class WAFPredicate {
      */
     public static class WafPatternPredicate implements Predicate<String> {
         private final List<Pattern> patterns;
+        private final String ruleName;
 
         /**
          * Constructs a predicate with a specific list of patterns.
          *
          * @param patterns The list of {@link Pattern} to test against.
          */
-        public WafPatternPredicate(List<Pattern> patterns) {
+        public WafPatternPredicate(List<Pattern> patterns, String ruleName) {
             this.patterns = Objects.requireNonNull(patterns, "Pattern list cannot be null.");
+            this.ruleName = Objects.requireNonNull(ruleName, "Rule Name cannot be null.");;
         }
 
         /**
@@ -89,10 +96,12 @@ public class WAFPredicate {
          */
         @Override
         public boolean test(String value) {
-            if (value == null) {
-                return true; // Null values are considered safe
+            if (value == null) return true;
+            boolean isSafe = !isWAFPattern(value, patterns);
+            if (!isSafe) {
+                logger.warn("WAF Blocked by rule [{}]. Value snippet: {}", ruleName, value.substring(0, Math.min(value.length(), 200)));
             }
-            return !WAFUtils.isWAFPattern(value, patterns);
+            return isSafe;
         }
 
         /**
@@ -105,21 +114,40 @@ public class WAFPredicate {
     }
 
 
+    private static boolean isWAFPattern(String value, List<Pattern> patterns) {
+        if (value == null) return false;
+        // Protect against ReDos
+        String safeValue = value.length() > 10000 ? value.substring(0, 10000) : value;
+        // matcher pattern find ?
+        for (Pattern pattern : patterns) {
+            if (pattern.matcher(safeValue).find())
+                return true;
+        }
+        return false;
+    }
+
+
+     private static final Pattern SAFE_PARAM_NAME = Pattern.compile("^[a-zA-Z0-9_.\\-\\[\\]]+$");
+
     /**
      * Predicate for validating HTTP parameter names.
-     * Checks for length, XSS, SQLi, Command, File, and Link injection patterns.
      */
     public final Predicate<String> forParameterNames = (param) -> {
-        if (param == null) return true; // Null is safe
+        if (param == null) return true;
         if (param.length() > parameterNamesLength) {
             logger.warn("Blocked: Parameter name exceeds max length ({}): {}", parameterNamesLength, param);
             return false;
         }
+
+        // Check whitelist (Extremely fast and secure)
+        if (!SAFE_PARAM_NAME.matcher(param).matches()) {
+            logger.warn("Blocked: Suspicious characters in parameter name: {}", param);
+            return false;
+        }
+
+        // Optional: Keep XSS or CMD in case...
         return xssPredicate.test(param) &&
-                sqlPredicate.test(param) &&
-                cmdPredicate.test(param) &&
-                filePredicate.test(param) &&
-                linkPredicate.test(param);
+                sqlPredicate.test(param);
     };
 
     /**
@@ -134,10 +162,15 @@ public class WAFPredicate {
         }
         return xssPredicate.test(value) &&
                 sqlPredicate.test(value) &&
+                googlePredicate.test(value) &&
                 cmdPredicate.test(value) &&
                 filePredicate.test(value) &&
-                linkPredicate.test(value);
+                linkPredicate.test(value) &&
+                javarcePredicate.test(value) &&       // Block SpEL, OGNL, Deserialization
+                suspiciousPredicate.test(value);      // WAF evasion
     };
+
+    private static final Pattern SAFE_HEADER_NAME = Pattern.compile("^[a-zA-Z0-9\\-]+$");
 
     /**
      * Predicate for validating HTTP header names.
@@ -149,7 +182,15 @@ public class WAFPredicate {
             logger.warn("Blocked: Header name exceeds max length ({}): {}", headerNamesLength, header);
             return false;
         }
-        return xssPredicate.test(header);
+
+        // Check whitelist (Extremely fast and secure)
+        if (!SAFE_HEADER_NAME.matcher(header).matches()) {
+            logger.warn("Blocked: Suspicious characters in Header name: {}", header);
+            return false;
+        }
+        return xssPredicate.test(header) &&
+                sqlPredicate.test(header) &&
+                cmdPredicate.test(header);
     };
 
     /**
@@ -163,12 +204,20 @@ public class WAFPredicate {
             return false;
         }
         // Special referrer header injection
-        return xssPredicate.test(header);
+        return xssPredicate.test(header) &&
+                sqlPredicate.test(header) &&
+                cmdPredicate.test(header) &&
+                javarcePredicate.test(header) &&   //  Block Log4Shell dans les Headers
+                suspiciousPredicate.test(header); // Block Headers malformed
     };
+
+
+    // Allow : sub.domain.com, localhost, 127.0.0.1, and optional ports (ex: domain.com:8080)
+    private static final Pattern VALID_HOSTNAME_FORMAT = Pattern.compile("^[a-zA-Z0-9.-]+(:[0-9]{1,5})?$");
 
     /**
      * Predicate for validating hostnames.
-     * Checks for length and allowed hostnames, Filter Suspicious and XSS.
+     * Checks for length, RFC format and allowed hostnames.
      */
     public final Predicate<String> forHostnames = (hostname) -> {
         if (hostname == null) return true; // Null is safe
@@ -176,13 +225,33 @@ public class WAFPredicate {
             logger.warn("Blocked: Hostname exceeds max length ({}): {}", hostNamesLength, hostname);
             return false;
         }
-        // Check against allowed hostnames if a pattern is configured
-        if (!"".equals(allowedHostnames.pattern()) && !allowedHostnames.matcher(hostname).matches()) {
-            logger.warn("Blocked: Hostname {} is not in the allowed list.", hostname);
+        if (!VALID_HOSTNAME_FORMAT.matcher(hostname).matches()) {
+            logger.warn("Blocked: Invalid Hostname format (potential injection): {}", hostname);
             return false;
         }
-        // Check suspicious and XSS even on allowed hostnames.
-        return suspiciousPredicate.test(hostname) && xssPredicate.test(hostname);
+        // Allowed domain ?
+        if (allowedHostnames != null && !allowedHostnames.pattern().isEmpty()) {
+            if (!allowedHostnames.matcher(hostname).matches()) {
+                logger.warn("Blocked: Hostname {} is not in the allowed list.", hostname);
+                return false;
+            }
+        }
+        return true;
+    };
+
+
+    /**
+     * Predicate for validating raw REST API Bodies (JSON/XML).
+     * Extremely useful for API Gateways reading the stream.
+     */
+    public final Predicate<String> forRestApiBody = (body) -> {
+        if (body == null || body.isEmpty()) return true;
+        return xssPredicate.test(body) &&
+                sqlPredicate.test(body) &&
+                cmdPredicate.test(body) &&
+                javarcePredicate.test(body) &&    // Malicious JSON deserialization (e.g., Fastjson @type)
+                xxePredicate.test(body) &&        // Prevents XML (XXE) attacks
+                suspiciousPredicate.test(body);   // Prevents oversized/obfuscated payloads
     };
 
     /**
@@ -198,6 +267,17 @@ public class WAFPredicate {
         boolean isDisallowed = !userAgentPredicate.test(userAgent);
         if (isDisallowed) {
             logger.warn("Blocked: User-Agent is disallowed: {}", userAgent);
+        }
+        return isDisallowed;
+    }
+
+    public boolean isAIUserAgentBlocked(String userAgent) {
+        if (!isBlockDisallowedAIUserAgents() || userAgent == null || userAgent.isEmpty()) {
+            return false;
+        }
+        boolean isDisallowed = !aiUserAgentPredicate.test(userAgent);
+        if (isDisallowed) {
+            logger.warn("Blocked: AI User-Agent is disallowed: {}", userAgent);
         }
         return isDisallowed;
     }
@@ -219,6 +299,14 @@ public class WAFPredicate {
 
     public void setBlockDisallowedUserAgents(boolean blockDisallowedUserAgents) {
         this.blockDisallowedUserAgents = blockDisallowedUserAgents;
+    }
+
+    public boolean isBlockDisallowedAIUserAgents() {
+        return blockDisallowedAIUserAgents;
+    }
+
+    public void setBlockDisallowedAIUserAgents(boolean blockDisallowedAIUserAgents) {
+        this.blockDisallowedAIUserAgents = blockDisallowedAIUserAgents;
     }
 
     public int getParameterNamesLength() {

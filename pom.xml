@@ -7,7 +7,7 @@
     <groupId>com.jservlet.nexus.backend</groupId>
     <artifactId>nexus-backend</artifactId>
     <packaging>${packaging}</packaging>
-    <version>1.0.24</version>
+    <version>1.0.25</version>
 
     <name>nexus-backend</name>
     <description>The Java Nexus BackendService, an advanced and secure Rest Backend Gateway</description>
@@ -82,7 +82,7 @@
         <mainClass>com.jservlet.nexus.config.Application</mainClass>
 
         <!-- Update the last Tomcat 9.x.x version with springboot starter-parent-->
-        <tomcat.version>9.0.107</tomcat.version>
+        <tomcat.version>9.0.116</tomcat.version>
 
         <!-- Dependency version -->
         <spring-boot.version>2.7.18</spring-boot.version>
@@ -94,7 +94,7 @@
 
         <swagger.version>3.0.0</swagger.version>
         <springdoc-openapi.version>1.8.0</springdoc-openapi.version>
-        <jackson.version>2.17.1</jackson.version>
+        <jackson.version>2.21.1</jackson.version>
         <ziplet.version>2.4.1</ziplet.version>
 
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
@@ -222,14 +222,14 @@
                     <version>${spring-boot.version}</version>
                     <scope>provided</scope>
                 </dependency>
-                <!-- Spring devtools -->
+                <!-- Spring devtools
                 <dependency>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-devtools</artifactId>
                     <version>${spring-boot.version}</version>
                     <scope>runtime</scope>
                     <optional>true</optional>
-                </dependency>
+                </dependency> -->
             </dependencies>
             <build>
                 <plugins>
@@ -531,17 +531,16 @@
             <version>2.0</version>
         </dependency>
 
-        <!-- Fix logback classic jdk8 -->
-        <!-- setProperty "org.springframework.boot.logging.LoggingSystem" at "none") -->
+        <!-- logback classic jdk8 -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.13</version>
+            <version>1.5.25</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>1.5.13</version>
+            <version>1.5.25</version>
         </dependency>
 
         <!-- Configuration processor -->
@@ -616,7 +615,7 @@
         <dependency>
             <groupId>io.swagger.parser.v3</groupId>
             <artifactId>swagger-parser</artifactId>
-            <version>2.1.21</version>
+            <version>2.1.39</version>
         </dependency>
 
         <!-- logback IfAction Janino -->

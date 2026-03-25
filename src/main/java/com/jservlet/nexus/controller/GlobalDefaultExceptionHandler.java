@@ -55,8 +55,8 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
 
     @ExceptionHandler(value = { RestClientException.class })
     public ResponseEntity<?> handleResourceAccessException(HttpServletRequest request, RestClientException e) {
-        logger.error("Intercepted RestClientException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                e.getMessage(), request.getRemoteHost(), request.getMethod(),
+        logger.error("Intercepted RestClientException: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
+                e.getMessage(), request.getRemoteAddr(), request.getMethod(),
                 request.getServletPath(), request.getHeader("User-Agent"));
         // ByeArray Resource request could not be completed due to a conflict with the current state of the target resource!
         if (Objects.requireNonNull(e.getMessage()).startsWith("Error while extracting response for type [class java.lang.Object] and content type")) {
@@ -70,24 +70,24 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
 
     @ExceptionHandler(value = { HttpMessageNotReadableException.class })
     public ResponseEntity<?> handleNotReadableException(HttpServletRequest request, HttpMessageNotReadableException e) {
-        logger.error("Intercepted HttpMessageNotReadableException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+        logger.error("Intercepted HttpMessageNotReadableException: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
+                e.getMessage(), request.getRemoteAddr(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
         return super.getResponseEntity(METHOD_NOT_ALLOWED);// 405 or 406 NOT_ACCEPTABLE !?
     }
 
     @ExceptionHandler(value = { RequestRejectedException.class })
     public ResponseEntity<?> handleRejectedException(HttpServletRequest request, RequestRejectedException e) {
         // Log security, the WAFFilter return a request not readable anymore
-        logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+        logger.error("Intercepted RequestRejectedException: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
+                e.getMessage(), request.getRemoteAddr(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
         return super.getResponseEntity("400", "ERROR", "Request rejected!", BAD_REQUEST);
     }
 
 
     @ExceptionHandler(value = { HttpRequestMethodNotSupportedException.class })
     public ResponseEntity<?> handleMethodNotSupportedException(HttpServletRequest request, HttpRequestMethodNotSupportedException e) {
-        logger.error("Intercepted HttpRequestMethodNotSupportedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+        logger.error("Intercepted HttpRequestMethodNotSupportedException: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
+                e.getMessage(), request.getRemoteAddr(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON); // Mandatory forced ContentType can be null
         return super.getResponseEntity("404", "ERROR", e, headers, NOT_FOUND);
@@ -98,8 +98,8 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
      */
     @ExceptionHandler(value = { HttpMediaTypeNotAcceptableException.class })
     public ResponseEntity<?> handleMediaTypeNotAcceptableException(HttpServletRequest request, HttpMediaTypeNotAcceptableException e) {
-        logger.error("Intercepted HttpMediaTypeNotAcceptableException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+        logger.error("Intercepted HttpMediaTypeNotAcceptableException: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
+                e.getMessage(), request.getRemoteAddr(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON); // Mandatory forced ContentType can be null
         return super.getResponseEntity("406", "ERROR", e, headers, NOT_ACCEPTABLE);
@@ -112,12 +112,12 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
     public ResponseEntity<?> handleGlobalException(HttpServletRequest request, Exception e) {
         // Special case ClientAbort
         if (e instanceof ClientAbortException || (e.getCause() != null && e.getCause() instanceof ClientAbortException)) {
-            logger.warn("Intercepted ClientAbortException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                    e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+            logger.warn("Intercepted ClientAbortException: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
+                    e.getMessage(), request.getRemoteAddr(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
             return null; // Spring will do nothing we manage the response!
         }
-        logger.error("Intercepted GlobalException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
-                e.getMessage(), request.getRemoteHost(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+        logger.error("Intercepted GlobalException: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
+                e.getMessage(), request.getRemoteAddr(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON); // Mandatory forced ContentType can be null or application/octet-stream
         return super.getResponseEntity("500",  "ERROR", e, headers, INTERNAL_SERVER_ERROR);

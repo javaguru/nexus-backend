@@ -205,8 +205,6 @@ public class ApiBackend extends ApiBase {
     public final Object requestEntity(@RequestBody(required = false) String body, HttpMethod method,
                                       HttpServletRequest request, NativeWebRequest nativeWebRequest)
             throws NexusHttpException, NexusIllegalUrlException, IOException {
-        // MultiValueMap store the MultiPartFiles and the Parameters Map
-        MultiValueMap<String, Object> map = null;
         try {
             // Any path within handler mapping without "api/" and with its query
             String url = ((String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).replaceAll("api/", "");
@@ -214,7 +212,8 @@ public class ApiBackend extends ApiBase {
 
             // Get the MultipartRequest from the NativeRequest!
             MultipartRequest multipartRequest = nativeWebRequest.getNativeRequest(MultipartRequest.class);
-            map = processMapResources(multipartRequest, request.getParameterMap());
+            // MultiValueMap store the MultiPartFiles and the Parameters Map
+            MultiValueMap<String, Object> map =  processMapResources(multipartRequest, request.getParameterMap());
 
             // Optimize logs writing, log methods can take time!
             if (logger.isDebugEnabled()) {

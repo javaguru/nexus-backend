@@ -34,6 +34,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.firewall.*;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -108,10 +109,19 @@ public class WebSecurityConfig {
         http.sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         // authorize HttpRequests
-        http.authorizeHttpRequests(auth -> auth.requestMatchers(
-                                "/", "/mock/**", "/static/**",
-                                "/actuator/**", "/swagger-ui/index.html",
-                                "/api/**").permitAll());
+        http.authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                // Use AntPathRequestMatcher for remove ambiguity with Servlet/JSP
+                                new AntPathRequestMatcher("/"),
+                                new AntPathRequestMatcher("/mock/**"),
+                                new AntPathRequestMatcher("/static/**"),
+                                new AntPathRequestMatcher("/actuator/**"),
+                                new AntPathRequestMatcher("/swagger-ui/index.html"),
+                                new AntPathRequestMatcher("/api/**"),
+                                new AntPathRequestMatcher("/error")
+                        ).permitAll()
+        );
+
         // security headers
         http.headers(headers -> {
             headers.contentTypeOptions(); // X-Content-Type-Options: nosniff
@@ -230,10 +240,12 @@ public class WebSecurityConfig {
     private int headerNamesValuesLength = 25000;
     @Value("${nexus.backend.security.predicate.hostNamesLength:255}")
     private int hostNamesLength = 255;
-    @Value("${nexus.backend.security.predicate.hostName.pattern:}")
+    @Value("${nexus.backend.security.predicate.hostName.pattern:}") // "^(www\\.)?nexus\\.jservlet\\.com(:[0-9]+)?$"
     private String hostNamesPattern;
     @Value("${nexus.backend.security.predicate.userAgent.blocked:false}")
     private boolean userAgentBlocked;
+    @Value("${nexus.backend.security.predicate.aiUserAgent.blocked:true}")
+    private boolean aiUserAgentBlocked;
 
     @Bean
     public WAFPredicate wafPredicate() {
@@ -245,10 +257,12 @@ public class WebSecurityConfig {
         wafPredicate.setHostNamesLength(hostNamesLength);
 
         if (hostNamesPattern.isEmpty()) {
-            wafPredicate.setAllowedHostnames(Pattern.compile(hostNamesPattern,Pattern.CASE_INSENSITIVE));
+            wafPredicate.setAllowedHostnames(Pattern.compile(hostNamesPattern,Pattern.CASE_INSENSITIVE | Pattern.DOTALL));
         }
 
+        //
         wafPredicate.setBlockDisallowedUserAgents(userAgentBlocked);
+        wafPredicate.setBlockDisallowedAIUserAgents(aiUserAgentBlocked);
 
         return wafPredicate;
     }

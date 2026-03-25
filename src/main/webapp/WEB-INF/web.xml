@@ -4,21 +4,34 @@
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
          version="4.0">
 
-        <!-- custom error page -->
-        <error-page>
-                <error-code>404</error-code>
-                <location>/notfound</location>
-        </error-page>
-        <error-page>
-                <error-code>403</error-code>
-                <location>/forbidden</location>
-        </error-page>
-       <!-- <error-page>
-                <error-code>500</error-code>
-                <location>/error</location>
-        </error-page>-->
-        <!--<error-page>
-                <exception-type>org.springframework.security.web.firewall.RequestRejectedException</exception-type>
-                <location>/forbidden</location>
-        </error-page>-->
+        <security-role>
+                <role-name>admin-gui</role-name>
+        </security-role>
+
+        <security-constraint>
+                <display-name>Admin Access Constraint</display-name>
+                <web-resource-collection>
+                        <web-resource-name>Protected Admin Area</web-resource-name>
+                        <url-pattern>/health/*</url-pattern>
+                        <url-pattern>/actuator/*</url-pattern>
+                        <!-- <http-method> -->
+                </web-resource-collection>
+
+                <auth-constraint>
+                        <role-name>admin-gui</role-name>
+                </auth-constraint>
+
+                <user-data-constraint>
+                        <!-- NONE = HTTP or HTTPS allowed -->
+                        <!-- CONFIDENTIAL = Force redirection to HTTPS -->
+                        <transport-guarantee>NONE</transport-guarantee>
+                </user-data-constraint>
+        </security-constraint>
+
+        <!-- LoginConfig -->
+        <login-config>
+                <auth-method>BASIC</auth-method>
+                <realm-name>Nexus Backend Realm</realm-name>
+        </login-config>
+
 </web-app>

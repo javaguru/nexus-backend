@@ -89,13 +89,4 @@ public class DefaultErrorController extends ApiBase implements ErrorController {
         return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
-    @GetMapping(path = "/notfound")
-    public String notfound() {
-        return "error/error404";
-    }
-    @GetMapping(path = "/forbidden")
-    public String forbidden() {
-        return "error/error403";
-    }
-
 }

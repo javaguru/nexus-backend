@@ -327,15 +327,16 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
 **Settings keys settings.properties:** Define a max length for Keys/Values Headers or Parameters 
 
-| **Keys**                                                 | **Default value** | **Descriptions**            |
-|----------------------------------------------------------|:------------------|:----------------------------|
-| nexus.backend.security.predicate.parameterNamesLength    | 255               | Parameter names length max  |   
-| nexus.backend.security.predicate.parameterValuesLength   | 1000000           | Parameter values length max |   
-| nexus.backend.security.predicate.headerNamesLength       | 255               | Header names length max     |   
-| nexus.backend.security.predicate.headerNamesValuesLength | 25000             | Header values length max    |   
-| nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max       |   
-| nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter     |   
-| nexus.backend.security.predicate.userAgent.blocked       | false             | Active UserAgent filter     |   
+| **Keys**                                                 | **Default value** | **Descriptions**                |
+|----------------------------------------------------------|:------------------|:--------------------------------|
+| nexus.backend.security.predicate.parameterNamesLength    | 255               | Parameter names length max      |   
+| nexus.backend.security.predicate.parameterValuesLength   | 1000000           | Parameter values length max     |   
+| nexus.backend.security.predicate.headerNamesLength       | 255               | Header names length max         |   
+| nexus.backend.security.predicate.headerNamesValuesLength | 25000             | Header values length max        |   
+| nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max           |   
+| nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter         |   
+| nexus.backend.security.predicate.userAgent.blocked       | false             | Active Scanner UserAgent filter |   
+| nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
 
 
 ### Activated the Mutual Authentication or mTLS connection on the HttpFactory Client
@@ -401,7 +402,7 @@ Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
  * Java 13
  * SpringBoot 2.7.18
- * Tomcat 9.0.104 & Servlet 4.0.1
+ * Tomcat 9.0.116 & Servlet 4.0.1
  * Maven 3.9.x
 
 ### Build war external Tomcat 9
@@ -534,7 +535,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.24**, released at 01/09/2025  Forwarded headers Client and Transfer headers Backend Server, Cors headers exposed 
+* Last version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent  
+* Version **1.0.24**, released at 01/09/2025  Forwarded headers Client and Transfer headers Backend Server, Cors headers exposed 
 * Version **1.0.23**, released at 22/08/2025 Reorganize WAFFilter Multipart, CorsConfiguration, Cookie client stateful
 * Version **1.0.22**, released at 31/07/2025 Fix Security RateLimit, Content Security Policy and Referrer-Policy
 * Version **1.0.21**, released at 29/07/2025 Fix Predicate for Hostnames, Shared CookieRedirectInterceptor, Postman-Echo performance

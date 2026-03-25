@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2024 JServlet.com Franck Andriano.
+ * Copyright (C) 2001-2025 JServlet.com Franck Andriano.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
@@ -18,22 +18,19 @@
 
 package com.jservlet.nexus.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.context.annotation.Profile;
 
 /**
  * SpringBoot Tomcat Container ServletInitializer
  * Only a Spring profile 'withoutTomcat' (or 'withTomcat' with a Tomcat Embedded by SpringBoot!)
  */
-@ConditionalOnExpression("#{environment.getProperty('spring.profiles.active').contains('withoutTomcat')}")
+@Profile("withoutTomcat")
 public class JServletInitializer extends SpringBootServletInitializer {
 
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
-        // Fix ClassNotFoundException: org.slf4j.impl.StaticLoggerBinder
-        System.setProperty("org.springframework.boot.logging.LoggingSystem", "none");
-
         // Swagger is only available in dev!
         String env = System.getProperty("environment", "development");
         if ("development".equals(env))  System.setProperty("springdoc.swagger-ui.enabled", "true");

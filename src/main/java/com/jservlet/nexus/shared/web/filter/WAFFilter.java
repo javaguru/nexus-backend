@@ -46,14 +46,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -80,11 +73,8 @@ public class WAFFilter extends ApiBase implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(WAFFilter.class);
 
-    private static final String SOURCE = "INTERNAL-REST-NEXUS-BACKEND";
+    private static final String SOURCE = "INTERNAL-WAF-NEXUS-BACKEND";
 
-    /**
-     * Defines the operational mode of the WAF.
-     */
     public enum Reactive {
         STRICT,  // Rejects requests with malicious patterns.
         PASSIVE, // Cleans malicious patterns from the request.
@@ -96,6 +86,10 @@ public class WAFFilter extends ApiBase implements Filter {
 
     @Value("${nexus.api.backend.filter.waf.deepscan.cookie:false}")
     private boolean isDeepScanCookie;
+
+    // Max WAF file scan limit (ex: 15MB) to prevent RAM OutOfMemory (DoS attack)
+    @Value("${nexus.api.backend.filter.waf.maxInMemoryFileSize:15728640}")
+    private long maxInMemoryFileSize = 15 * 1024 * 1024;
 
     private final WAFPredicate wafPredicate;
     private final ObjectMapper objectMapper;
@@ -114,30 +108,14 @@ public class WAFFilter extends ApiBase implements Filter {
 
     @PostConstruct
     private void postConstruct() {
-        // Init XML MimeTypes
-        xmlMimeTypes.add("image/svg+xml");
-        xmlMimeTypes.add("text/xml");
-        xmlMimeTypes.add("application/xml");
-        xmlMimeTypes.add("application/vnd.mozilla.xul+xml");
+        xmlMimeTypes.addAll(Arrays.asList("image/svg+xml", "text/xml", "application/xml", "application/vnd.mozilla.xul+xml"));
 
-        // Init magic numbers
         magicNumbers.put("FFD8FF", "image/jpeg");
         magicNumbers.put("47494638", "image/gif");
-        magicNumbers.put("89504E470D0A1A0A", "image/png");
+        magicNumbers.put("89504E47", "image/png"); // Simplified PNG magic number for matching
         magicNumbers.put("424D", "image/bmp");
-        magicNumbers.put("FFFB", "audio/mpeg");
-        magicNumbers.put("494433", "audio/mpeg");
-        magicNumbers.put("52494646", "audio/wav");
         magicNumbers.put("255044462D", "application/pdf");
         magicNumbers.put("504B0304", "application/zip");
-        magicNumbers.put("1F8B", "application/gzip");
-        magicNumbers.put("7B5C727466", "application/rtf");
-        magicNumbers.put("47", "video/mp2t");
-        magicNumbers.put("1A45DFA3", "video/webm");
-        magicNumbers.put("49492A00", "image/tiff");
-        magicNumbers.put("4D4D002A", "image/tiff");
-        magicNumbers.put("377A", "application/x-7z-compressed");
-        magicNumbers.put("526172211A0700", "application/vnd.rar");
     }
 
     @Override
@@ -160,12 +138,13 @@ public class WAFFilter extends ApiBase implements Filter {
             // Wrap the request to allow reading input stream multiple times and modifying parameters
             WAFRequestWrapper wrappedRequest = new WAFRequestWrapper(req);
 
-            // Validate User-Agent
-            validateUserAgent(wrappedRequest);
+            // Validate Hostname & User-Agent (Gateways must check Host headers)
+            validateHostAndUserAgent(wrappedRequest);
 
-            // Wrap the request MultipartFiles
+            // Wrap & Scan Multipart Files safely
             HttpServletRequest processedRequest = scanAndWrapMultipartFiles(wrappedRequest);
 
+            // Apply WAF Policies
             if (reactiveMode == Reactive.STRICT) {
                 handleStrict(processedRequest);
             } else if (reactiveMode == Reactive.PASSIVE) {
@@ -195,46 +174,39 @@ public class WAFFilter extends ApiBase implements Filter {
 
             for (Map.Entry<String, List<MultipartFile>> entry : originalMultipartRequest.getMultiFileMap().entrySet()) {
                 for (MultipartFile file : entry.getValue()) {
-                    if (file.isEmpty()) {
-                        continue;
+                    if (file.isEmpty()) continue;
+
+                    // ANTI-DOS: Prevent loading massive files into RAM
+                    if (file.getSize() > maxInMemoryFileSize) {
+                        throw new RequestRejectedException("Request rejected: File size exceeds WAF inspection limit.");
                     }
                     // Check magic numbers and file type
                     byte[] fileContent = file.getBytes();
                     String declaredContentType = file.getContentType();
 
-                    if (fileContent.length > 0) {
-                        // read magic numbers 8 octets!
-                        byte[] header = Arrays.copyOfRange(fileContent, 0, Math.min(fileContent.length, 8));
-                        String hexHeader = bytesToHex(header);
-                        logger.debug("File '{}' with Content-Type '{}' has magic number: {}", file.getOriginalFilename(), declaredContentType, hexHeader);
+                    // Magic Number Validation
+                    if (fileContent.length >= 4) {
+                        String hexHeader = bytesToHex(Arrays.copyOfRange(fileContent, 0, 8));
+                        String magicMimeType = magicNumbers.entrySet().stream()
+                                .filter(e -> hexHeader.toUpperCase().startsWith(e.getKey()))
+                                .map(Map.Entry::getValue)
+                                .findFirst().orElse(null);
 
-                        String magicMimeType = null;
-                        for (Map.Entry<String, String> magicEntry : magicNumbers.entrySet()) {
-                            if (hexHeader.toUpperCase().startsWith(magicEntry.getKey())) {
-                                magicMimeType = magicEntry.getValue();
-                                break;
-                            }
-                        }
-
-                        // magic numbers not corresponding to the Content-Type
-                        if (magicMimeType != null && !magicMimeType.equals(file.getContentType())) {
+                        if (magicMimeType != null && declaredContentType != null && !magicMimeType.equals(declaredContentType)) {
                             throw new RequestRejectedException("Request rejected: Mime-type spoofing detected for file '" + file.getOriginalFilename() + "'.");
                         }
                     }
 
-                    // Check XML files
+                    // XML/SVG Injection Validation
                     if (declaredContentType != null && xmlMimeTypes.contains(declaredContentType.toLowerCase())) {
                         String content = new String(fileContent, StandardCharsets.UTF_8);
-                        logger.debug("Scanning XML file: '{}' with Content-Type: '{}' for malicious patterns.", file.getOriginalFilename(), declaredContentType);
-
+                        // Using WAF Parameter validation for file content
                         if (!wafPredicate.getWAFParameterValues().test(content)) {
                             throw new RequestRejectedException("Request rejected: Disallowed pattern found in XML file '" + file.getOriginalFilename() + "'.");
                         }
                     }
 
-                    // Create a MultipartFile in memory for the next filter or controller
-                    MultipartFile newFile = new WAFTempMultipartFile(file.getName(), file.getOriginalFilename(), declaredContentType, fileContent);
-                    newMultipartFiles.add(entry.getKey(), newFile);
+                    newMultipartFiles.add(entry.getKey(), new WAFTempMultipartFile(file.getName(), file.getOriginalFilename(), declaredContentType, fileContent));
                 }
             }
             return new WAFMultipartRequestWrapper(request, newMultipartFiles);
@@ -248,15 +220,45 @@ public class WAFFilter extends ApiBase implements Filter {
      * @param request The processed HttpServletRequest.
      */
     private void handleStrict(HttpServletRequest request) throws IOException {
-        // Check cookies if deep scan is enabled.
+        // Validate http headers (Critical for Log4Shell/SpEL/Deserialization)
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames != null && headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            if (!wafPredicate.getWAFHeaderNames().test(headerName)) {
+                throw new RequestRejectedException("Request rejected: Disallowed pattern in Header name.");
+            }
+            Enumeration<String> headers = request.getHeaders(headerName);
+            while (headers != null && headers.hasMoreElements()) {
+                if (!wafPredicate.getWAFHeaderValues().test(headers.nextElement())) {
+                    throw new RequestRejectedException("Request rejected: Disallowed pattern in Header value (" + headerName + ").");
+                }
+            }
+        }
+
+        // Validate url / form parameters (XSS, SQLi in Query String)
+        for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
+            if (!wafPredicate.getWAFParameterNames().test(entry.getKey())) {
+                throw new RequestRejectedException("Request rejected: Disallowed pattern in Parameter name.");
+            }
+            for (String value : entry.getValue()) {
+                if (!wafPredicate.getWAFParameterValues().test(value)) {
+                    throw new RequestRejectedException("Request rejected: Disallowed pattern in Parameter value.");
+                }
+            }
+        }
+
+        // Validate cookies
         if (isDeepScanCookie) {
             validateCookies(request);
         }
 
-        // Check the request body for malicious patterns.
+        // Validate json/rest body
         String body = IOUtils.toString(request.getReader());
         if (!StringUtils.isBlank(body)) {
-            rejectBodyIfInvalid(body);
+            // Note: Assume you added getWAFRestApiBody() in WAFPredicate as suggested, otherwise use getWAFParameterValues()
+            if (!wafPredicate.getWAFParameterValues().test(body)) {
+                throw new RequestRejectedException("Request rejected: Disallowed WAF pattern found in Request Body.");
+            }
         }
     }
 
@@ -266,7 +268,8 @@ public class WAFFilter extends ApiBase implements Filter {
      * @param request The processed HttpServletRequest.
      */
     private void handlePassive(HttpServletRequest request) throws IOException {
-        // Clean XSS patterns from request parameters.
+        // Warning: Sanitizing input by stripping patterns (Regex replaceAll) can lead to bypasses (e.g. <scr<script>ipt>).
+        // It is recommended to use STRICT mode on APIs.
         Map<String, String[]> cleanedParameters = cleanParameterMap(request.getParameterMap());
         ((WAFRequestWrapper) request).setParameterMap(cleanedParameters);
 
@@ -283,54 +286,53 @@ public class WAFFilter extends ApiBase implements Filter {
      */
     private static String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02X", b));
-        }
+        for (byte b : bytes) { sb.append(String.format("%02X", b)); }
         return sb.toString();
     }
 
     /**
-     * Validates all cookies in the request if deep scan is enabled.
+     * Host and User-Agent include AI.
      */
+    private void validateHostAndUserAgent(HttpServletRequest request) {
+        if (!wafPredicate.getWAFHostnames().test(request.getServerName())) {
+            throw new RequestRejectedException("Request rejected: Disallowed Hostname.");
+        }
+
+        String userAgent = request.getHeader("User-Agent");
+        if (wafPredicate.isUserAgentBlocked(userAgent)) {
+            throw new RequestRejectedException("Request rejected: Disallowed User-Agent.");
+        }
+        if (wafPredicate.isAIUserAgentBlocked(userAgent)) {
+            throw new RequestRejectedException("Request rejected: Disallowed AI User-Agent.");
+        }
+    }
+
     private void validateCookies(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
-            if (cookies.length > 100) {
-                throw new RequestRejectedException("Request rejected: Exceeded cookie limit (100).");
-            }
+            if (cookies.length > 100) throw new RequestRejectedException("Request rejected: Exceeded cookie limit.");
             for (Cookie cookie : cookies) {
-                rejectCookieIfInvalid(cookie);
+                if (!wafPredicate.getWAFParameterNames().test(cookie.getName())) {
+                    throw new RequestRejectedException("Request rejected: Disallowed pattern in cookie name.");
+                }
+                if (!wafPredicate.getWAFParameterValues().test(cookie.getValue())) {
+                    throw new RequestRejectedException("Request rejected: Disallowed pattern in cookie value.");
+                }
             }
         }
     }
 
-    /**
-     * Validates the User-Agent header if configured to do so.
-     */
-    private void validateUserAgent(HttpServletRequest request) {
-        if (wafPredicate.isBlockDisallowedUserAgents()) {
-            String userAgent = request.getHeader("User-Agent");
-            if (wafPredicate.isUserAgentBlocked(userAgent)) {
-                throw new RequestRejectedException("Request rejected: Disallowed User-Agent.");
-            }
-        }
-    }
-
-    /**
-     * Centralized handler for sending a rejection response.
-     */
     private void handleRequestRejected(RequestRejectedException ex, HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        logger.error("Intercepted RequestRejectedException: {} RemoteHost: {} RequestURL: {} {} UserAgent: {}",
+        logger.warn("WAF Blocked Request: {} getRemoteAddr: {} RequestURL: {} {} UserAgent: {}",
                 LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // No truncated in debug mode!
-                req.getRemoteHost(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
+                req.getRemoteAddr(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
 
-        resp.setStatus(HttpStatus.BAD_REQUEST.value());
+        resp.setStatus(HttpStatus.FORBIDDEN.value()); // FORBIDDEN (403) is standard for WAF drops, BAD_REQUEST (400) is okay too.
         resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
-        // Write a standard error message to the response body.
         byte[] responseBody = objectMapper.writeValueAsBytes(
-                new Message("400", "ERROR", SOURCE, "Request rejected due to security policy violation.")
+                new Message("403", "SECURITY_VIOLATION", SOURCE, "Request rejected due to security policy violation.")
         );
         resp.getOutputStream().write(responseBody);
         resp.flushBuffer();
@@ -346,10 +348,8 @@ public class WAFFilter extends ApiBase implements Filter {
             String key = entry.getKey();
             String[] values = entry.getValue();
             String[] cleanedValues = new String[values.length];
-            for (int i = 0; i < values.length; i++) {
-                cleanedValues[i] = stripWAFPatterns(values[i], wafPredicate.getXSSPatterns());
-            }
-            cleanedParameters.put(key, cleanedValues);
+            for (int i = 0; i < values.length; i++) cleanedValues[i] = stripWAFPatterns(values[i], wafPredicate.getXSSPatterns());
+            cleanedParameters.put(entry.getKey(), cleanedValues);
         }
         return cleanedParameters;
     }
@@ -360,9 +360,7 @@ public class WAFFilter extends ApiBase implements Filter {
     private String stripWAFPatterns(String value, List<Pattern> patterns) {
         if (value == null) return null;
         // Prevent Regular Expression Denial of Service (ReDoS) attacks.
-        if (value.length() > 100000) {
-            throw new RequestRejectedException("Input value is too long for pattern stripping.");
-        }
+        if (value.length() > 100000) throw new RequestRejectedException("Input value is too long for passive sanitization.");
         String strippedValue = value;
         for (Pattern pattern : patterns) {
             strippedValue = pattern.matcher(strippedValue).replaceAll("");
@@ -370,32 +368,6 @@ public class WAFFilter extends ApiBase implements Filter {
         return strippedValue;
     }
 
-    /**
-     * Throws RequestRejectedException if the request body contains disallowed patterns.
-     */
-    private void rejectBodyIfInvalid(String body) {
-        if (!wafPredicate.getWAFParameterValues().test(body)) {
-            throw new RequestRejectedException("Request rejected: Disallowed pattern found in request body.");
-        }
-    }
-
-    /**
-     * Throws RequestRejectedException if a cookie is invalid.
-     */
-    private void rejectCookieIfInvalid(Cookie cookie) {
-        // Enforce HttpOnly flag for security.
-        if (!cookie.isHttpOnly()) {
-            throw new RequestRejectedException("Request rejected: Cookie '" + cookie.getName() + "' is not HttpOnly.");
-        }
-        // Validate cookie name against patterns.
-        if (!wafPredicate.getWAFParameterNames().test(cookie.getName())) {
-            throw new RequestRejectedException("Request rejected: Disallowed pattern in cookie name '" + cookie.getName() + "'.");
-        }
-        // Validate cookie value against patterns.
-        if (!wafPredicate.getWAFParameterValues().test(cookie.getValue())) {
-            throw new RequestRejectedException("Request rejected: Disallowed pattern in value for cookie '" + cookie.getName() + "'.");
-        }
-    }
 
     @Override
     public void destroy() {

@@ -44,7 +44,12 @@ import java.util.concurrent.TimeUnit;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /*
- * The Status Controller
+ * The  Status Controller over Http
+ * curl -v http://localhost:8082/nexus-backend/health/status
+ * curl -v -u admin:admin -H "Accept: text/plain" http://localhost:8082/nexus-backend/health/status
+ * or over Https
+ * curl -v -k  https://nexus6.jservlet.com:8443/nexus-backend/health/status
+ * curl -v -k -u admin:admin -H "Accept: text/plain" https://nexus6.jservlet.com:8443/nexus-backend/health/status
  */
 @Controller
 public class StatusController {
