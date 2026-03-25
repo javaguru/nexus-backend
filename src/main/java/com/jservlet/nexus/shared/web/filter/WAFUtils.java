@@ -27,9 +27,9 @@ import java.util.regex.Pattern;
  * - XSS script injection evasion (various encoding, obfuscation, template injections)<br>
  * - SQL injection (commands, functions, params and NoSQL)<br>
  * - Google injection (GCP/Google Cloud Platform - GCP Metadata server)<br>
- * - Command injection & RCE (Remote code execution)<br>
- * - File injection (LFI/RFI& path traversal)<br>
- * - Java injection (RCE, SSTI & deserialization)<br>
+ * - Command injection &amp; RCE (Remote code execution)<br>
+ * - File injection (LFI/RFI &amp; path traversal)<br>
+ * - Java injection (RCE, SSTI &amp; deserialization)<br>
  * - XXE injection (Xml External Entity)<br>
  * - Suspicious characters injection (excessive special char, unusual length/structure)<br>
  * - Link injection (mailto or ftp)<br>
@@ -75,10 +75,10 @@ public class WAFUtils {
     );
 
     /**
-     * Modern Google / GCP (Google Cloud Platform) Threats & Cloud Dorking
+     * Modern Google / GCP (Google Cloud Platform) Threats &amp; Cloud Dorking
      * SSRF on GCP Metadata server (Critical for Google Cloud hosted apps)
      * Abuse of Google Workspace (Apps Script, Drive) for data exfiltration or Open Redirects
-     * Google API Key & Service Account injection/stealing
+     * Google API Key &amp; Service Account injection/stealing
      * Modern Dorking operators targeting cloud credentials (used in local search abuse)
      */
     public static final List<Pattern> GOOGLE_PATTERNS = List.of(
@@ -97,7 +97,7 @@ public class WAFUtils {
     );
 
     /**
-     * Command injection & RCE (remote code execution)
+     * Command injection &amp; RCE (remote code execution)
      * Linux piping (`|`), backticks, $() execution, and out-of-band network commands (curl, wget, nc).
      */
     public static final List<Pattern> COMMAND_PATTERNS = List.of(
@@ -106,7 +106,7 @@ public class WAFUtils {
     );
 
     /**
-     * Modern Java specific RCE (Remote Code Execution), SSTI (templates) & deserialization (Log4Shell, SpEL, OGNL)
+     * Modern Java specific RCE (Remote Code Execution), SSTI (templates) &amp; deserialization (Log4Shell, SpEL, OGNL)
      */
     public static final List<Pattern> JAVA_RCE_PATTERNS = List.of(
             // Log4Shell (CVE-2021-44228) and variants
@@ -116,7 +116,7 @@ public class WAFUtils {
     );
 
     /**
-     * Potential file inclusion (LFI/RFI) & path traversal
+     * Potential file inclusion (LFI/RFI) &amp; path traversal
      * Advanced dot-dot-slash obfuscation (%2e%2e%2f) and PHP/File wrappers (php://, file://)
      */
     public static final List<Pattern> FILE_PATTERNS = List.of(
