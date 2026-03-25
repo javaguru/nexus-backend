@@ -80,6 +80,7 @@ public class WAFPredicate {
          * Constructs a predicate with a specific list of patterns.
          *
          * @param patterns The list of {@link Pattern} to test against.
+         * @param ruleName Rule name.
          */
         public WafPatternPredicate(List<Pattern> patterns, String ruleName) {
             this.patterns = Objects.requireNonNull(patterns, "Pattern list cannot be null.");
