@@ -256,11 +256,11 @@ public class WebSecurityConfig {
         wafPredicate.setHeaderValuesLength(headerNamesValuesLength);
         wafPredicate.setHostNamesLength(hostNamesLength);
 
-        if (hostNamesPattern.isEmpty()) {
+        if (hostNamesPattern != null && !hostNamesPattern.isEmpty()) {
             wafPredicate.setAllowedHostnames(Pattern.compile(hostNamesPattern,Pattern.CASE_INSENSITIVE | Pattern.DOTALL));
         }
 
-        //
+        // AI User-Agent
         wafPredicate.setBlockDisallowedUserAgents(userAgentBlocked);
         wafPredicate.setBlockDisallowedAIUserAgents(aiUserAgentBlocked);
 
