@@ -268,7 +268,9 @@ public class WebSecurityConfig {
     }
 
     /**
-     * Web HttpFirewall, allow semicolon by example
+     * Web HttpFirewall filtered only Encoded characters, allow semicolon by example
+     * (The WAF Filter with WAF Predicate analyzed the Headers, Map parameters and Bodyb!)
+     *
      * @param waf WAFPredicate
      * @return HttpFirewall
      */
@@ -290,7 +292,7 @@ public class WebSecurityConfig {
         firewall.setAllowUrlEncodedParagraphSeparator(isAllowUrlEncodedParagraphSeparator);
         firewall.setAllowUrlEncodedLineSeparator(isAllowUrlEncodedLineSeparator);
 
-        // Predicate Parameter Name/Value
+        /*// Predicate Parameter Name/Value
         firewall.setAllowedParameterNames(waf.getWAFParameterNames());
         firewall.setAllowedParameterValues(waf.getWAFParameterValues());
 
@@ -299,7 +301,7 @@ public class WebSecurityConfig {
         firewall.setAllowedHeaderValues(waf.getWAFHeaderValues());
 
         // Predicate Hostnames
-        firewall.setAllowedHostnames(waf.getWAFHostnames());
+        firewall.setAllowedHostnames(waf.getWAFHostnames());*/
 
         return firewall;
     }
