@@ -1,6 +1,6 @@
 package com.jservlet.nexus.controller;
 
-import com.jservlet.nexus.shared.service.monitor.NmtMonitorService;
+import com.jservlet.nexus.config.web.monitor.NmtMonitorService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

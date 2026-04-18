@@ -40,12 +40,15 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 ***An Ajax Single Page Application communicate through the Rest Controller ApiBackend and its BackendService to a RestApi Backend Server.***
 
 
-### Ability to Secure all RestApi Request to a Backend Server
+### ⚙️ Ability to Secure all RestApi Request to a Backend Server
 
  * Implements a **BackendService**, ability to request typed response Object class or ParameterizedTypeReference, requested on all HTTP methods to a RestApi Backend Server.
  * Implements an **EntityBackend** JSON Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
  * Implements a **HttpFirewall** filter protection against evasion, rejected any suspicious Requests Encoding, and log IP address at fault
- * Implements a **WAF Filter** protection against evasion on the Http JSON BodyRequest, Headers, Keys, Parameters, and log IP address at fault.
+ * Implements a **WAF Filter Patterns** protection against evasion on the Http JSON BodyRequest, Headers, Keys, Parameters, and log IP address at fault.
+ * Implements a **AI WAF Engine DistilBERT ONNX** detect miscellaneous Http requests, and log IP address at fault.
+ * Implements a **AnalyzerRequest** with Matrix Batching and Dynamic Context-Preserving Chunking.
+ * Implements a **Native Memory Tracking** Monitoring System calls, Tracks the actual RAM footprint, allowing jcmd to generate reports.
  * Implements a **CORS Security Request** filter, authorize request based on Origin Domains and Methods.
  * Implements a **Content Security Policy** filter, define your own policy rules CSP.
  * Implements a **RateLimit** interceptor, allows 1000 requests per minutes and per-IP-address.
@@ -57,9 +60,9 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
  * Implements a **CharacterEncoding** filter, UTF-8 default encoding for requests.
 
 
-### Specials config Http Headers
+### 💡 Specials config Http Headers
 
- * **HTTP headers:** reset all Headers, remove host or origin header.
+ * **HTTP headers:** reset all Headers, remove Host or Origin header.
  * **Basic Authentication:** set any security ACL **Access Control List**
  * **Bearer Authorization:** set any security **Bearer Token**.
  * **Cookie:** set any **security session Cookie**.
@@ -67,7 +70,7 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
   not restricted to accessing resources from the same origin through what is known as same-origin policy.
 
 
-### The Nexus Backend application can be configured by the following keys SpringBoot and Settings properties
+### ⚙️ The Nexus Backend application can be configured by the following keys SpringBoot and Settings properties
 
  **SpringBoot keys application.properties:**
 
@@ -90,7 +93,7 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 * -Dspring.config.name=spring.properties
 
 
-### The Nexus-Backend Url Server and miscellaneous options can be configured by the following keys Settings
+### ⚙️ The Nexus-Backend Url Server and miscellaneous options can be configured by the following keys Settings
 
  **Settings keys settings.properties:**
 
@@ -127,7 +130,8 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 * **${user.home}**/conf/config.properties
 * **${user.home}**/cfg/**${servletContextPath}**/config.properties
 
-### The ApiBackend Configuration JSON Entity Object or a ByteArray Resource
+
+###  ⚙️️ The ApiBackend Configuration JSON Entity Object or a ByteArray Resource
 
 **ApiBackend ResponseType** can be now a **ByteArray Resource.** 
 
@@ -166,7 +170,8 @@ And the Http Responses didn't come back with a HttpHeader **"Transfer-Encoding: 
 Enable the **ShallowEtagHeader Filter** in the configuration for force to calculate the header **Content-Length**
 for all the **Response JSON Entity Object**, no more HttpHeader **"Transfer-Encoding: chunked"**.
 
-### The MediaTypes safe extensions configuration
+
+### ⚙️ The MediaTypes safe extensions configuration
 
 **MediaTypes safe extensions**
 
@@ -191,7 +196,7 @@ Default Header ContentNegotiation Strategy:
 | nexus.backend.content.negotiation.commonMediaTypes            | true              | Enabled                     |   
 
 
-### The CORS Security configuration
+### ⚙️ The CORS Security configuration
 
 **CORS Security configuration, allow Control Request on Domains and Methods**
 
@@ -213,7 +218,7 @@ The default Cors Configuration:
 
 Exposed headers
 
-### The RateLimit Configuration
+### ⚙️ The RateLimit Configuration
 
 **Rate limit** 1000 per minutes and per-IP-address.
 
@@ -230,7 +235,7 @@ The default Cors Configuration:
 | nexus.backend.interceptor.ratelimit.bandwidthCapacity  | 1000              | 100               | Bucket capacity  |  
 
 
-### The Nexus-Backend provides a full support MultipartRequest and Map parameters inside a form-data HttpRequest
+### ⚙️ The Nexus-Backend provides a full support MultipartRequest and Map parameters inside a form-data HttpRequest
 
 #### MultipartConfig
 
@@ -249,7 +254,8 @@ The default Cors Configuration:
 
 Since version 1.0.24 no more BackendResource and temporary file, all is in memory.  
 
-### The BackendService HttpFactory Client Configuration
+
+### 🏭 The BackendService HttpFactory Client Configuration
 
  **Settings keys settings.properties:**
 
@@ -272,7 +278,7 @@ Since version 1.0.24 no more BackendResource and temporary file, all is in memor
 | nexus.backend.client.cookie.secure                  | false             | true              | Remove secure cookie              |
 
 
-### The Nexus-Backend Firewall and the WAF Filter Configuration
+### 🛡️ The Nexus-Backend Firewall and the WAF Filter Configuration 
 
 The **Nexus-Backend** implements a **HttpFirewall** protection against evasion and rejected any suspicious Http Request 
 on the Headers and Cookies, the Parameters, the keys and Values.
@@ -304,7 +310,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.security.allowUrlEncodedParagraphSeparator   | false                                       | Allow url encoded Paragraph Separator |                       
 | nexus.backend.security.allowUrlEncodedLineSeparator        | false                                       | Allow url encoded Line Separator      |                           
 
-**The WAF Utilities Predicates checked for potential evasion:**
+**☠️ The WAF Utilities Predicates checked for potential evasion:**
 
 * XSS script injection
 * SQL injection
@@ -313,20 +319,21 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 * File injection
 * Link injection
  
-**Implements a WAF Predicate for potential evasion by Headers or Parameters:**
+**📃 Implements a WAF Predicate for potential evasion by Headers or Parameters:**
 
  * Header Names / Header Values
  * Parameter Names / Parameter Values
  * Hostnames
  * UserAgent
+ * AI UserAgent
 
-**And check for Buffer Overflow evasion by the Length:**
+**⚙️ And check for Buffer Overflow evasion by the Length:**
 
  * Parameter Names 255 characters max. / Values 1000000 characters max.
  * Header Names 255 characters max. / Values 25000 characters max.
  * Hostnames 255 characters max.
 
- **The WAF Reactive mode configuration:**
+**☣️ The WAF Reactive mode configuration:**
 
  * **STRICT_ONNX_AI**:  STRICT mode + Artificial Intelligence Scan by ONNX Neural Network
  * **ONNX_AI**:  Artificial Intelligence Scan by ONNX Neural Network
@@ -334,7 +341,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
  * **PASSIVE**: Strict HttpFirewall + Clean JSON RequestBody and Parameters Map
  * **UNSAFE**:  Strict HttpFirewall + No check JSON RequestBody!
 
-**AI Model ONNX model/model.onnx**
+**🛸 AI Model ONNX model/model.onnx**
 
 **Settings keys settings.properties:** Define file model and tokenizer
 
@@ -359,10 +366,9 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter         |   
 | nexus.backend.security.predicate.userAgent.blocked       | false             | Active Scanner UserAgent filter |   
 | nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
-| nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
 
 
-### Activated the Mutual Authentication or mTLS connection on the HttpFactory Client
+### ⚙️ Activated the Mutual Authentication or mTLS connection on the HttpFactory Client
 
  **Settings keys settings.properties:** *nexus.backend.client.ssl.mtls.enable* at **true** for activated the mTLS connection
 
@@ -376,7 +382,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.client.ssl.https.cipherSuites | TLS_AES_256_GCM_SHA384 | The Cipher Suites         |   
 
 
-### Activated Tomcat Catalina Connector TLS/SSL on a wildcard domain Certificate
+### ⚙️ Activated Tomcat Catalina Connector TLS/SSL on a wildcard domain Certificate
 
  **Settings keys settings.properties:**
 
@@ -394,7 +400,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.tomcat.ssl.ajp.connector.secretRequired | false                | A secret is Required      |   
 
 
-### Activated Tomcat Catalina Extended AccessLog Valve
+### ⚙️ Activated Tomcat Catalina Extended AccessLog Valve
 
  **Settings keys settings.properties:**
 
@@ -417,21 +423,16 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
 
-## Build Nexus-Backend
+## 🔧 Build Nexus-Backend
 
-[Java](https://jdk.java.net/archive/)
-[SpringBoot](https://projects.spring.io/spring-boot/)
-[Tomcat](https://tomcat.apache.org/download-10.cgi)
-[Maven](https://maven.apache.org/download.cgi)
+### ✅ Build requirements 
 
-### Build requirements
+* **Java >= 21 (Virtual Threads)** [Java](https://jdk.java.net/archive/)
+* **SpringBoot 3.3.0** [SpringBoot](https://projects.spring.io/spring-boot/)
+* **Apache Tomcat 10.0.54 & Servlet 6.0.0 (Jakarta)** [Tomcat](https://tomcat.apache.org/download-10.cgi)
+* **Apache Maven >= 3.9.3** [Maven](https://maven.apache.org/download.cgi)
 
- * Java 21
- * SpringBoot 3.3.0
- * Tomcat 10.0.53 & Servlet 6.0.0 (Jakarta)
- * Maven 3.9.x
-
-### Build war external Tomcat 9
+### 🏭 Build war external Tomcat 9
 
 with the profile withoutTomcat:
 
@@ -441,7 +442,7 @@ with the profile withoutTomcat:
 
 and look for the jar at `target/nexus-backend-{version}.war`
 
-### Build jar embedded Tomcat 9
+### 🏭 Build war embedded Tomcat 9
 
 with the profile withTomcat:
 
@@ -449,23 +450,41 @@ with the profile withTomcat:
 * `mvn clean install -P withTomcat`
 * `mvn clean package -P withTomcat`
 
-and look for the jar at `target/nexus-backend-{version}.jar`
+and look for the jar at `target/nexus-backend-{version}.war`
 
-### Get the Javadoc
+### 📋 Get the Javadoc
 
 `mvn javadoc:javadoc`
 
-### Run SpringBoot App
+### 🔥  Run SpringBoot App
 
-with Maven (-XX:NativeMemoryTracking=summary for monitored Native Memory Tracking for ONNX Neural Network):
+Prerequisites set the Jdk 21 as JAVA_HOME: set JAVA_HOME={Path_JDK}\jdk-21.0.1`
 
-`mvn spring-boot:run -P withTomcat -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary"`
+Maven clean and package nexus-backend (skip Tests):
 
-with Maven and Development environment:
+`mvn clean package -pl nexus-backend -am -DskipTests`
 
-`mvn spring-boot:run -P withTomcat -Dspring-boot.run.jvmArguments="-Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary"`
+Maven clean and install nexus-backend:
 
-### The Configuration
+`mvn clean install`
+
+with Java:
+
+`java -Dspring.profiles.active=withTomcat -Denvironment=development -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+
+with Java and Development environment:
+
+`java -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+
+with Maven change dir to /nexus-backend:
+
+`cd nexus-backend`
+
+And run Spring-boot (-XX:NativeMemoryTracking=summary for monitored Native Memory Tracking for ONNX Neural Network):
+
+`mvn spring-boot:run -P withTomcat -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=withTomcat -Denvironment=development -XX:NativeMemoryTracking=summary"`
+
+### 📡 The Configuration
 
 By default, it uses `8082` port and the Servlet Context `/nexus-backend`.
 
@@ -479,19 +498,62 @@ The Config keys and values can be modified or override by external path files, h
  * file `{user.home}/conf/config.properties`
  * file `{user.home}/cfg/nexus-backend/config.properties`
 
-### Swagger Tests environment
+### 💹 Swagger Tests environment
 
 See RestControllerTest is in interaction with the MockController, run the tests with a local Tomcat running on localhost:8082/nexus-backend
 
 The Swagger Mock-Api is only available in Dev mode, added in JVM Options: -Denvironment=development
 
-## The BackendService API Implementation
+
+### 📊 Monitor MNT - Native Memory Tracking
+
+See NmtMonitorService is in interaction with the NmtController to reports the Native Memory Tracking:  
+
+- Native: System calls (malloc/mmap) in C++, ONNX model.<br>
+- Memory: Tracks the actual RAM footprint.<br>
+- Tracking: The -XX:NativeMemoryTracking=summary option enables internal instrumentation, allowing jcmd to generate reports.
+
+Lists the instrumented Java Virtual Machines (JVMs) on the target system, see [Doc Oracle JPS](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jps.html).
+
+The Nexus-Backend J Monitor MNT is only available in Role **gui-admin**.
+
+```
+===============================================================
+NEXUS WAF - NMT REPORT (PID: 25768)
+===============================================================
+Category                  | Reserved (MB)   | Committed (MB)
+--------------------------|-----------------|------------------
+Total (Global)            | 9655,13      MB | 440,09       MB
+--------------------------|-----------------|------------------
+Java Heap                 | 8156,00      MB | 200,00       MB
+Class                     | 1026,53      MB | 11,53        MB
+Thread                    | 51,14        MB | 2,86         MB
+Code                      | 49,89        MB | 19,41        MB
+GC                        | 209,49       MB | 54,09        MB
+GCCardSet                 | 0,10         MB | 0,10         MB
+Compiler                  | 0,15         MB | 0,15         MB
+Internal (ONNX AI)        | 49,26        MB | 49,26        MB
+Other                     | 0,01         MB | 0,01         MB
+Symbol                    | 21,86        MB | 21,86        MB
+Native Memory Tracking    | 5,65         MB | 5,65         MB
+Shared class space        | 16,00        MB | 12,56        MB
+Arena Chunk               | 1,25         MB | 1,25         MB
+Module                    | 0,27         MB | 0,27         MB
+Safepoint                 | 0,01         MB | 0,01         MB
+Synchronization           | 0,91         MB | 0,91         MB
+Serviceability            | 2,30         MB | 2,30         MB
+Metaspace                 | 64,29        MB | 57,85        MB
+String Deduplication      | 0,00         MB | 0,00         MB
+===============================================================
+```
+
+## 💡 The BackendService API Implementation
 
 This API implementation is used for the communication to a backend server.
 It provides methods for all supported http protocols on the backend side. 
 Normally, it communicates to an API interface Backend.
 
-### Available HTTP methods:
+### 📃 Available HTTP methods:
  
  * Get
  * Post
@@ -502,9 +564,9 @@ Normally, it communicates to an API interface Backend.
  * Patch Multipart File
  * Delete
  
-### Sample BackendService API
+### 📃 Sample BackendService API
 
-#### Prerequisites:
+#### 📂 Prerequisites:
 
 * **RestOperations** should be configured with an Apache-HttpClient and a Pooling connection should be properly configured.
 * **HttpMessageConverter** are also mandatory, StringHttp, FormHttp, ByteArrayHttp, ResourceHttp and MappingJackson2Http are the minimal.
@@ -564,7 +626,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 ```
 
 
-## Last News
+## 🗒️ Last News
+* Last version **2.0.1**, released at 18/04/2026 Fix README.md, Run SpringBoot App, Fix RequestAnalyzerService, Upgrade Tomcat 10.1.54
 * Version **2.0.0**, released at 18/04/2026 Migration Spring 6 - SpringBoot 3.3.0, Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX  
 * Version **1.0.26**, released at 18/04/2026 Fix external Tomcat Initializer
 * Version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent  
@@ -594,16 +657,16 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 * Version **1.0.1** released at 21/11/2022.
 * Initial release **1.0.0** at 03/06/2021.
 
-## Support
+## 👨‍🚀 Support
 If you need help using Nexus-Backend Service feel free to drop an email or create an issue in GitHub.com (preferred).
 
-## Contributions
+## 👥 Contributions
 To help **Nexus-Backend / ApiBackend / BackendService** development you are encouraged to
 * Provide suggestion/feedback/Issue
 * pull requests for new features
 * Star :star2: the project
 
-## License
+## 📖 License
 
 This project is an Open Source Software released under the [GPL-3.0 license](https://github.com/javaguru/nexus-backend/blob/master/LICENSE.txt).
 

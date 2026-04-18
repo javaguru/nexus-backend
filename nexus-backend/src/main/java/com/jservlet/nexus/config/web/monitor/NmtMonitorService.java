@@ -16,7 +16,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  */
 
-package com.jservlet.nexus.shared.service.monitor;
+package com.jservlet.nexus.config.web.monitor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +30,9 @@ import java.util.regex.Pattern;
 /**
  * NmtMonitorService - Native Memory Tracking
  * <p>
+ * Lists the instrumented Java Virtual Machines (JVMs) on the target system.<br>
+ * See <a href="https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jps.html">Doc Oracle JPS</a>
+ * <p>
  * - Native: System calls (malloc/mmap) in C++, ONNX model.<br>
  * - Memory: Tracks the actual RAM footprint.<br>
  * - Tracking: The -XX:NativeMemoryTracking=summary option enables internal instrumentation, allowing jcmd to generate reports.
@@ -39,6 +42,8 @@ public class NmtMonitorService {
     private static final Logger log = LoggerFactory.getLogger(NmtMonitorService.class);
     private static final String TARGET_APP_EMBEDDED = "com.jservlet.nexus.config.Application";
     private static final String TARGET_APP_WAR = "org.apache.catalina.startup.Bootstrap";
+    private static final String TARGET_RUN_JAR = "nexus-backend.jar";
+    private static final String TARGET_RUN_WAR = "nexus-backend.war";
 
     // Regex patterns for parsing
     private static final Pattern TOTAL_PATTERN = Pattern.compile("Total:\\s*reserved=(\\d+)KB,\\s*committed=(\\d+)KB");
@@ -49,11 +54,12 @@ public class NmtMonitorService {
      */
     public Optional<String> findApplicationPid() {
         try {
-            Process process = new ProcessBuilder("jps", "-l").start();
+                Process process = new ProcessBuilder("jps", "-l").start();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if (line.contains(TARGET_APP_EMBEDDED) || line.contains(TARGET_APP_WAR)) {
+                    if (line.contains(TARGET_APP_EMBEDDED) || line.contains(TARGET_APP_WAR) ||
+                            line.contains(TARGET_RUN_JAR) || line.contains(TARGET_RUN_WAR)) {
                         return Optional.of(line.split("\\s+")[0]);
                     }
                 }
@@ -70,7 +76,8 @@ public class NmtMonitorService {
     public String getNativeMemoryReport() {
         Optional<String> pidOpt = findApplicationPid();
         if (pidOpt.isEmpty()) {
-            return "Error: Could not find PID for " + TARGET_APP_EMBEDDED + " OR " + TARGET_APP_WAR;
+            return "Error: Could not find PID for " + TARGET_APP_EMBEDDED + " OR " + TARGET_APP_WAR +
+                    " OR " + TARGET_RUN_JAR + " OR " + TARGET_RUN_WAR;
         }
 
         String pid = pidOpt.get();

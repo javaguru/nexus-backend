@@ -28,7 +28,7 @@
         <spring-boot-security.version>6.2.3</spring-boot-security.version>
 
         <!-- Update the last Tomcat 10.x.x version with springboot starter-parent-->
-        <tomcat.version>10.1.53</tomcat.version>
+        <tomcat.version>10.1.54</tomcat.version>
         <servlet.api.version>6.1.0</servlet.api.version> <!-- Jakarta EE 10+ -->
         <!-- WARN migrate at > 2.7 or 2.8.4 last release for migrate 3.4.5 -->
         <springdoc-openapi.version>2.5.0</springdoc-openapi.version> <!-- Version 2.x pour Jakarta/SpringBoot 3+ -->

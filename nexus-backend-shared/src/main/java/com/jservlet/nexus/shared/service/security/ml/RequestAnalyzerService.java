@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 
+import java.io.InputStream;
 import java.nio.LongBuffer;
 import java.util.Map;
 
@@ -65,8 +66,9 @@ public class RequestAnalyzerService {
         logger.info("Starting RequestAnalyzer Neural Network AI: {}", optionsHuggingFace);
 
         // Initialize Tokenizer
-        String tokenizerPath = new ClassPathResource(pathTokenizer).getFile().getAbsolutePath();
-        this.tokenizer = HuggingFaceTokenizer.newInstance(java.nio.file.Paths.get(tokenizerPath), optionsHuggingFace);
+        try (InputStream tokenizerStream = new ClassPathResource(pathTokenizer).getInputStream()) {
+            this.tokenizer = HuggingFaceTokenizer.newInstance(tokenizerStream, optionsHuggingFace);
+        }
 
         // Initialize environment ONNX
         this.env = OrtEnvironment.getEnvironment();
@@ -80,8 +82,11 @@ public class RequestAnalyzerService {
         optionsSession.disableProfiling();
 
         // Load the model
-        String modelPath = new ClassPathResource(pathModel).getFile().getAbsolutePath();
-        this.session = env.createSession(modelPath, optionsSession);
+        try (InputStream modelStream = new ClassPathResource(pathModel).getInputStream()) {
+            // readAllBytes() est parfait ici car tu es sur Java 21 !
+            byte[] modelBytes = modelStream.readAllBytes();
+            this.session = env.createSession(modelBytes, optionsSession);
+        }
         logger.info("ONNX model ready. Inputs: {}", session.getInputNames());
     }
 

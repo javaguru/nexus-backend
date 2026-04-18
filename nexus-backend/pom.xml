@@ -12,7 +12,6 @@
     </parent>
 
     <artifactId>nexus-backend</artifactId>
-    <!-- default jar file with profile 'withTomcat' or war file profile 'withoutTomcat' -->
     <packaging>${packaging.type}</packaging>
     <name>nexus-backend</name>
     <description>The Java Nexus BackendService, an advanced and secure Rest Backend Gateway</description>
@@ -142,6 +141,17 @@
             <artifactId>spring-webmvc</artifactId>
         </dependency>
 
+        <!-- JABX not provided > Jdk 11 (Embedded Tomcat provided) -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <version>2.3.1</version>
+        </dependency>
 
        <!-- Jakarta servlet api -->
         <dependency>
@@ -274,17 +284,6 @@
                     <artifactId>spring-boot-starter-tomcat</artifactId>
                     <scope>provided</scope>
                 </dependency>
-                <!-- JABX not provided > Jdk 11 (Embedded Tomcat provided) -->
-                <dependency>
-                    <groupId>javax.xml.bind</groupId>
-                    <artifactId>jaxb-api</artifactId>
-                    <version>2.3.1</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.glassfish.jaxb</groupId>
-                    <artifactId>jaxb-runtime</artifactId>
-                    <version>2.3.1</version>
-                </dependency>
             </dependencies>
         </profile>
         <profile>
@@ -293,7 +292,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <packaging.type>jar</packaging.type>
+                <packaging.type>war</packaging.type>
             </properties>
             <dependencyManagement>
                 <dependencies>
@@ -331,7 +330,6 @@
                 <directory>src/main/resources</directory>
                 <includes>
                     <include>**/*.properties</include>
-                    <!--<include>META-INF/version.properties</include>-->
                 </includes>
                 <filtering>true</filtering>
             </resource>
@@ -340,14 +338,13 @@
                 <directory>src/main/resources</directory>
                 <includes>
                     <include>logback.xml</include>
-                    <include>tomcat-users.xml</include>
                     <include>api-ui/api-docs.yaml</include>
                     <include>mime/*.properties</include>
 
-                  <!--  <include>META-INF/version.properties</include>-->
+                    <include>tomcat-users.xml</include>
+
                     <include>META-INF/services/jakarta.servlet.ServletContainerInitializer</include>
                     <include>META-INF/spring/*.imports</include>
-                   <!-- <include>META-INF/resources/WEB-INF/**/*jsp</include>-->
 
                     <include>model/tokenizer.json</include>
                     <include>model/nexus_v10_14_int8.onnx</include>

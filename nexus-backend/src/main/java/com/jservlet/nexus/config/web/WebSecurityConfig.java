@@ -18,7 +18,7 @@
 
 package com.jservlet.nexus.config.web;
 
-import com.jservlet.nexus.shared.service.monitor.NmtMonitorService;
+import com.jservlet.nexus.config.web.monitor.NmtMonitorService;
 import com.jservlet.nexus.shared.service.security.ml.RequestAnalyzerService;
 import com.jservlet.nexus.shared.web.filter.WAFPredicate;
 import com.jservlet.nexus.shared.web.security.WebHttpFirewall;
