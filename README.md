@@ -1,27 +1,33 @@
 Nexus-Backend Service
 =====================
 
+## 🛡️ Advanced API Gateway with NLP-Driven Threat Detection
 
-## An Advanced and Secure RestApi Backend Service Gateway 
+**Nexus-Backend Service** acts as a highly secure reverse-proxy and intermediary gateway between REST clients and backend 
+services. It intercepts, analyzes, and securely forwards HTTP requests while providing enterprise-grade protection against
+modern web vulnerabilities.
 
-**The Nexus-Backend Service** acts as an intermediary between a **REST Client application** and a **Backend REST API service**.
-It forwards Requests from the client to the **Backend Service** and returns the Responses back to the client.
-The Nexus-Backend integrate a HttpFirewall and **WAF Filter** for a protection against evasion on the **Http Request Headers,
-Request Map parameters and Json BodyRequest.**
+At the core of the Nexus-Backend is a next-generation **AI WAF Engine**. Instead of relying on static Regex rules, 
+it utilizes a quantized Machine Learning model (DistilBERT) to understand the *semantics* of the traffic.
 
-**Inside a Servlet Container a Rest Controller ApiBackend and its BackendService, Secure and Replicate all the HTTP
-Requests to a RestApi Backend Server.**
+**Key Security Features:**
+* **Deep Payload Inspection:** Real-time semantic analysis of HTTP Headers, URL Parameters, and massive JSON bodies.
+* **Sliding Window Chunking:** Safely processes infinite JSON payloads with mathematical overlap and Early-Exit architecture.
+* **Zero-Day & Evasion Resistance:** Immune to spatial biases, complex obfuscation, and novel syntax injections.
+* **High Performance:** Operates entirely locally via JNI/ONNX (C++) within the Servlet Container, delivering sub-50ms inference times with strict native memory tracking.
+
+Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Backend REST API.
 
 **All HttpRequests methods supported:** Get, Post, Post Multipart File, Put, Put Multipart File, Patch, Patch Multipart File, Delete.
 
-* Full support **Request Json Entity Object**: application/json, application/x-www-form-urlencoded
+* Full support **Request JSON Entity Object**: application/json, application/x-www-form-urlencoded
 * Full support **MultipartRequest Resources and Map parameters**, and embedded form **Json Entity Object**: multipart/form-data
-* Full support **Response in Json Entity Object**: application/json
+* Full support **Response in JSON Entity Object**: application/json
 * Full support **Response in ByteArray Resource file**: application/octet-stream
-* Full support **Streaming Http Response Json Entity Object**: application/octet-stream, accept header Range bytes
+* Full support **Streaming Http Response JSON Entity Object**: application/octet-stream, accept header Range bytes
 * Full support **Cookie manage** during a redirection Http status 3xx  
 
-**Tomcat Servlet Containers under Servlet version 4.x**
+**Tomcat Servlet Containers under Servlet version 6.x**
 
 **Examples forwarded requests and responses through the Nexus-Backend Service:**
 
@@ -37,14 +43,14 @@ Requests to a RestApi Backend Server.**
 ### Ability to Secure all RestApi Request to a Backend Server
 
  * Implements a **BackendService**, ability to request typed response Object class or ParameterizedTypeReference, requested on all HTTP methods to a RestApi Backend Server.
- * Implements an **EntityBackend** Json Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
- * Implements a **HttpFirewall** filter protection against evasion, rejected any suspicious Requests, Headers, Parameters, and log IP address at fault.
- * Implements a **WAF** filter protection against evasion on the Http Json BodyRequest, and log IP address at fault.
+ * Implements an **EntityBackend** JSON Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
+ * Implements a **HttpFirewall** filter protection against evasion, rejected any suspicious Requests Encoding, and log IP address at fault
+ * Implements a **WAF Filter** protection against evasion on the Http JSON BodyRequest, Headers, Keys, Parameters, and log IP address at fault.
  * Implements a **CORS Security Request** filter, authorize request based on Origin Domains and Methods.
  * Implements a **Content Security Policy** filter, define your own policy rules CSP.
  * Implements a **RateLimit** interceptor, allows 1000 requests per minutes and per-IP-address.
  * Implements a **Fingerprint** for each Http header Request, generate a unique trackable Token APP-REQUEST-ID in the access logs.
- * Implements a **Method Override** filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override.
+ * Implements a **HttpMethod Override** filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override.
  * Implements a **Forwarded Header** filter, set removeOnly at true by default, remove "Forwarded" and "X-Forwarded-*" headers.
  * Implements a **FormContent** filter, parses form data for Http PUT, PATCH, and DELETE requests and exposes it as Servlet request parameters.
  * Implements a **Compressing** filter Gzip compression for the Http Responses.
@@ -88,30 +94,30 @@ Requests to a RestApi Backend Server.**
 
  **Settings keys settings.properties:**
 
-| **Keys**                                        | **Default value**        | **Example value**               | **Descriptions**                                    |
-|-------------------------------------------------|:-------------------------|:--------------------------------|:----------------------------------------------------|
-| **nexus.backend.url**                           | https://postman-echo.com | https://nexus6.jservlet.com/api | The API Backend<br/> Server targeted                |   
-| **nexus.backend.uri.alive**                     | /get                     | /health/info                    | The endpoint alive <br/>Backend Server              |   
-| nexus.backend.http.response.truncated           | false                    | true                            | Truncated the Json<br/> output in the logs          |   
-| nexus.backend.http.response.truncated.maxLength | 1000                     | 100                             | MaxLength truncated                                 |   
-| **WAF**                                         |                          |                                 |                                                     |
-| nexus.api.backend.filter.waf.reactive.mode      | STRICT                   | PASSIVE                         | Default Strict HttpFirewall <br/>+ Json RequestBody |
-| nexus.api.backend.filter.waf.deepscan.cookie    | false                    | true                            | Activated Deep Scan Cookie                          |
-| **Headers**                                     |                          |                                 |                                                     |
-| nexus.backend.header.remove                     | **true**                 | true                            | Remove all Headers                                  |   
-| nexus.backend.header.host.remove                | false                    | false                           | Remove just host Header                             |   
-| nexus.backend.header.origin.remove              | false                    | false                            | Remove just origin Header                           |   
-| nexus.backend.header.cookie                     | -                        | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX  | Set a Cookie Request Header                         |   
-| nexus.backend.header.bearer                     | -                        | eyJhbGciO                       | Activated Bearer <br/>Authorization request         |   
-| nexus.backend.header.user-agent                 | JavaNexus                | Apache HttpClient/4.5           | User Agent header                                   |
-| nexus.backend.header.authorization.username     | -                        | XUsername                       | Activated Basic <br/>Authorization request          |   
-| nexus.backend.header.authorization.password     | -                        | XPassword                       | "                                                   |
-| **Backend Headers**                             |                          |                                 |                                                     |
-| nexus.api.backend.transfer.headers              | test                     | test,Link,Content-Range         | Headers list back<br/>from Backend Server           |  
-| **Mapper**                                      |                          |                                 |                                                     |
-| nexus.backend.mapper.indentOutput               | false                    | true                            | Indent Output Json                                  |   
-| **Debug**                                       |                          |                                 |                                                     |
-| nexus.spring.web.security.debug                 | false                    | true                            | Debug the Spring FilterChain                        |
+| **Keys**                                        | **Default value**        | **Example value**               | **Descriptions**                                     |
+|-------------------------------------------------|:-------------------------|:--------------------------------|:-----------------------------------------------------|
+| **nexus.backend.url**                           | https://postman-echo.com | https://nexus6.jservlet.com/api | The API Backend<br/> Server targeted                 |
+| **nexus.backend.uri.alive**                     | /get                     | /health/info                    | The endpoint alive <br/>Backend Server               |
+| nexus.backend.http.response.truncated           | false                    | true                            | Truncated the Json<br/> output in the logs           |
+| nexus.backend.http.response.truncated.maxLength | 1000                     | 100                             | MaxLength truncated                                  |
+| **WAF**                                         |                          |                                 |                                                      |
+| nexus.api.backend.filter.waf.reactive.mode      | STRICT_ONNX_AI           | ONNX_AI                         | Default Strict HttpFirewall <br/>+ AI Neural Network |
+| nexus.api.backend.filter.waf.deepscan.cookie    | false                    | true                            | Activated Deep Scan Cookie                           |
+| **Headers**                                     |                          |                                 |                                                      |
+| nexus.backend.header.remove                     | **true**                 | true                            | Remove all Headers                                   |
+| nexus.backend.header.host.remove                | false                    | false                           | Remove just host Header                              |
+| nexus.backend.header.origin.remove              | false                    | false                           | Remove just origin Header                            |
+| nexus.backend.header.cookie                     | -                        | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX  | Set a Cookie Request Header                          |
+| nexus.backend.header.bearer                     | -                        | eyJhbGciO                       | Activated Bearer <br/>Authorization request          |
+| nexus.backend.header.user-agent                 | JavaNexus                | Apache HttpClient/4.5           | User Agent header                                    |
+| nexus.backend.header.authorization.username     | -                        | XUsername                       | Activated Basic <br/>Authorization request           |
+| nexus.backend.header.authorization.password     | -                        | XPassword                       | "                                                    |
+| **Backend Headers**                             |                          |                                 |                                                      |
+| nexus.api.backend.transfer.headers              | test                     | test,Link,Content-Range         | Headers list back<br/>from Backend Server            |
+| **Mapper**                                      |                          |                                 |                                                      |
+| nexus.backend.mapper.indentOutput               | false                    | true                            | Indent Output Json                                   |
+| **Debug**                                       |                          |                                 |                                                      |
+| nexus.spring.web.security.debug                 | false                    | true                            | Debug the Spring FilterChain                         |
 
 **Noted**: About the list HttpHeaders transfer back, the CORS can expose these Headers see key security.cors.exposedHeaders
 
@@ -121,7 +127,7 @@ Requests to a RestApi Backend Server.**
 * **${user.home}**/conf/config.properties
 * **${user.home}**/cfg/**${servletContextPath}**/config.properties
 
-### The ApiBackend Configuration Json Entity Object or a ByteArray Resource
+### The ApiBackend Configuration JSON Entity Object or a ByteArray Resource
 
 **ApiBackend ResponseType** can be now a **ByteArray Resource.** 
 
@@ -158,7 +164,7 @@ And the Http Responses didn't come back with a HttpHeader **"Transfer-Encoding: 
 **Noted bis:** For remove the Http header **"Transfer-Encoding: chunked"** the header Content-Length need to be calculated.
 
 Enable the **ShallowEtagHeader Filter** in the configuration for force to calculate the header **Content-Length**
-for all the **Response Json Entity Object**, no more HttpHeader **"Transfer-Encoding: chunked"**.
+for all the **Response JSON Entity Object**, no more HttpHeader **"Transfer-Encoding: chunked"**.
 
 ### The MediaTypes safe extensions configuration
 
@@ -247,22 +253,23 @@ Since version 1.0.24 no more BackendResource and temporary file, all is in memor
 
  **Settings keys settings.properties:**
 
-| **Keys**                                            | **Default value** | **Example value** | **Descriptions**               |
-|-----------------------------------------------------|:------------------|:------------------|:-------------------------------|
-| nexus.backend.client.header.user-agent              | JavaNexus         | curl              | User Agent Header              |
-| nexus.backend.client.connectTimeout                 | 10                | 5                 | Connection timeout in second   |
-| nexus.backend.client.requestTimeout                 | 20                | 10                | Request timeout in second      |
-| nexus.backend.client.socketTimeout                  | 10                | 5                 | Socket timeout in second       |
-| nexus.backend.client.max_connections_per_route      | 20                | 30                | Max Connections per route      |
-| nexus.backend.client.max_connections                | 100               | 300               | Max Connections in the Pool    |
-| nexus.backend.client.close_idle_connections_timeout | 0                 | 0                 | Close idle connections timeout |
-| nexus.backend.client.validate_after_inactivity      | 2                 | 2                 | Validate after inactivity      |
-| nexus.backend.client.requestSentRetryEnabled        | false             | true              | Request Sent Retry Enabled     |
-| nexus.backend.client.retryCount                     | 3                 | 2                 | Retry Count                    |
-| nexus.backend.client.redirectsEnabled               | true              | true              | Redirects enabled              |
-| nexus.backend.client.maxRedirects                   | 5                 | 2                 | Maximum redirections           |
-| nexus.backend.client.authenticationEnabled          | false             | true              | Authentication enabled         |
-| nexus.backend.client.circularRedirectsAllowed       | false             | true              | Circular redirections allowed  |
+| **Keys**                                            | **Default value** | **Example value** | **Descriptions**                  |
+|-----------------------------------------------------|:------------------|:------------------|:----------------------------------|
+| nexus.backend.client.header.user-agent              | JavaNexus         | curl              | User Agent Header                 |
+| nexus.backend.client.connectTimeout                 | 10                | 5                 | Connection timeout in second      |
+| nexus.backend.client.requestTimeout                 | 20                | 10                | Request timeout in second         |
+| nexus.backend.client.socketTimeout                  | 10                | 5                 | Socket timeout in second          |
+| nexus.backend.client.max_connections_per_route      | 20                | 30                | Max Connections per route         |
+| nexus.backend.client.max_connections                | 100               | 300               | Max Connections in the Pool       |
+| nexus.backend.client.close_idle_connections_timeout | 0                 | 0                 | Close idle connections timeout    |
+| nexus.backend.client.validate_after_inactivity      | 2                 | 2                 | Validate after inactivity         |
+| nexus.backend.client.retryCount                     | 3                 | 0                 | Retry Count                       |
+| nexus.backend.client.redirectsEnabled               | true              | true              | Redirects enabled                 |
+| nexus.backend.client.maxRedirects                   | 5                 | 2                 | Maximum redirections              |
+| nexus.backend.client.authenticationEnabled          | false             | true              | Authentication enabled            |
+| nexus.backend.client.circularRedirectsAllowed       | false             | true              | Circular redirections allowed     |
+| nexus.backend.client.cookie.domain                  |                   | postman-echo.com  | Domain cookie or empty or #{null} |
+| nexus.backend.client.cookie.secure                  | false             | true              | Remove secure cookie              |
 
 
 ### The Nexus-Backend Firewall and the WAF Filter Configuration
@@ -321,9 +328,24 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
  **The WAF Reactive mode configuration:**
 
- * **STRICT**:  Strict HttpFirewall + Json RequestBody
- * **PASSIVE**: Strict HttpFirewall + Clean Json RequestBody and Parameters Map
- * **UNSAFE**:  Strict HttpFirewall + No check Json RequestBody!
+ * **STRICT_ONNX_AI**:  STRICT mode + Artificial Intelligence Scan by ONNX Neural Network
+ * **ONNX_AI**:  Artificial Intelligence Scan by ONNX Neural Network
+ * **STRICT**:  Strict HttpFirewall + JSON RequestBody
+ * **PASSIVE**: Strict HttpFirewall + Clean JSON RequestBody and Parameters Map
+ * **UNSAFE**:  Strict HttpFirewall + No check JSON RequestBody!
+
+**AI Model ONNX model/model.onnx**
+
+**Settings keys settings.properties:** Define file model and tokenizer
+
+| **Keys**                                       | **Default value**            | **Descriptions** |
+|------------------------------------------------|:-----------------------------|:-----------------|
+| nexus.api.backend.analyzer.onnx.maxLength      | 512                          | Length max Token |   
+| nexus.api.backend.analyzer.onnx.truncation     | false                        | Truncation       |   
+| nexus.api.backend.analyzer.onnx.path.model     | model/nexus_v10_14_int8.onnx | AI Model ONNX    |   
+| nexus.api.backend.analyzer.onnx.path.tokenizer | model/tokenizer.json         | File Tokenizer   |   
+| nexus.api.backend.analyzer.onnx.cpu            | 4                            | Number CPU       |   
+
 
 **Settings keys settings.properties:** Define a max length for Keys/Values Headers or Parameters 
 
@@ -336,6 +358,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max           |   
 | nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter         |   
 | nexus.backend.security.predicate.userAgent.blocked       | false             | Active Scanner UserAgent filter |   
+| nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
 | nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
 
 
@@ -396,13 +419,16 @@ Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
 ## Build Nexus-Backend
 
+[Java](https://jdk.java.net/archive/)
 [SpringBoot](https://projects.spring.io/spring-boot/)
+[Tomcat](https://tomcat.apache.org/download-10.cgi)
+[Maven](https://maven.apache.org/download.cgi)
 
 ### Build requirements
 
- * Java 13
- * SpringBoot 2.7.18
- * Tomcat 9.0.116 & Servlet 4.0.1
+ * Java 21
+ * SpringBoot 3.3.0
+ * Tomcat 10.0.53 & Servlet 6.0.0 (Jakarta)
  * Maven 3.9.x
 
 ### Build war external Tomcat 9
@@ -425,15 +451,19 @@ with the profile withTomcat:
 
 and look for the jar at `target/nexus-backend-{version}.jar`
 
-### Get javadoc
+### Get the Javadoc
 
 `mvn javadoc:javadoc`
 
 ### Run SpringBoot App
 
-with maven:
+with Maven (-XX:NativeMemoryTracking=summary for monitored Native Memory Tracking for ONNX Neural Network):
 
-`mvn spring-boot:run -P withTomcat`
+`mvn spring-boot:run -P withTomcat -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary"`
+
+with Maven and Development environment:
+
+`mvn spring-boot:run -P withTomcat -Dspring-boot.run.jvmArguments="-Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary"`
 
 ### The Configuration
 
@@ -535,7 +565,9 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## Last News
-* Last version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent  
+* Version **2.0.0**, released at 18/04/2026 Migration Spring 6 - SpringBoot 3.3.0, Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX  
+* Version **1.0.26**, released at 18/04/2026 Fix external Tomcat Initializer
+* Version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent  
 * Version **1.0.24**, released at 01/09/2025  Forwarded headers Client and Transfer headers Backend Server, Cors headers exposed 
 * Version **1.0.23**, released at 22/08/2025 Reorganize WAFFilter Multipart, CorsConfiguration, Cookie client stateful
 * Version **1.0.22**, released at 31/07/2025 Fix Security RateLimit, Content Security Policy and Referrer-Policy
@@ -575,5 +607,5 @@ To help **Nexus-Backend / ApiBackend / BackendService** development you are enco
 
 This project is an Open Source Software released under the [GPL-3.0 license](https://github.com/javaguru/nexus-backend/blob/master/LICENSE.txt).
 
-Copyright (c) 2001-2025 JServlet.com [Franck ANDRIANO.](http://jservlet.com)
+Copyright (c) 2001-2026 JServlet.com [Franck ANDRIANO.](http://jservlet.com)
 
