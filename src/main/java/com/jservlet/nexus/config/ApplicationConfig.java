@@ -31,6 +31,7 @@ import com.jservlet.nexus.shared.web.interceptor.CookieRedirectInterceptor;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.RegistryBuilder;
@@ -40,6 +41,7 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.impl.client.*;
@@ -65,12 +67,15 @@ import org.springframework.http.converter.*;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.*;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import javax.net.ssl.SSLContext;
 import java.io.*;
 import java.net.Socket;
 import java.security.KeyStore;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -280,6 +285,7 @@ public class ApplicationConfig  {
         return new HttpComponentsClientHttpRequestFactory(HttpClientBuilder.create()
                 .setUserAgent(userAgent)
                 .setConnectionManager(cm)
+                //.setDefaultCookieStore(new RequestScopedCookieStore())
                 .setDefaultRequestConfig(RequestConfig.custom()
                     .setCookieSpec(CookieSpecs.STANDARD) // Optional specs standard!
                     .setConnectTimeout(connectTimeout * 1000)
@@ -300,6 +306,32 @@ public class ApplicationConfig  {
                 .disableAuthCaching()
                 .disableConnectionState()
                 .build());
+    }
+
+    /**
+     * Thread-Safe, Request-Isolated CookieStore.
+     * Guarantees each incoming Spring MVC request get its own CookieStore, prevent session bleeding
+     */
+    public static class RequestScopedCookieStore implements CookieStore {
+        private static final String COOKIE_STORE_ATTR = "SCOPED_COOKIE_STORE";
+
+        private CookieStore getStore() {
+            RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+            // Fallback to a temporary store if executed outside a web request (e.g., background thread)
+            if (attributes == null) return new BasicCookieStore();
+            CookieStore store = (CookieStore) attributes.getAttribute(COOKIE_STORE_ATTR, RequestAttributes.SCOPE_REQUEST);
+            if (store == null)  {
+                store = new BasicCookieStore();
+                attributes.setAttribute(COOKIE_STORE_ATTR, store, RequestAttributes.SCOPE_REQUEST);
+            }
+            return store;
+        }
+
+        @Override public void addCookie(Cookie cookie) { getStore().addCookie(cookie); }
+        @Override public List<Cookie> getCookies() { return getStore().getCookies(); }
+        @Override @Deprecated public boolean clearExpired(Date date) { return getStore().clearExpired(date); }
+        //@Override public boolean clearExpired(Instant date) { return CookieStore.super.clearExpired(date); }
+        @Override public void clear() { getStore().clear(); }
     }
 
     /**

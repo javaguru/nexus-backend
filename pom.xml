@@ -7,7 +7,7 @@
     <groupId>com.jservlet.nexus.backend</groupId>
     <artifactId>nexus-backend</artifactId>
     <packaging>${packaging}</packaging>
-    <version>1.0.25</version>
+    <version>1.0.26</version>
 
     <name>nexus-backend</name>
     <description>The Java Nexus BackendService, an advanced and secure Rest Backend Gateway</description>
@@ -222,14 +222,14 @@
                     <version>${spring-boot.version}</version>
                     <scope>provided</scope>
                 </dependency>
-                <!-- Spring devtools
+                <!-- Spring devtools -->
                 <dependency>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-devtools</artifactId>
                     <version>${spring-boot.version}</version>
                     <scope>runtime</scope>
                     <optional>true</optional>
-                </dependency> -->
+                </dependency>
             </dependencies>
             <build>
                 <plugins>
