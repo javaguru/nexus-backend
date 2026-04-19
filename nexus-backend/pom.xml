@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>nexus-backend</artifactId>
-    <packaging>${packaging.type}</packaging>
+    <packaging>war</packaging>
     <name>nexus-backend</name>
     <description>The Java Nexus BackendService, an advanced and secure Rest Backend Gateway</description>
     <url>https://github.com/javaguru/nexus-backend</url>
@@ -50,6 +50,32 @@
         <mainClass>com.jservlet.nexus.config.Application</mainClass>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Force all modules Tomcat 10.x.x for apply the correct version -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-jasper</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
 
         <!-- Module Nexus-Backend shared -->
@@ -76,14 +102,24 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Tomcat starter provided -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Prometheus metrics-core -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
         <!-- Spring Boot Validation Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -272,12 +308,9 @@
 
     </dependencies>
 
-    <profiles>
+    <!--<profiles>
         <profile>
             <id>withoutTomcat</id>
-            <properties>
-                <packaging.type>war</packaging.type>
-            </properties>
             <dependencies>
                 <dependency>
                     <groupId>org.springframework.boot</groupId>
@@ -291,12 +324,9 @@
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-            <properties>
-                <packaging.type>war</packaging.type>
-            </properties>
             <dependencyManagement>
                 <dependencies>
-                    <!-- Force all modules Tomcat 10.x.x for apply the correct version -->
+                    &lt;!&ndash; Force all modules Tomcat 10.x.x for apply the correct version &ndash;&gt;
                     <dependency>
                         <groupId>org.apache.tomcat.embed</groupId>
                         <artifactId>tomcat-embed-core</artifactId>
@@ -320,7 +350,7 @@
                 </dependencies>
             </dependencyManagement>
         </profile>
-    </profiles>
+    </profiles>-->
 
     <build>
         <finalName>${project.artifactId}</finalName>
@@ -338,16 +368,24 @@
                 <directory>src/main/resources</directory>
                 <includes>
                     <include>logback.xml</include>
-                    <include>api-ui/api-docs.yaml</include>
                     <include>mime/*.properties</include>
 
+                    <!-- Swagger ui open-api security and initializer -->
+                    <include>api-ui/api-docs.yaml</include>
+                    <include>static/swagger-ui/swagger-initializer.jss</include>
+
+                    <!-- Default embedded Tomcat users -->
                     <include>tomcat-users.xml</include>
 
+                    <!-- Servlet Container Initializer Tomcat -->
                     <include>META-INF/services/jakarta.servlet.ServletContainerInitializer</include>
-                    <include>META-INF/spring/*.imports</include>
+                    <!-- Spring Processors -->
+                    <include>META-INF/spring.factories</include>
 
+                    <!-- The DistilBERT Model ONNX - HuggingFace Tokenizer Neural Network Env. -->
                     <include>model/tokenizer.json</include>
                     <include>model/nexus_v10_14_int8.onnx</include>
+
                 </includes>
                 <filtering>false</filtering>
                 <excludes>

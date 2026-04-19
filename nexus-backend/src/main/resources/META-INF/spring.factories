@@ -1,2 +1,2 @@
-# test EnvironmentPostProcessor
+org.springframework.boot.env.EnvironmentPostProcessor=\
 com.jservlet.nexus.config.web.env.NexusEnvironmentPostProcessor

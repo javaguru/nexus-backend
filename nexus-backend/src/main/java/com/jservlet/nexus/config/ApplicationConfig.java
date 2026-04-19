@@ -88,7 +88,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  *  Loader ConfigProperties file "classpath:settings.properties"
  */
 @Configuration
-@ConfigProperties("classpath:settings.properties")
+//@ConfigProperties("classpath:settings.properties")
 @Import({
         WebConfig.class,
         WebSecurityConfig.class,

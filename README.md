@@ -423,7 +423,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
 
-## 🔧 Build Nexus-Backend
+## 🛠️ Build Nexus-Backend
 
 ### ✅ Build requirements 
 
@@ -432,25 +432,15 @@ Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 * **Apache Tomcat 10.0.54 & Servlet 6.0.0 (Jakarta)** [Tomcat](https://tomcat.apache.org/download-10.cgi)
 * **Apache Maven >= 3.9.3** [Maven](https://maven.apache.org/download.cgi)
 
-### 🏭 Build war external Tomcat 9
+### 🏭 Build WAR Tomcat 10.xx (Embedded or External Tomcat)
 
-with the profile withoutTomcat:
+Maven clean, compile, package or install:
 
-* `mvn clean compile -P withoutTomcat`
-* `mvn clean package -P withoutTomcat`
-* `mvn clean install -P withoutTomcat`
+* `mvn clean compile`
+* `mvn clean package `
+* `mvn clean install`
 
-and look for the jar at `target/nexus-backend-{version}.war`
-
-### 🏭 Build war embedded Tomcat 9
-
-with the profile withTomcat:
-
-* `mvn clean compile -P withTomcat`
-* `mvn clean install -P withTomcat`
-* `mvn clean package -P withTomcat`
-
-and look for the jar at `target/nexus-backend-{version}.war`
+and look for the war at `target/nexus-backend-{version}.war`
 
 ### 📋 Get the Javadoc
 
@@ -564,7 +554,7 @@ Normally, it communicates to an API interface Backend.
  * Patch Multipart File
  * Delete
  
-### 📃 Sample BackendService API
+### 📃 Samples BackendService API
 
 #### 📂 Prerequisites:
 
@@ -627,7 +617,7 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## 🗒️ Last News
-* Last version **2.0.1**, released at 18/04/2026 Fix README.md, Run SpringBoot App, Fix RequestAnalyzerService, Upgrade Tomcat 10.1.54
+* Last version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService, Build WAR, Run SpringBoot App, Upgrade Tomcat 10.1.54, README.md
 * Version **2.0.0**, released at 18/04/2026 Migration Spring 6 - SpringBoot 3.3.0, Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX  
 * Version **1.0.26**, released at 18/04/2026 Fix external Tomcat Initializer
 * Version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent  

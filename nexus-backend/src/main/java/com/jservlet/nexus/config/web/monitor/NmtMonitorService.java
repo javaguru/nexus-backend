@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,10 +41,14 @@ import java.util.regex.Pattern;
 public class NmtMonitorService {
 
     private static final Logger log = LoggerFactory.getLogger(NmtMonitorService.class);
-    private static final String TARGET_APP_EMBEDDED = "com.jservlet.nexus.config.Application";
-    private static final String TARGET_APP_WAR = "org.apache.catalina.startup.Bootstrap";
-    private static final String TARGET_RUN_JAR = "nexus-backend.jar";
-    private static final String TARGET_RUN_WAR = "nexus-backend.war";
+
+    private final static List<String> STATIC_TARGET_APPS =
+            List.of(
+                    "org.apache.catalina.startup.Bootstrap", // Bootstrap app
+                    "com.jservlet.nexus.config.Application",     // SpringBoot app
+                    "nexus-backend.jar",                         // nexus-backend jar (SpringBoot without JSP)
+                    "nexus-backend.war"                          // nexus-backend war (SpringBoot with JSP)
+            );
 
     // Regex patterns for parsing
     private static final Pattern TOTAL_PATTERN = Pattern.compile("Total:\\s*reserved=(\\d+)KB,\\s*committed=(\\d+)KB");
@@ -58,8 +63,7 @@ public class NmtMonitorService {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if (line.contains(TARGET_APP_EMBEDDED) || line.contains(TARGET_APP_WAR) ||
-                            line.contains(TARGET_RUN_JAR) || line.contains(TARGET_RUN_WAR)) {
+                    if (STATIC_TARGET_APPS.stream().anyMatch(line::contains)) {
                         return Optional.of(line.split("\\s+")[0]);
                     }
                 }
@@ -76,8 +80,7 @@ public class NmtMonitorService {
     public String getNativeMemoryReport() {
         Optional<String> pidOpt = findApplicationPid();
         if (pidOpt.isEmpty()) {
-            return "Error: Could not find PID for " + TARGET_APP_EMBEDDED + " OR " + TARGET_APP_WAR +
-                    " OR " + TARGET_RUN_JAR + " OR " + TARGET_RUN_WAR;
+            return "Error: Could not find PID for " + STATIC_TARGET_APPS;
         }
 
         String pid = pidOpt.get();

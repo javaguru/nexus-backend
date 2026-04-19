@@ -50,8 +50,11 @@ import java.lang.annotation.*;
 import java.util.*;
 
 /**
- * Annotation for interfaces declaring a config properties file as PropertySourcesPlaceholder
+ * Annotation for interfaces declaring a config properties file as PropertySourcesPlaceholder.
+ *
+ * @deprecated As of Spring Boot 3.3.0, use {@link org.springframework.boot.env.EnvironmentPostProcessor} instead.
  */
+@Deprecated(since = "2.0.1", forRemoval = true)
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

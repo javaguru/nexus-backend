@@ -26,7 +26,8 @@ import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 
 import java.io.InputStream;
 import java.nio.LongBuffer;
@@ -35,6 +36,8 @@ import java.util.Map;
 /**
  * Analyzer Request Service with Matrix Batching and Dynamic Context-Preserving Chunking.<br>
  * The DistilBERT Model with HuggingFace Tokenizer in an ONNX Neural Network Environment.
+ *
+ * @since version 2.0.0
  */
 public class RequestAnalyzerService {
 
@@ -49,13 +52,19 @@ public class RequestAnalyzerService {
     @Value("${nexus.api.backend.analyzer.onnx.truncation:false}") // Must be false so we handle chunking ourselves
     private boolean truncation;
 
-    @Value("${nexus.api.backend.analyzer.onnx.path.model:model/model.onnx}")
+    @Value("${nexus.api.backend.analyzer.onnx.path.model:classpath:model/model.onnx}")
     private String pathModel;
-    @Value("${nexus.api.backend.analyzer.onnx.path.tokenizer:model/tokenizer.json}")
+    @Value("${nexus.api.backend.analyzer.onnx.path.tokenizer:classpath:model/tokenizer.json}")
     private String pathTokenizer;
 
     @Value("${nexus.api.backend.analyzer.onnx.cpu:4}")
     private int cpu;
+
+    private final ResourceLoader resourceLoader;
+
+    public RequestAnalyzerService(ResourceLoader resourceLoader) {
+        this.resourceLoader = resourceLoader;
+    }
 
     @PostConstruct
     public void init() throws Exception {
@@ -65,8 +74,14 @@ public class RequestAnalyzerService {
         );
         logger.info("Starting RequestAnalyzer Neural Network AI: {}", optionsHuggingFace);
 
+        // Check Resource tokenizer
+        Resource tokenizerResource = resourceLoader.getResource(pathTokenizer);
+        if (!tokenizerResource.exists()) {
+            throw new RuntimeException("Tokenizer file not found : " + pathTokenizer);
+        }
+
         // Initialize Tokenizer
-        try (InputStream tokenizerStream = new ClassPathResource(pathTokenizer).getInputStream()) {
+        try (InputStream tokenizerStream = tokenizerResource.getInputStream()) {
             this.tokenizer = HuggingFaceTokenizer.newInstance(tokenizerStream, optionsHuggingFace);
         }
 
@@ -81,9 +96,14 @@ public class RequestAnalyzerService {
         // Stealth mode, no internal timing
         optionsSession.disableProfiling();
 
+        // Check Resource Model
+        Resource modelResource = resourceLoader.getResource(pathModel);
+        if (!modelResource.exists()) {
+            throw new RuntimeException("Model file not found : " + pathModel);
+        }
+
         // Load the model
-        try (InputStream modelStream = new ClassPathResource(pathModel).getInputStream()) {
-            // readAllBytes() est parfait ici car tu es sur Java 21 !
+        try (InputStream modelStream = modelResource.getInputStream()) {
             byte[] modelBytes = modelStream.readAllBytes();
             this.session = env.createSession(modelBytes, optionsSession);
         }

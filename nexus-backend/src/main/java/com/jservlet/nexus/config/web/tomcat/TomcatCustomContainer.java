@@ -110,7 +110,7 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     private String suffix;
     @Value("${nexus.backend.tomcat.accesslog.prefix:nexus_backend_access_log}")
     private String prefix;
-    @Value("${nexus.backend.tomcat.accesslog.pattern:}")
+    @Value("${nexus.backend.tomcat.accesslog.pattern:%t %I %a %S %m %U %s %b %{Content-Length}i %T %u %{Authorization}i %{User-Agent}i %{X-Forwarded-For}i}")
     private String pattern;
     @Value("${nexus.backend.tomcat.accesslog.encoding:UTF-8}")
     private String encoding;
