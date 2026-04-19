@@ -308,50 +308,6 @@
 
     </dependencies>
 
-    <!--<profiles>
-        <profile>
-            <id>withoutTomcat</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>withTomcat</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <dependencyManagement>
-                <dependencies>
-                    &lt;!&ndash; Force all modules Tomcat 10.x.x for apply the correct version &ndash;&gt;
-                    <dependency>
-                        <groupId>org.apache.tomcat.embed</groupId>
-                        <artifactId>tomcat-embed-core</artifactId>
-                        <version>${tomcat.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.tomcat.embed</groupId>
-                        <artifactId>tomcat-embed-el</artifactId>
-                        <version>${tomcat.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.tomcat.embed</groupId>
-                        <artifactId>tomcat-embed-websocket</artifactId>
-                        <version>${tomcat.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.tomcat.embed</groupId>
-                        <artifactId>tomcat-embed-jasper</artifactId>
-                        <version>${tomcat.version}</version>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
-        </profile>
-    </profiles>-->
-
     <build>
         <finalName>${project.artifactId}</finalName>
         <resources>

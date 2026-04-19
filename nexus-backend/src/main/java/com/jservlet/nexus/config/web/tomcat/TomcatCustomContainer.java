@@ -18,6 +18,7 @@
 
 package com.jservlet.nexus.config.web.tomcat;
 
+import org.apache.catalina.Context;
 import org.apache.catalina.authenticator.BasicAuthenticator;
 import org.apache.catalina.realm.MemoryRealm;
 import org.apache.catalina.valves.AccessLogValve;
@@ -30,6 +31,7 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Profile;
@@ -93,6 +95,9 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
 
     private final static Logger logger = LoggerFactory.getLogger(TomcatCustomContainer.class);
 
+    @Value("${nexus.backend.tomcat.embedded.webxml.path:}")
+    private String externalWebXmlPath;
+
     @Value("${nexus.backend.tomcat.accesslog.valve.enable:false}")
     private boolean accessLogEnabled;
 
@@ -134,7 +139,7 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     // Default Security constraint properties
     @Value("${nexus.backend.tomcat.security.patterns:/actuator/*,/health/*,/nmt/*}")
     private String[] securityPatterns;
-    @Value("${nexus.backend.tomcat.security.admin.acl.enable:false}")
+    @Value("${nexus.backend.tomcat.security.admin.acl.enable:true}")
     private boolean adminAclEnabled;
     @Value("${nexus.backend.tomcat.security.users.file:}")
     private String customUsersFilePath;
@@ -166,8 +171,25 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
 
     @Override
     public void customize(TomcatServletWebServerFactory factory) {
+        // Config external path Web.xml
+        if (externalWebXmlPath != null && !externalWebXmlPath.isEmpty()) {
+            File webXmlFile = new File(externalWebXmlPath);
 
-        // Configuration Http connector by default
+            if (webXmlFile.exists()) {
+                factory.addContextCustomizers(new TomcatContextCustomizer() {
+                    @Override
+                    public void customize(Context context) {
+                        logger.info("Force Embedded Tomcat to read external web.xml : {}", webXmlFile.getAbsolutePath());
+                        // Tomcat's magic method to override the default WEB-INF/web.xml
+                        context.setAltDDName(webXmlFile.getAbsolutePath());
+                    }
+                });
+            } else {
+                logger.warn("The external web.xml file was not found.: {}", webXmlFile.getAbsolutePath());
+            }
+        }
+
+        // Config Http connector by default
         factory.addConnectorCustomizers(connector -> {
             connector.setProperty("acceptCount", String.valueOf(acceptCount));
             connector.setProperty("connectionTimeout", String.valueOf(connectionTimeout));

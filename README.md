@@ -252,7 +252,7 @@ The default Cors Configuration:
 
 ~~This BackendResource can convert a **MultipartFile** to a temporary **Resource**, ready to be sent to the **Backend Server**.~~
 
-Since version 1.0.24 no more BackendResource and temporary file, all is in memory.  
+Since the version **1.0.24** no more BackendResource and temporary file. **All is in memory**.  
 
 
 ### 🏭 The BackendService HttpFactory Client Configuration
@@ -276,6 +276,20 @@ Since version 1.0.24 no more BackendResource and temporary file, all is in memor
 | nexus.backend.client.circularRedirectsAllowed       | false             | true              | Circular redirections allowed     |
 | nexus.backend.client.cookie.domain                  |                   | postman-echo.com  | Domain cookie or empty or #{null} |
 | nexus.backend.client.cookie.secure                  | false             | true              | Remove secure cookie              |
+
+
+### ⚙️ Activated the Mutual Authentication or mTLS connection on the HttpFactory Client
+
+**Settings keys settings.properties:** *nexus.backend.client.ssl.mtls.enable* at **true** for activated the mTLS connection
+
+| **Keys**                                    | **Default value**      | **Descriptions**          |
+|---------------------------------------------|:-----------------------|:--------------------------|
+| nexus.backend.client.ssl.mtls.enable        | **false**              | Activated the Mutual TLS  |   
+| nexus.backend.client.ssl.key-store          | nexus-default.jks      | Path to the Java KeyStore |   
+| nexus.backend.client.ssl.key-store-password | changeit               | The password              |   
+| nexus.backend.client.ssl.certificate.alias  | key_server             | The certificate alias     |   
+| nexus.backend.client.ssl.https.protocols    | TLSv1.3                | The protocols             |   
+| nexus.backend.client.ssl.https.cipherSuites | TLS_AES_256_GCM_SHA384 | The Cipher Suites         |  
 
 
 ### 🛡️ The Nexus-Backend Firewall and the WAF Filter Configuration 
@@ -353,6 +367,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.api.backend.analyzer.onnx.path.tokenizer | model/tokenizer.json         | File Tokenizer   |   
 | nexus.api.backend.analyzer.onnx.cpu            | 4                            | Number CPU       |   
 
+**🛸 Web HttpFirewall
 
 **Settings keys settings.properties:** Define a max length for Keys/Values Headers or Parameters 
 
@@ -368,18 +383,18 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
 
 
-### ⚙️ Activated the Mutual Authentication or mTLS connection on the HttpFactory Client
+### ⚙️ Tomcat 10.xx Embedded with external configuration
 
- **Settings keys settings.properties:** *nexus.backend.client.ssl.mtls.enable* at **true** for activated the mTLS connection
+**Settings keys settings.properties:** *nexus.backend.client.ssl.mtls.enable* at **true** for activated the mTLS connection
 
-| **Keys**                                    | **Default value**      | **Descriptions**          |
-|---------------------------------------------|:-----------------------|:--------------------------|
-| nexus.backend.client.ssl.mtls.enable        | **false**              | Activated the Mutual TLS  |   
-| nexus.backend.client.ssl.key-store          | nexus-default.jks      | Path to the Java KeyStore |   
-| nexus.backend.client.ssl.key-store-password | changeit               | The password              |   
-| nexus.backend.client.ssl.certificate.alias  | key_server             | The certificate alias     |   
-| nexus.backend.client.ssl.https.protocols    | TLSv1.3                | The protocols             |   
-| nexus.backend.client.ssl.https.cipherSuites | TLS_AES_256_GCM_SHA384 | The Cipher Suites         |   
+| **Keys**                                       | **Default value**                     | **Descriptions**                          |
+|------------------------------------------------|:--------------------------------------|:------------------------------------------|
+| nexus.backend.tomcat.security.admin.acl.enable | **true**                              | Enable ACL                                |   
+| nexus.backend.tomcat.security.role             | **admin-gui**                         | Role Admin GUI                            |   
+| nexus.backend.tomcat.security.patterns         | /health/*,/actuator/*,/mnt/admin/**   | Pattern match paths                       |   
+| nexus.backend.tomcat.embedded.webxml.path      |                                       | /apps/apache-tomcat/conf/web.xml          |   
+| nexus.backend.tomcat.security.users.file       |                                       | /apps/apache-tomcat/conf/tomcat-users.xml |   
+
 
 
 ### ⚙️ Activated Tomcat Catalina Connector TLS/SSL on a wildcard domain Certificate
