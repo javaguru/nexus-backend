@@ -254,7 +254,7 @@ public class RestApiTest  {
     public void testPostEchoEntityProxy() {
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-Type", MediaType.APPLICATION_FORM_URLENCODED_VALUE); // WARN mandatory!
+            headers.add("Content-Type", MediaType.APPLICATION_JSON_VALUE); // WARN mandatory! or APPLICATION_FORM_URLENCODED_VALUE
             // get Echo data in ByteArray through the proxy!
             byte[] obj = backendService.doRequest("/mock/v1/proxy", HttpMethod.POST,
                     backendService.createResponseType(byte[].class), "Hello Echo!", headers); // WARN mandatory typed byte[].class

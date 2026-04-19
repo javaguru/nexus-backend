@@ -30,6 +30,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.*;
+import org.springframework.core.io.support.ResourcePropertySource;
 import org.springframework.lang.NonNull;
 
 import javax.cache.CacheManager;
@@ -66,10 +67,10 @@ public class WebConfig implements ApplicationContextAware {
         if (logger.isInfoEnabled()) {
             Map<String, Object> map = getApplicationProperties(env);
             // Debug also log system out!
-            logger.info("*** SpringBoot ApplicationProperties ***");
-            for (Map.Entry<String, Object> entry : map.entrySet()) {
-                logger.info("{} = {}", entry.getKey(), entry.getValue());
-            }
+            //logger.info("*** SpringBoot ApplicationProperties ***");
+            //for (Map.Entry<String, Object> entry : map.entrySet()) {
+            //    logger.info("{} = {}", entry.getKey(), entry.getValue());
+            // }
         }
     }
 
@@ -81,21 +82,38 @@ public class WebConfig implements ApplicationContextAware {
         return appContext;
     }
 
-    /* Stuff, get loaded SpringBoot Application Properties */
+    /**
+     *  Stuff, get loaded SpringBoot Application Properties, EnvironmentPostProcessor and Spring devtools
+     */
     private static Map<String, Object> getApplicationProperties(Environment env) {
         Map<String, Object> map = new LinkedHashMap<>(); // keep order!
         if (env instanceof ConfigurableEnvironment) {
             for (PropertySource<?> propertySource : ((ConfigurableEnvironment) env).getPropertySources()) {
-                // WARN all tracked SpringBoot config file *.properties!
+                // Native Spring files(application.properties, application.yml)
                 if (propertySource instanceof OriginTrackedMapPropertySource) {
+                    logger.info("*** SpringBoot ApplicationProperties ***");
                     for (String key : ((EnumerablePropertySource<?>) propertySource).getPropertyNames()) {
-                        map.put(key, propertySource.getProperty(key));
+                        Object object = propertySource.getProperty(key);
+                        map.put(key, object);
+                        logger.info("{} = {}", key, object);
+                    }
+                }
+                // Files loaded via your EnvironmentPostProcessor (settings.properties, external files)
+                else if (propertySource instanceof ResourcePropertySource) {
+                    logger.info("*** Loaded SettingsProperties ***");
+                    for (String key : ((ResourcePropertySource) propertySource).getPropertyNames()) {
+                        Object object = propertySource.getProperty(key);
+                        map.put(key, object);
+                        logger.info("{} = {}", key, object);
                     }
                 }
                 // Include Spring devtools
-                if (propertySource instanceof MapPropertySource && "devtools".equals(propertySource.getName())) {
+                else if (propertySource instanceof MapPropertySource && "devtools".equals(propertySource.getName())) {
+                    logger.info("*** Loaded DevtoolsProperties ***");
                     for (String key : ((MapPropertySource) propertySource).getPropertyNames()) {
+                        Object object = propertySource.getProperty(key);
                         map.put(key, propertySource.getProperty(key));
+                        logger.info("{} = {}", key, object);
                     }
                 }
             }

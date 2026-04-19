@@ -7,10 +7,10 @@ gen
 catalina.base_IS_UNDEFINED/
 .idea/workspace.xml
 overlays/
-target/
 .idea/
 *.onnx
 ~$*
+
 # These are some examples of commonly ignored file patterns.
 # You should customize this list as applicable to your project.
 # Learn more about .gitignore:
@@ -18,7 +18,6 @@ target/
 
 # Node artifact files
 node_modules/
-dist/
 
 # Compiled Java class files
 *.class

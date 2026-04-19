@@ -6,11 +6,40 @@
 
     <groupId>com.jservlet.nexus.backend</groupId>
     <artifactId>nexus-backend-parent</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
     <packaging>pom</packaging>
 
     <name>nexus-backend-parent</name>
-    <description>Parent POM for Nexus Backend</description>
+    <description>Parent POM for Nexus-Backend</description>
+    <url>https://github.com/javaguru/nexus-backend</url>
+
+    <organization>
+        <name>JServlet.com</name>
+        <url>https://github.com/javaguru</url>
+    </organization>
+    <inceptionYear>2023</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License (GPL) version 3.0</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>fan</id>
+            <name>Franck Andriano.</name>
+            <email>franck@jservlet.com</email>
+            <organization>JServlet</organization>
+            <organizationUrl>https://www.jservlet.com</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
 
     <modules>
         <module>nexus-backend-shared</module>
@@ -28,7 +57,7 @@
         <spring-boot-security.version>6.2.3</spring-boot-security.version>
 
         <!-- Update the last Tomcat 10.x.x version with springboot starter-parent-->
-        <tomcat.version>10.1.53</tomcat.version>
+        <tomcat.version>10.1.54</tomcat.version>
         <servlet.api.version>6.1.0</servlet.api.version> <!-- Jakarta EE 10+ -->
         <!-- WARN migrate at > 2.7 or 2.8.4 last release for migrate 3.4.5 -->
         <springdoc-openapi.version>2.5.0</springdoc-openapi.version> <!-- Version 2.x pour Jakarta/SpringBoot 3+ -->

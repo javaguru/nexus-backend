@@ -64,10 +64,11 @@ import java.util.regex.Pattern;
  * <p>
  * Default reactive mode is STRICT mode
  * <ul>
- * <li>ONNX_AI: StrictHttpFirewall + STRICT mode + Neural Network AI Scan.</li>
- * <li>STRICT:  StrictHttpFirewall + Rejects requests with malicious patterns.</li>
- * <li>PASSIVE: StrictHttpFirewall + Cleans malicious patterns from request body and parameters.</li>
- * <li>UNSAFE:  StrictHttpFirewall + No checks on request body.</li>
+ * <li>STRICT_ONNX_AI: WebHttpFirewall + STRICT mode + Neural Network AI Scan.</li>
+ * <li>ONNX_AI: WebHttpFirewall + Neural Network AI Scan.</li>
+ * <li>STRICT:  WebHttpFirewall + Rejects requests with malicious patterns.</li>
+ * <li>PASSIVE: WebHttpFirewall + Cleans malicious patterns from request body and parameters.</li>
+ * <li>UNSAFE:  WebHttpFirewall + No checks on request body.</li>
  * </ul>
  * <p>
  * Activated WebFilter by only 'nexus.api.backend.filter.waf.enabled=true' in the configuration

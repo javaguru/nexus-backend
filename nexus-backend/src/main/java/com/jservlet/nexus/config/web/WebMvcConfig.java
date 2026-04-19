@@ -64,9 +64,8 @@ public class WebMvcConfig implements WebMvcConfigurer, ResourceLoaderAware {
 
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
-        if ("development".equals(env.getProperty(ENV_VAR))) {
-            registry.addResourceHandler("/swagger-ui/**").resourceChain(false);
-        }
+        // Swagger only -Denvironment=development
+        registry.addResourceHandler("/swagger-ui/**").resourceChain("development".equals(env.getProperty(ENV_VAR)));
         registry.addResourceHandler("/resources/api-ui/**").addResourceLocations("/resources/");
         registry.addResourceHandler("/static/**").addResourceLocations("/static/");
     }

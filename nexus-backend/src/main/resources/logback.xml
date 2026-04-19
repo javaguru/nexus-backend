@@ -19,7 +19,7 @@
             <FileNamePattern>nexus-backend_error.%d{yyyy-MM-dd}.log</FileNamePattern>
         </rollingPolicy>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>[%contextName][[%thread]:%d{dd.MM.yyyy HH:mm:ss.SSS}][id:%mdc{APP-REQUEST-ID}] %-5level %logger{36}: %msg%n</pattern>
+            <pattern>[%contextName][[%thread]:%d{dd.MM.yyyy HH:mm:ss.SSS}][id:%mdc{APP-REQUEST-ID}] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -29,7 +29,7 @@
             <FileNamePattern>nexus_backend_full_access.%d{yyyy-MM-dd}.log</FileNamePattern>
         </rollingPolicy>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <Pattern>[%contextName][[%thread]:%d{dd.MM.yyyy HH:mm:ss.SSS}][id:%mdc{APP-REQUEST-ID}] %-5level: %file:%line : %msg%n</Pattern>
+            <pattern>[%contextName][[%thread]:%d{dd.MM.yyyy HH:mm:ss.SSS}][id:%mdc{APP-REQUEST-ID}] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 

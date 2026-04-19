@@ -7,13 +7,44 @@
     <parent>
         <groupId>com.jservlet.nexus.backend</groupId>
         <artifactId>nexus-backend-parent</artifactId>
-        <version>2.0.0</version>
+        <version>2.0.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>nexus-backend-shared</artifactId>
     <packaging>jar</packaging>
     <name>nexus-backend-shared</name>
+
+    <description>The Java Nexus BackendService Shared API</description>
+    <url>https://github.com/javaguru/nexus-backend</url>
+
+    <organization>
+        <name>JServlet.com</name>
+        <url>https://github.com/javaguru</url>
+    </organization>
+    <inceptionYear>2023</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License (GPL) version 3.0</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>fan</id>
+            <name>Franck Andriano.</name>
+            <email>franck@jservlet.com</email>
+            <organization>JServlet</organization>
+            <organizationUrl>https://www.jservlet.com</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
 
     <dependencies>
         <dependency>

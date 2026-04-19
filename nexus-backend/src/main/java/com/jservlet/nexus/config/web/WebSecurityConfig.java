@@ -18,7 +18,7 @@
 
 package com.jservlet.nexus.config.web;
 
-import com.jservlet.nexus.shared.service.monitor.NmtMonitorService;
+import com.jservlet.nexus.config.web.monitor.NmtMonitorService;
 import com.jservlet.nexus.shared.service.security.ml.RequestAnalyzerService;
 import com.jservlet.nexus.shared.web.filter.WAFPredicate;
 import com.jservlet.nexus.shared.web.security.WebHttpFirewall;
@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -57,7 +58,7 @@ import java.util.regex.Pattern;
  * Web Security Configuration: HttpFirewall, FilterChain and Customizer
  */
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity// (debug = false)
 public class WebSecurityConfig {
 
     private final static Logger logger = LoggerFactory.getLogger(WebSecurityConfig.class);
@@ -338,8 +339,8 @@ public class WebSecurityConfig {
      * @return RequestAnalyzerService
      */
     @Bean
-    public RequestAnalyzerService analyzerService() {
-        return new RequestAnalyzerService();
+    public RequestAnalyzerService analyzerService(ResourceLoader resourceLoader) {
+        return new RequestAnalyzerService(resourceLoader);
     }
 
     /**
