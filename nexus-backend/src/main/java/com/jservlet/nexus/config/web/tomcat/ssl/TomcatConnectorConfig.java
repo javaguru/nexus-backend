@@ -51,9 +51,9 @@ import org.springframework.context.annotation.Profile;
  *      &lt;Connector port="8009" protocol="AJP/1.3" redirectPort="8443"/&gt;
  * </pre>
  */
-@Profile("withTomcat")
-@ConditionalOnProperty(value = "nexus.backend.tomcat.connector.https.enable")
+
 @Configuration
+@ConditionalOnProperty(value = "nexus.backend.tomcat.connector.https.enable")
 public class TomcatConnectorConfig {
 
     private final static Logger logger = LoggerFactory.getLogger(TomcatConnectorConfig.class);

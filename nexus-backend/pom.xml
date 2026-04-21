@@ -326,10 +326,8 @@
                     <include>logback.xml</include>
                     <include>mime/*.properties</include>
 
-                    <!-- Swagger ui open-api security and initializer -->
+                    <!-- Swagger ui open-api security -->
                     <include>api-ui/api-docs.yaml</include>
-                    <include>static/swagger-ui/swagger-initializer.jss</include>
-
                     <!-- Default embedded Tomcat users -->
                     <include>tomcat-users.xml</include>
 

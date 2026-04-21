@@ -347,7 +347,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
  * Header Names 255 characters max. / Values 25000 characters max.
  * Hostnames 255 characters max.
 
-**☣️ The WAF Reactive mode configuration:**
+**🛡️ The WAF Reactive mode configuration:**
 
  * **STRICT_ONNX_AI**:  STRICT mode + Artificial Intelligence Scan by ONNX Neural Network
  * **ONNX_AI**:  Artificial Intelligence Scan by ONNX Neural Network
@@ -367,7 +367,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.api.backend.analyzer.onnx.path.tokenizer | model/tokenizer.json         | File Tokenizer   |   
 | nexus.api.backend.analyzer.onnx.cpu            | 4                            | Number CPU       |   
 
-**🛸 Web HttpFirewall
+**⚔️ Web HttpFirewall**
 
 **Settings keys settings.properties:** Define a max length for Keys/Values Headers or Parameters 
 
@@ -632,34 +632,11 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## 🗒️ Last News
-* Last version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService, Build WAR, Run SpringBoot App, Upgrade Tomcat 10.1.54, README.md
-* Version **2.0.0**, released at 18/04/2026 Migration Spring 6 - SpringBoot 3.3.0, Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX  
-* Version **1.0.26**, released at 18/04/2026 Fix external Tomcat Initializer
-* Version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent  
-* Version **1.0.24**, released at 01/09/2025  Forwarded headers Client and Transfer headers Backend Server, Cors headers exposed 
-* Version **1.0.23**, released at 22/08/2025 Reorganize WAFFilter Multipart, CorsConfiguration, Cookie client stateful
-* Version **1.0.22**, released at 31/07/2025 Fix Security RateLimit, Content Security Policy and Referrer-Policy
-* Version **1.0.21**, released at 29/07/2025 Fix Predicate for Hostnames, Shared CookieRedirectInterceptor, Postman-Echo performance
-* Version **1.0.20**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate - Bis
-* Version **1.0.19**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate
-* Version **1.0.18**, released at 10/05/2025 Fix manage Cookie during a redirection 3xx
-* Version **1.0.17**, released at 04/05/2025 Fix manage Cookie, Gateway is stateless!
-* Version **1.0.16**, released at 03/11/2024 Fix CORS Security configuration Spring 5/6
-* Version **1.0.15**, released at 23/10/2024 Fix missing method addCorsMappings
-* Version **1.0.14**, released at 14/10/2024 Support Backend Headers and Support ContentNegotiation Header Strategy for Resources
-* Version **1.0.13**, released at 06/10/2024 Full support Response in ByteArray Resource and Streaming Http Response Range Bytes 
-* Version **1.0.12**, released at 02/10/2024 Fix ApiBase error Message super.getResponseEntity
-* Version **1.0.11**, released at 30/09/2024 Does not encode the URI template! 
-* Version **1.0.10**, released at 29/09/2024 Add full support MultipartRequest content type multipart/form-data 
-* Version **1.0.9**, released at 24/09/2024 Fix replicate requests ApiBackend.requestEntity
-* Version **1.0.8**, released at 13/08/2024 Re-encoding HttpUrl, Special Characters are re-interpreted
-* Version **1.0.7**, released at 03/08/2024 All is Bytes.
-* Version **1.0.6**, released at 14/07/2024 Clarify Byte Array deserialization.
-* Version **1.0.5**, released at 13/07/2024 Optimize build war/jar.
-* Version **1.0.4**, released at 08/07/2024.
-* Version **1.0.3**, released at 23/06/2024 Reinit project.
-* Version **1.0.2** released at 28/04/2024.
-* Version **1.0.1** released at 21/11/2022.
+* Last version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService ResourceLoader, Build WAR external/internal.
+* Version **2.0.0**, released at 18/04/2026 Migration Jdk 21, Spring 6, SpringBoot 3.3.0: Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX.
+* Version **1.0.26**, Last release Spring 5 - SpringBoot 2.7.5 released at 18/04/2026, Fix external Tomcat Initializer.
+* Version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent.
+* [...]
 * Initial release **1.0.0** at 03/06/2021.
 
 ## 👨‍🚀 Support

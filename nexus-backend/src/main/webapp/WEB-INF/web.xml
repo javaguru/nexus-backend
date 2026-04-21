@@ -12,7 +12,6 @@
         <display-name>Admin Access Constraint</display-name>
         <web-resource-collection>
             <web-resource-name>Protected Admin Area</web-resource-name>
-            <url-pattern>/health/*</url-pattern>
             <url-pattern>/actuator/*</url-pattern>
             <url-pattern>/nmt/*</url-pattern>
             <!-- <http-method> -->
@@ -29,9 +28,28 @@
         </user-data-constraint>
     </security-constraint>
 
+    <security-role>
+        <role-name>admin-health</role-name>
+    </security-role>
+
+    <security-constraint>
+        <display-name>Health Access Constraint</display-name>
+        <web-resource-collection>
+            <web-resource-name>Protected Health Area</web-resource-name>
+            <url-pattern>/health/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>admin-health</role-name>
+        </auth-constraint>
+        <user-data-constraint>
+            <transport-guarantee>NONE</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint>
+
     <!-- LoginConfig -->
     <login-config>
         <auth-method>BASIC</auth-method>
+        <!-- Not use anymore by Chrome, Edge, Firefox cause phishing attacks  -->
         <realm-name>Nexus Backend Realm</realm-name>
     </login-config>
 

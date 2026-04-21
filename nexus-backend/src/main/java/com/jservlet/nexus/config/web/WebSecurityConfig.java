@@ -261,12 +261,12 @@ public class WebSecurityConfig {
 
     @Value("${nexus.backend.security.predicate.parameterNamesLength:255}")
     private int parameterNamesLength = 255;
-    @Value("${nexus.backend.security.predicate.parameterValuesLength:1000000}")
-    private int parameterValuesLength = 1000000;
+    @Value("${nexus.backend.security.predicate.parameterValuesLength:30000}")
+    private int parameterValuesLength = 30000;
     @Value("${nexus.backend.security.predicate.headerNamesLength:255}")
     private int headerNamesLength = 255;
-    @Value("${nexus.backend.security.predicate.headerNamesValuesLength:25000}")
-    private int headerNamesValuesLength = 25000;
+    @Value("${nexus.backend.security.predicate.headerNamesValuesLength:6000}")
+    private int headerNamesValuesLength = 6000;
     @Value("${nexus.backend.security.predicate.hostNamesLength:255}")
     private int hostNamesLength = 255;
     @Value("${nexus.backend.security.predicate.hostName.pattern:}") // "^(www\\.)?nexus\\.jservlet\\.com(:[0-9]+)?$"
@@ -318,18 +318,7 @@ public class WebSecurityConfig {
         firewall.setAllowUrlEncodedParagraphSeparator(isAllowUrlEncodedParagraphSeparator);
         firewall.setAllowUrlEncodedLineSeparator(isAllowUrlEncodedLineSeparator);
 
-
         // WARN We are not applying any predicate rules here, let the WAFFilter do that for us!
-       /* // Predicate Parameter Name/Value
-        firewall.setAllowedParameterNames(waf.getWAFParameterNames());
-        firewall.setAllowedParameterValues(waf.getWAFParameterValues());
-
-        // Predicate Header Name/Value
-        firewall.setAllowedHeaderNames(waf.getWAFHeaderNames());
-        firewall.setAllowedHeaderValues(waf.getWAFHeaderValues());
-
-        // Predicate Hostnames
-        firewall.setAllowedHostnames(waf.getWAFHostnames());*/
 
         return firewall;
     }

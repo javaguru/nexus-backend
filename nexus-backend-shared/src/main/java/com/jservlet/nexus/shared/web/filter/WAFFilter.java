@@ -423,13 +423,17 @@ public class WAFFilter extends ApiBase implements Filter {
      *
      * @param request The processed HttpServletRequest.
      */
-    private void handleStrict(HttpServletRequest request) throws IOException {
+    private void handleStrict(HttpServletRequest request) throws IOException, IllegalArgumentException {
         // Validate http headers (Critical for Log4Shell/SpEL/Deserialization)
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames != null && headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
             if (!wafPredicate.getWAFHeaderNames().test(headerName)) {
                 throw new RequestRejectedException("Request rejected: Disallowed pattern in Header name.");
+            }
+            String headerValue = request.getHeader(headerName);
+            if (!wafPredicate.getWAFHeaderValues().test(headerValue)) {
+                throw new RequestRejectedException("Request rejected: Disallowed pattern in Header value.");
             }
         }
 
@@ -453,7 +457,6 @@ public class WAFFilter extends ApiBase implements Filter {
         // Validate json/rest body
         String body = IOUtils.toString(request.getReader());
         if (!StringUtils.isBlank(body)) {
-            // Note: Assume you added getWAFRestApiBody() in WAFPredicate as suggested, otherwise use getWAFParameterValues()
             if (!wafPredicate.getWAFRestApiBody().test(body)) {
                 throw new RequestRejectedException("Request rejected: Disallowed WAF pattern found in Request Body.");
             }

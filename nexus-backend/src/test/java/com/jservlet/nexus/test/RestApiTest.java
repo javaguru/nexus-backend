@@ -312,8 +312,8 @@ public class RestApiTest  {
     public void testXErrorBackend400() throws NexusGetException {
         try {
             // get Object Entity
-            Object obj = backendService.doRequest("/v1/dataError400", HttpMethod.GET,
-                    backendService.createResponseType(Data.class), null, null);
+            Object obj = backendService.doRequest("/mock/v1/dataError400", HttpMethod.GET,
+                    backendService.createResponseType(Object.class), null, null);
             System.out.println(obj);
         } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
             System.out.println("Failed to GET Data entity/entities on backend: " + e.getMessage());

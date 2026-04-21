@@ -20,10 +20,10 @@ package com.jservlet.nexus.config.web.tomcat;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.authenticator.BasicAuthenticator;
+import org.apache.catalina.realm.LockOutRealm;
 import org.apache.catalina.realm.MemoryRealm;
 import org.apache.catalina.valves.AccessLogValve;
 import org.apache.catalina.valves.ErrorReportValve;
-import org.apache.catalina.valves.ExtendedAccessLogValve;
 import org.apache.catalina.valves.HealthCheckValve;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
@@ -34,7 +34,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -43,53 +42,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 
 /**
  * Custom Container with an Embedded Tomcat: <br>
- *  - Customizes Connector Http <br>
- *  - Extended Access Log Valve <br>
- *  - Error ReportValve <br>
- *  - Configuration ACL / Security constraint <br>
- * <br>
- * <br>
- * server.xml
- * <pre>
- * &lt;Connector port="8080" protocol="HTTP/1.1"
- *             executor="tomcatThreadPool"
- *             redirectPort="8443"
- *             enableLookups="false"
- *             acceptCount="100"
- *             connectionTimeout="20000"
- *             maxPostSize="10485760"
- *             disableUploadTimeout="true"
- *             compression="on"
- *             compressableMimeType="text/html,text/xml,text/plain,text/javascript,text/css,application/json"
- *             URIEncoding="UTF-8"
- *             maxHttpHeaderSize="32768"
- * 			   rejectIllegalHeader="true"
- *             server="git di nexus a"
- *     /&gt;
- * </pre>
- * <pre>
- *      &lt;Valve className="org.apache.catalina.valves.ErrorReportValve"
- *            showReport="false"
- *            showServerInfo="false"/&gt;
- * </pre>
- * <pre>
- *      &lt;Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
- *          prefix="localhost_access_log" suffix=".txt"
- *          pattern="%h %l %u %t &quot;%r&quot; %s %b" /&gt;
- * </pre>
- * <br>
- * <br>
- * tomcat-users.xml
- * <pre>
- *      &lt;role rolename="manager-gui"/&gt;
- *      &lt;role rolename="admin-gui"/&gt;
- *      &lt;user username="admin" password="admin" roles="manager-gui,admin-gui"/&gt;
- * </pre>
+ * - Customizes Connector Http <br>
+ * - Extended Access Log Valve <br>
+ * - Error ReportValve <br>
+ * - Configuration ACL / Security constraint <br>
  */
-@Profile("withTomcat")
 @Component
 public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatServletWebServerFactory> {
 
@@ -104,11 +65,10 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     @Value("${nexus.backend.tomcat.healthcheck.enable:true}")
     private boolean healthCheckEnabled;
 
-    // Default HealthCheck endpoint path /health
     @Value("${nexus.backend.tomcat.healthcheck.path:/health}")
     private String healthCheckPath;
 
-    // Default Accesslog properties
+    // Accesslog properties
     @Value("${nexus.backend.tomcat.accesslog.directory:}")
     private String directory;
     @Value("${nexus.backend.tomcat.accesslog.suffix:.log}")
@@ -125,28 +85,30 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     private boolean asyncSupported;
     @Value("${nexus.backend.tomcat.accesslog.renameOnRotate:true}")
     private boolean renameOnRotate;
-    @Value("${nexus.backend.tomcat.accesslog.throwOnFailure:true}")
-    private boolean throwOnFailure;
     @Value("${nexus.backend.tomcat.accesslog.maxDays:-1}")
     private int maxDays;
 
-    // Default errorReport properties
+    // ErrorReport properties
     @Value("${nexus.backend.tomcat.error-report.showReport:false}")
     private boolean showReport;
     @Value("${nexus.backend.tomcat.error-report.showServerInfo:false}")
     private boolean showServerInfo;
 
-    // Default Security constraint properties
-    @Value("${nexus.backend.tomcat.security.patterns:/actuator/*,/health/*,/nmt/*}")
+    // Security constraint properties
+    @Value("${nexus.backend.tomcat.security.patterns:/actuator/*,/nmt/*}")
     private String[] securityPatterns;
+    @Value("${nexus.backend.tomcat.security.patterns:/health/*}")
+    private String[] healthPatterns;
     @Value("${nexus.backend.tomcat.security.admin.acl.enable:true}")
     private boolean adminAclEnabled;
     @Value("${nexus.backend.tomcat.security.users.file:}")
     private String customUsersFilePath;
-    @Value("${nexus.backend.tomcat.security.role:admin-gui}")
-    private String securityRole;
+    @Value("#{'${nexus.backend.tomcat.security.role:admin-gui}'.split(',')}")
+    private List<String> securitiesRoles;
+    @Value("#{'${nexus.backend.tomcat.security.role:admin-health}'.split(',')}")
+    private List<String> healthRoles;
 
-    // Default Connector properties (HTTP)
+    // Connector properties (HTTP)
     @Value("${nexus.backend.tomcat.connector.accept-count:100}")
     private int acceptCount;
     @Value("${nexus.backend.tomcat.connector.connection-timeout:20000}")
@@ -171,25 +133,61 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
 
     @Override
     public void customize(TomcatServletWebServerFactory factory) {
-        // Config external path Web.xml
-        if (externalWebXmlPath != null && !externalWebXmlPath.isEmpty()) {
-            File webXmlFile = new File(externalWebXmlPath);
 
-            if (webXmlFile.exists()) {
-                factory.addContextCustomizers(new TomcatContextCustomizer() {
-                    @Override
-                    public void customize(Context context) {
-                        logger.info("Force Embedded Tomcat to read external web.xml : {}", webXmlFile.getAbsolutePath());
-                        // Tomcat's magic method to override the default WEB-INF/web.xml
-                        context.setAltDDName(webXmlFile.getAbsolutePath());
+        // Manage web.xml file (External ou Embedded)
+        factory.addContextCustomizers(new TomcatContextCustomizer() {
+            @Override
+            public void customize(Context context) {
+                try {
+                    File webXmlFile = null;
+
+                    // Priority external file check
+                    if (externalWebXmlPath != null && !externalWebXmlPath.isEmpty()) {
+                        File extFile = new File(externalWebXmlPath);
+                        if (extFile.exists()) {
+                            webXmlFile = extFile;
+                        } else {
+                            logger.warn("The external web.xml file was not found : {}", extFile.getAbsolutePath());
+                        }
                     }
-                });
-            } else {
-                logger.warn("The external web.xml file was not found.: {}", webXmlFile.getAbsolutePath());
-            }
-        }
 
-        // Config Http connector by default
+                    // Fallback on web.xml embedded in the classpath
+                    if (webXmlFile == null) {
+                        String[] candidatePaths = {
+                            "META-INF/resources/WEB-INF/web.xml", // standard Spring Boot for a webapp
+                            "WEB-INF/web.xml",
+                            "web.xml"                             // Fallback include root
+                        };
+
+                        for (String path : candidatePaths) {
+                            ClassPathResource resource = new ClassPathResource(path);
+                            if (resource.exists()) {
+                                logger.info("Found embedded web.xml at: {}", path);
+                                webXmlFile = File.createTempFile("web-embedded-", ".xml");
+                                webXmlFile.deleteOnExit();
+                                try (InputStream inputStream = resource.getInputStream()) {
+                                    Files.copy(inputStream, webXmlFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    // Tomcat context assignment
+                    if (webXmlFile != null && webXmlFile.exists()) {
+                        logger.info("Force Embedded Tomcat to use web.xml: {}", webXmlFile.getAbsolutePath());
+                        context.setAltDDName(webXmlFile.getAbsolutePath());
+                    } else {
+                        logger.warn("No web.xml found in common locations. Relying on Spring Boot programmatic constraints.");
+                    }
+
+                } catch (IOException e) {
+                    logger.error("Error during web.xml extraction", e);
+                }
+            }
+        });
+
+        // Default HTTP Connector Configuration
         factory.addConnectorCustomizers(connector -> {
             connector.setProperty("acceptCount", String.valueOf(acceptCount));
             connector.setProperty("connectionTimeout", String.valueOf(connectionTimeout));
@@ -210,7 +208,7 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
                     rejectIllegalHeader, serverHeader, compression);
         });
 
-        // Health Check Tomcat for Load Balancer!
+        // Valves (HealthCheck, AccessLog, ErrorReport)
         if (healthCheckEnabled) {
             HealthCheckValve healthCheckValve = new HealthCheckValve();
             healthCheckValve.setPath(healthCheckPath);
@@ -221,8 +219,7 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
         // Access logs
         if (accessLogEnabled) {
             logger.info("Starting Tomcat Catalina AccessLog Valve");
-            AccessLogValve accessLogValve = getAccessLogValve(); // getExtendedAccessLogValve();
-            factory.addEngineValves(accessLogValve);
+            factory.addEngineValves(getAccessLogValve());
         } else {
             logger.debug("Tomcat AccessLog Valve is disabled");
         }
@@ -234,88 +231,122 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
         factory.addEngineValves(errorReportValve); // GLOBAL!
         logger.info("Starting Tomcat Catalina ErrorReport Valve: showReport {} - ShowServerInfo {}", showReport, showServerInfo);
 
-        // Configuration ACL / Security constraint
+
+        // Configuration ACL / Security constraint & tomcat-users.xml
         if (adminAclEnabled) {
-            logger.info("Configuring Tomcat Security Constraint Pattern path");
+            logger.info("Configuring Tomcat Security Constraint and Realm");
+
             factory.addContextCustomizers(context -> {
-                MemoryRealm realm = new MemoryRealm();
+                MemoryRealm memoryRealm = new MemoryRealm();
                 File userConfigFile = null;
 
                 try {
                     // specific path
                     if (customUsersFilePath != null && !customUsersFilePath.isEmpty()) {
                         userConfigFile = new File(customUsersFilePath);
+                    } else {
+                        logger.warn("The external tomcat-users.xml is not configured");
                     }
 
                     // auto-detect catalina.base
                     if ((userConfigFile == null || !userConfigFile.exists()) && System.getProperty("catalina.base") != null) {
                         File candidate = new File(System.getProperty("catalina.base"), "conf/tomcat-users.xml");
-                        if (candidate.exists()) {
-                            userConfigFile = candidate;
-                        }
+                        if (candidate.exists()) userConfigFile = candidate;
                     }
+
                     // auto-detect catalina.home
                     if ((userConfigFile == null || !userConfigFile.exists()) && System.getProperty("catalina.home") != null) {
                         File candidate = new File(System.getProperty("catalina.home"), "conf/tomcat-users.xml");
-                        if (candidate.exists()) {
-                            userConfigFile = candidate;
-                        }
+                        if (candidate.exists()) userConfigFile = candidate;
                     }
 
-                    // Application or Fallback Classpath
+                    // Application or Fallback Classpath (Embedded)
                     if (userConfigFile != null && userConfigFile.exists()) {
                         logger.info("Loading tomcat-users.xml from path {}", userConfigFile.getAbsolutePath());
-                        realm.setPathname(userConfigFile.getAbsolutePath());
+                        memoryRealm.setPathname(userConfigFile.getAbsolutePath());
                     } else {
                         // File embedded src/main/resources
                         logger.info("Loading embedded tomcat-users.xml from classpath");
                         ClassPathResource resource = new ClassPathResource("tomcat-users.xml");
 
                         if (resource.exists()) {
-                            userConfigFile = File.createTempFile("tomcat-users-embedded", ".xml");
+                            userConfigFile = File.createTempFile("tomcat-users-embedded-", ".xml");
                             userConfigFile.deleteOnExit();
 
                             try (InputStream inputStream = resource.getInputStream()) {
                                 Files.copy(inputStream, userConfigFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                             }
-                            realm.setPathname(userConfigFile.getAbsolutePath()); // WARN set Pathname!
+                            memoryRealm.setPathname(userConfigFile.getAbsolutePath());
                             logger.info("Embedded tomcat-users.xml extracted to: {}", userConfigFile.getAbsolutePath());
                         } else {
                             logger.error("File tomcat-users.xml not found in classpath!");
                         }
                     }
-
                 } catch (IOException e) {
-                    logger.error("Failed to load tomcat-users.xml configuration", e);
+                    logger.error("Failed to load or extract tomcat-users.xml configuration", e);
                 }
 
-                context.setRealm(realm);
+                // Encapsulate in a LockOutRealm (Protection Brute Force)
+                LockOutRealm lockOutRealm = new LockOutRealm();
+                lockOutRealm.addRealm(memoryRealm);
+                lockOutRealm.setFailureCount(5); // 5 failed max
+                lockOutRealm.setLockOutTime(300); // block 300s
 
-                SecurityConstraint securityConstraint = new SecurityConstraint();
-                securityConstraint.setUserConstraint("NONE");
-                securityConstraint.setDisplayName("Admin Access Constraint");
-                securityConstraint.setAuthConstraint(true);
+                // Assign LockOutRealm
+                context.setRealm(lockOutRealm);
 
-                SecurityCollection collection = new SecurityCollection();
+                // Programmatic Constraints (Only if no web.xml is found)
+                if (context.getAltDDName() == null) {
+                    SecurityConstraint securityConstraint = new SecurityConstraint();
+                    securityConstraint.setUserConstraint("NONE");
+                    securityConstraint.setDisplayName("Nexus Admin Access Constraint");
+                    securityConstraint.setAuthConstraint(true);
+                    logger.info("Create security Constraint : {}", securityConstraint.getDisplayName());
 
-                if (securityPatterns != null) {
+                    SecurityCollection collection = new SecurityCollection();
                     for (String p : securityPatterns) {
-                        if (!p.trim().isEmpty()) {
-                            collection.addPattern(p.trim());
-                            logger.info("- Constraint Pattern {}", p.trim());
-                        }
+                        collection.addPattern(p.trim());
+                        logger.info("- Path security : {}", p.trim());
                     }
+                    securityConstraint.addCollection(collection);
+
+                    for (String securityRole : securitiesRoles) {
+                        securityConstraint.addAuthRole(securityRole);
+                        context.addSecurityRole(securityRole);
+                        logger.info("- Role authority : {}", securityRole);
+                    }
+                    context.addConstraint(securityConstraint);
+
+                    SecurityConstraint securityConstraintHealth = new SecurityConstraint();
+                    securityConstraintHealth.setUserConstraint("NONE");
+                    securityConstraintHealth.setDisplayName("Nexus health Access Constraint");
+                    securityConstraintHealth.setAuthConstraint(true);
+                    logger.info("Create security Constraint : {}", securityConstraintHealth.getDisplayName());
+
+                    SecurityCollection collectionHealth = new SecurityCollection();
+                    for (String p : healthPatterns) {
+                        collectionHealth.addPattern(p.trim());
+                        logger.info("- Path security : {}", p.trim());
+                    }
+                    securityConstraintHealth.addCollection(collectionHealth);
+
+                    for (String securityRole : healthRoles) {
+                        securityConstraintHealth.addAuthRole(securityRole);
+                        context.addSecurityRole(securityRole);
+                        logger.info("- Role authority : {}", securityRole);
+                    }
+                    // add also admin
+                    for (String securityRole : securitiesRoles) {
+                        securityConstraint.addAuthRole(securityRole);
+                        logger.info("- Role authority : {}", securityRole);
+                    }
+                    context.addConstraint(securityConstraintHealth);
+                    logger.info("Programmatic Security Constraints applied (No web.xml found).");
                 }
-
-                securityConstraint.addCollection(collection);
-                securityConstraint.addAuthRole(securityRole); // Utilisation de la variable
-
-                context.addConstraint(securityConstraint);
-                context.addSecurityRole(securityRole);
 
                 // Authentication config method (Browser Pop-up)
                 LoginConfig loginConfig = new LoginConfig();
-                loginConfig.setAuthMethod("BASIC"); // ou "DIGEST", "FORM"
+                loginConfig.setAuthMethod("BASIC");
                 loginConfig.setRealmName("Nexus Backend Realm");
                 context.setLoginConfig(loginConfig);
 
@@ -341,20 +372,4 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
         return accessLogValve;
     }
 
-    /* WARN Display pattern buggy !?
-    private ExtendedAccessLogValve getExtendedAccessLogValve() {
-        ExtendedAccessLogValve accessLogValve = new ExtendedAccessLogValve();
-        accessLogValve.setDirectory(directory);
-        accessLogValve.setSuffix(suffix);
-        accessLogValve.setPrefix(prefix);
-        accessLogValve.setBuffered(false);
-        accessLogValve.setCheckExists(checkExists);
-        accessLogValve.setPattern(pattern);
-        accessLogValve.setEncoding(encoding);
-        accessLogValve.setAsyncSupported(asyncSupported);
-        accessLogValve.setRenameOnRotate(renameOnRotate);
-        accessLogValve.setThrowOnFailure(throwOnFailure);
-        accessLogValve.setMaxDays(maxDays);
-        return accessLogValve;
-    }*/
 }
