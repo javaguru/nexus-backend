@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
          version="4.0">
 
-    <security-role>
+    <!--<security-role>
         <role-name>admin-gui</role-name>
     </security-role>
 
@@ -14,7 +14,7 @@
             <web-resource-name>Protected Admin Area</web-resource-name>
             <url-pattern>/actuator/*</url-pattern>
             <url-pattern>/nmt/*</url-pattern>
-            <!-- <http-method> -->
+            &lt;!&ndash; <http-method> &ndash;&gt;
         </web-resource-collection>
 
         <auth-constraint>
@@ -22,8 +22,8 @@
         </auth-constraint>
 
         <user-data-constraint>
-            <!-- NONE = HTTP or HTTPS allowed -->
-            <!-- CONFIDENTIAL = Force redirection to HTTPS -->
+            &lt;!&ndash; NONE = HTTP or HTTPS allowed &ndash;&gt;
+            &lt;!&ndash; CONFIDENTIAL = Force redirection to HTTPS &ndash;&gt;
             <transport-guarantee>NONE</transport-guarantee>
         </user-data-constraint>
     </security-constraint>
@@ -46,11 +46,11 @@
         </user-data-constraint>
     </security-constraint>
 
-    <!-- LoginConfig -->
+    &lt;!&ndash; LoginConfig &ndash;&gt;
     <login-config>
         <auth-method>BASIC</auth-method>
-        <!-- Not use anymore by Chrome, Edge, Firefox cause phishing attacks  -->
+        &lt;!&ndash; Not use anymore by Chrome, Edge, Firefox cause phishing attacks  &ndash;&gt;
         <realm-name>Nexus Backend Realm</realm-name>
-    </login-config>
+    </login-config>-->
 
 </web-app>

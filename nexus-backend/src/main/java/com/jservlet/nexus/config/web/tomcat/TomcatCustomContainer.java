@@ -56,7 +56,7 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
 
     private final static Logger logger = LoggerFactory.getLogger(TomcatCustomContainer.class);
 
-    @Value("${nexus.backend.tomcat.embedded.webxml.path:}")
+    @Value("${nexus.backend.tomcat.embedded.webxml.file:}")
     private String externalWebXmlPath;
 
     @Value("${nexus.backend.tomcat.accesslog.valve.enable:false}")
@@ -94,18 +94,18 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     @Value("${nexus.backend.tomcat.error-report.showServerInfo:false}")
     private boolean showServerInfo;
 
-    // Security constraint properties
+    // Security constraints properties
     @Value("${nexus.backend.tomcat.security.patterns:/actuator/*,/nmt/*}")
     private String[] securityPatterns;
-    @Value("${nexus.backend.tomcat.security.patterns:/health/*}")
+    @Value("${nexus.backend.tomcat.security.health.patterns:/health/*}")
     private String[] healthPatterns;
     @Value("${nexus.backend.tomcat.security.admin.acl.enable:true}")
     private boolean adminAclEnabled;
     @Value("${nexus.backend.tomcat.security.users.file:}")
     private String customUsersFilePath;
-    @Value("#{'${nexus.backend.tomcat.security.role:admin-gui}'.split(',')}")
+    @Value("#{'${nexus.backend.tomcat.security.gui.roles:admin-gui}'.split(',')}")
     private List<String> securitiesRoles;
-    @Value("#{'${nexus.backend.tomcat.security.role:admin-health}'.split(',')}")
+    @Value("#{'${nexus.backend.tomcat.security.health.roles:admin-health,admin-gui}'.split(',')}")
     private List<String> healthRoles;
 
     // Connector properties (HTTP)
@@ -168,6 +168,31 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
                                 try (InputStream inputStream = resource.getInputStream()) {
                                     Files.copy(inputStream, webXmlFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                                 }
+                                // Default HTTP Connector Configuration
+                                factory.addConnectorCustomizers(connector -> {
+                                    connector.setProperty("acceptCount", String.valueOf(acceptCount));
+                                    connector.setProperty("connectionTimeout", String.valueOf(connectionTimeout));
+                                    connector.setProperty("maxPostSize", String.valueOf(maxPostSize));
+                                    connector.setProperty("disableUploadTimeout", String.valueOf(disableUploadTimeout));
+
+                                    // Compression, encoding
+                                    connector.setProperty("compression", compression);
+                                    connector.setProperty("compressableMimeType", compressableMimeType);
+                                    connector.setURIEncoding(uriEncoding);
+
+                                    // Security and Headers
+                                    connector.setProperty("maxHttpHeaderSize", String.valueOf(maxHttpHeaderSize));
+                                    connector.setProperty("rejectIllegalHeader", String.valueOf(rejectIllegalHeader));
+                                    connector.setProperty("server", serverHeader);
+
+                                    logger.info("Configured Default HTTP Connector: acceptCount={}, connectionTimeout={}, maxPostSize={}, disableUploadTimeout={}," +
+                                                    "compression={},  compressableMimeType={}, uriEncoding={}," +
+                                                    "maxHttpHeaderSize={}, rejectIllegalHeader={}, serverHeader={}",
+                                            acceptCount, connectionTimeout, maxPostSize, disableUploadTimeout,
+                                            compression, compressableMimeType, uriEncoding,
+                                            maxHttpHeaderSize, rejectIllegalHeader, serverHeader
+                                    );
+                                });
                                 break;
                             }
                         }
@@ -185,27 +210,6 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
                     logger.error("Error during web.xml extraction", e);
                 }
             }
-        });
-
-        // Default HTTP Connector Configuration
-        factory.addConnectorCustomizers(connector -> {
-            connector.setProperty("acceptCount", String.valueOf(acceptCount));
-            connector.setProperty("connectionTimeout", String.valueOf(connectionTimeout));
-            connector.setProperty("maxPostSize", String.valueOf(maxPostSize));
-            connector.setProperty("disableUploadTimeout", String.valueOf(disableUploadTimeout));
-
-            // Compression, encoding
-            connector.setProperty("compression", compression);
-            connector.setProperty("compressableMimeType", compressableMimeType);
-            connector.setURIEncoding(uriEncoding);
-
-            // Security and Headers
-            connector.setProperty("maxHttpHeaderSize", String.valueOf(maxHttpHeaderSize));
-            connector.setProperty("rejectIllegalHeader", String.valueOf(rejectIllegalHeader));
-            connector.setProperty("server", serverHeader);
-
-            logger.info("Configured Default HTTP Connector: rejectIllegalHeader={}, serverHeader={}, compression={}",
-                    rejectIllegalHeader, serverHeader, compression);
         });
 
         // Valves (HealthCheck, AccessLog, ErrorReport)
@@ -232,59 +236,60 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
         logger.info("Starting Tomcat Catalina ErrorReport Valve: showReport {} - ShowServerInfo {}", showReport, showServerInfo);
 
 
-        // Configuration ACL / Security constraint & tomcat-users.xml
-        if (adminAclEnabled) {
-            logger.info("Configuring Tomcat Security Constraint and Realm");
+        // Configuration ACL / Security constraint web.xml and tomcat-users.xml
+        factory.addContextCustomizers(context -> {
+            MemoryRealm memoryRealm = new MemoryRealm();
+            File userConfigFile = null;
 
-            factory.addContextCustomizers(context -> {
-                MemoryRealm memoryRealm = new MemoryRealm();
-                File userConfigFile = null;
-
-                try {
-                    // specific path
-                    if (customUsersFilePath != null && !customUsersFilePath.isEmpty()) {
-                        userConfigFile = new File(customUsersFilePath);
-                    } else {
-                        logger.warn("The external tomcat-users.xml is not configured");
-                    }
-
-                    // auto-detect catalina.base
-                    if ((userConfigFile == null || !userConfigFile.exists()) && System.getProperty("catalina.base") != null) {
-                        File candidate = new File(System.getProperty("catalina.base"), "conf/tomcat-users.xml");
-                        if (candidate.exists()) userConfigFile = candidate;
-                    }
-
-                    // auto-detect catalina.home
-                    if ((userConfigFile == null || !userConfigFile.exists()) && System.getProperty("catalina.home") != null) {
-                        File candidate = new File(System.getProperty("catalina.home"), "conf/tomcat-users.xml");
-                        if (candidate.exists()) userConfigFile = candidate;
-                    }
-
-                    // Application or Fallback Classpath (Embedded)
-                    if (userConfigFile != null && userConfigFile.exists()) {
-                        logger.info("Loading tomcat-users.xml from path {}", userConfigFile.getAbsolutePath());
-                        memoryRealm.setPathname(userConfigFile.getAbsolutePath());
-                    } else {
-                        // File embedded src/main/resources
-                        logger.info("Loading embedded tomcat-users.xml from classpath");
-                        ClassPathResource resource = new ClassPathResource("tomcat-users.xml");
-
-                        if (resource.exists()) {
-                            userConfigFile = File.createTempFile("tomcat-users-embedded-", ".xml");
-                            userConfigFile.deleteOnExit();
-
-                            try (InputStream inputStream = resource.getInputStream()) {
-                                Files.copy(inputStream, userConfigFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                            }
-                            memoryRealm.setPathname(userConfigFile.getAbsolutePath());
-                            logger.info("Embedded tomcat-users.xml extracted to: {}", userConfigFile.getAbsolutePath());
-                        } else {
-                            logger.error("File tomcat-users.xml not found in classpath!");
-                        }
-                    }
-                } catch (IOException e) {
-                    logger.error("Failed to load or extract tomcat-users.xml configuration", e);
+            try {
+                // specific path
+                if (customUsersFilePath != null && !customUsersFilePath.isEmpty()) {
+                    userConfigFile = new File(customUsersFilePath);
+                } else {
+                    logger.warn("The external tomcat-users.xml is not configured");
                 }
+
+                // auto-detect catalina.base
+                if ((userConfigFile == null || !userConfigFile.exists()) && System.getProperty("catalina.base") != null) {
+                    File candidate = new File(System.getProperty("catalina.base"), "conf/tomcat-users.xml");
+                    if (candidate.exists()) userConfigFile = candidate;
+                }
+
+                // auto-detect catalina.home
+                if ((userConfigFile == null || !userConfigFile.exists()) && System.getProperty("catalina.home") != null) {
+                    File candidate = new File(System.getProperty("catalina.home"), "conf/tomcat-users.xml");
+                    if (candidate.exists()) userConfigFile = candidate;
+                }
+
+                // Application or Fallback Classpath (Embedded)
+                if (userConfigFile != null && userConfigFile.exists()) {
+                    logger.info("Loading tomcat-users.xml from path {}", userConfigFile.getAbsolutePath());
+                    memoryRealm.setPathname(userConfigFile.getAbsolutePath());
+                } else {
+                    // File embedded src/main/resources
+                    logger.info("Loading embedded tomcat-users.xml from classpath");
+                    ClassPathResource resource = new ClassPathResource("tomcat-users.xml");
+
+                    if (resource.exists()) {
+                        userConfigFile = File.createTempFile("tomcat-users-embedded-", ".xml");
+                        userConfigFile.deleteOnExit();
+
+                        try (InputStream inputStream = resource.getInputStream()) {
+                            Files.copy(inputStream, userConfigFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        }
+                        memoryRealm.setPathname(userConfigFile.getAbsolutePath());
+                        logger.info("Embedded tomcat-users.xml extracted to: {}", userConfigFile.getAbsolutePath());
+                    } else {
+                        logger.error("File tomcat-users.xml not found in classpath!");
+                    }
+                }
+            } catch (IOException e) {
+                logger.error("Failed to load or extract tomcat-users.xml configuration", e);
+            }
+
+            // Programmatic Constraints (Only if no web.xml is found)
+            if (context.getAltDDName() == null) {
+                logger.info("Configuring Tomcat Security Constraint and Realm");
 
                 // Encapsulate in a LockOutRealm (Protection Brute Force)
                 LockOutRealm lockOutRealm = new LockOutRealm();
@@ -295,54 +300,46 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
                 // Assign LockOutRealm
                 context.setRealm(lockOutRealm);
 
-                // Programmatic Constraints (Only if no web.xml is found)
-                if (context.getAltDDName() == null) {
-                    SecurityConstraint securityConstraint = new SecurityConstraint();
-                    securityConstraint.setUserConstraint("NONE");
-                    securityConstraint.setDisplayName("Nexus Admin Access Constraint");
-                    securityConstraint.setAuthConstraint(true);
-                    logger.info("Create security Constraint : {}", securityConstraint.getDisplayName());
+                SecurityConstraint securityConstraint = new SecurityConstraint();
+                securityConstraint.setUserConstraint("NONE");
+                securityConstraint.setDisplayName("Nexus Admin Access Constraint");
+                securityConstraint.setAuthConstraint(true);
+                logger.info("Create Security Constraint : {}", securityConstraint.getDisplayName());
 
-                    SecurityCollection collection = new SecurityCollection();
-                    for (String p : securityPatterns) {
-                        collection.addPattern(p.trim());
-                        logger.info("- Path security : {}", p.trim());
-                    }
-                    securityConstraint.addCollection(collection);
-
-                    for (String securityRole : securitiesRoles) {
-                        securityConstraint.addAuthRole(securityRole);
-                        context.addSecurityRole(securityRole);
-                        logger.info("- Role authority : {}", securityRole);
-                    }
-                    context.addConstraint(securityConstraint);
-
-                    SecurityConstraint securityConstraintHealth = new SecurityConstraint();
-                    securityConstraintHealth.setUserConstraint("NONE");
-                    securityConstraintHealth.setDisplayName("Nexus health Access Constraint");
-                    securityConstraintHealth.setAuthConstraint(true);
-                    logger.info("Create security Constraint : {}", securityConstraintHealth.getDisplayName());
-
-                    SecurityCollection collectionHealth = new SecurityCollection();
-                    for (String p : healthPatterns) {
-                        collectionHealth.addPattern(p.trim());
-                        logger.info("- Path security : {}", p.trim());
-                    }
-                    securityConstraintHealth.addCollection(collectionHealth);
-
-                    for (String securityRole : healthRoles) {
-                        securityConstraintHealth.addAuthRole(securityRole);
-                        context.addSecurityRole(securityRole);
-                        logger.info("- Role authority : {}", securityRole);
-                    }
-                    // add also admin
-                    for (String securityRole : securitiesRoles) {
-                        securityConstraint.addAuthRole(securityRole);
-                        logger.info("- Role authority : {}", securityRole);
-                    }
-                    context.addConstraint(securityConstraintHealth);
-                    logger.info("Programmatic Security Constraints applied (No web.xml found).");
+                SecurityCollection collection = new SecurityCollection();
+                for (String p : securityPatterns) {
+                    collection.addPattern(p.trim());
+                    logger.info("- Path Security : {}", p.trim());
                 }
+                securityConstraint.addCollection(collection);
+
+                for (String securityRole : securitiesRoles) {
+                    securityConstraint.addAuthRole(securityRole);
+                    context.addSecurityRole(securityRole);
+                    logger.info("- Role Authority : {}", securityRole);
+                }
+                context.addConstraint(securityConstraint);
+
+                SecurityConstraint securityConstraintHealth = new SecurityConstraint();
+                securityConstraintHealth.setUserConstraint("NONE");
+                securityConstraintHealth.setDisplayName("Nexus Health Access Constraint");
+                securityConstraintHealth.setAuthConstraint(true);
+                logger.info("Create Security Constraint : {}", securityConstraintHealth.getDisplayName());
+
+                SecurityCollection collectionHealth = new SecurityCollection();
+                for (String p : healthPatterns) {
+                    collectionHealth.addPattern(p.trim());
+                    logger.info("- Path Security : {}", p.trim());
+                }
+                securityConstraintHealth.addCollection(collectionHealth);
+
+                for (String securityRole : healthRoles) {
+                    securityConstraintHealth.addAuthRole(securityRole);
+                    context.addSecurityRole(securityRole);
+                    logger.info("- Role Authority : {}", securityRole);
+                }
+                context.addConstraint(securityConstraintHealth);
+                logger.info("Programmatic Security Constraints applied (No web.xml found).");
 
                 // Authentication config method (Browser Pop-up)
                 LoginConfig loginConfig = new LoginConfig();
@@ -353,8 +350,8 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
                 // Inject now the basic Authentication
                 BasicAuthenticator basicAuthenticator = new BasicAuthenticator();
                 context.getPipeline().addValve(basicAuthenticator);
-            });
-        }
+            }
+        });
     }
 
     private AccessLogValve getAccessLogValve() {

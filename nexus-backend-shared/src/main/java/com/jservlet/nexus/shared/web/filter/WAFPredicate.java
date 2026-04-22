@@ -57,7 +57,8 @@ public class WAFPredicate {
 
     // Configurable length limits for various request components
     private int parameterNamesLength = 255;
-    private int parameterValuesLength = 30000; // WARN Max 30.000 or the test will throw a RequestRejectedException!
+    // Max 1_000_000 / 1Mo - The test will throw a RequestRejectedException!
+    private int parameterValuesLength = 1_000_000;
     private int headerNamesLength = 255;
     private int headerValuesLength = 6000;
     private int hostNamesLength = 255;
@@ -100,9 +101,9 @@ public class WAFPredicate {
         @Override
         public boolean test(String value) {
             if (value == null) return true;
-            // Protect against ReDos
-            if (value.length() > 30000)
-                throw new RequestRejectedException("WAF Predicate cannot have more than 30.000 characters.");
+            /*// Protect against ReDos
+            if (value.length() > 1_000_000)
+                throw new RequestRejectedException("WAF Predicate cannot have more than 1_000_000 characters.");*/
             boolean isSafe = !isWAFPattern(value, patterns);
             if (!isSafe) {
                 logger.warn("WAF Blocked by rule [{}]. Value snippet: {}", ruleName, value.substring(0, Math.min(value.length(), 200)));

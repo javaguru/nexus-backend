@@ -387,13 +387,15 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
 **Settings keys settings.properties:** *nexus.backend.client.ssl.mtls.enable* at **true** for activated the mTLS connection
 
-| **Keys**                                       | **Default value**                     | **Descriptions**                          |
-|------------------------------------------------|:--------------------------------------|:------------------------------------------|
-| nexus.backend.tomcat.security.admin.acl.enable | **true**                              | Enable ACL                                |   
-| nexus.backend.tomcat.security.role             | **admin-gui**                         | Role Admin GUI                            |   
-| nexus.backend.tomcat.security.patterns         | /health/*,/actuator/*,/mnt/admin/**   | Pattern match paths                       |   
-| nexus.backend.tomcat.embedded.webxml.path      |                                       | /apps/apache-tomcat/conf/web.xml          |   
-| nexus.backend.tomcat.security.users.file       |                                       | /apps/apache-tomcat/conf/tomcat-users.xml |   
+| **Keys**                                      | **Default value**         | **Descriptions**                          |
+|-----------------------------------------------|:--------------------------|:------------------------------------------|
+|                                               | **true**                  | Default ACLs Embedded (no web.xml found)  |   
+| nexus.backend.tomcat.security.gui.roles       | **admin-gui**             | Roles Admin GUI                           |   
+| nexus.backend.tomcat.security.patterns        | /actuator/*,/mnt/admin/** | Pattern match paths actuator              |   
+| nexus.backend.tomcat.security.health.roles    | **admin-health**          | Roles Health status                       |   
+| nexus.backend.tomcat.security.health.patterns | /health/*                 | Pattern match paths                       |   
+| nexus.backend.tomcat.embedded.webxml.file     |                           | /apps/apache-tomcat/conf/web.xml          |   
+| nexus.backend.tomcat.security.users.file      |                           | /apps/apache-tomcat/conf/tomcat-users.xml |   
 
 
 
@@ -475,11 +477,11 @@ Maven clean and install nexus-backend:
 
 with Java:
 
-`java -Dspring.profiles.active=withTomcat -Denvironment=development -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+`java -Denvironment=development -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
 
 with Java and Development environment:
 
-`java -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+`java -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
 
 with Maven change dir to /nexus-backend:
 
@@ -487,9 +489,9 @@ with Maven change dir to /nexus-backend:
 
 And run Spring-boot (-XX:NativeMemoryTracking=summary for monitored Native Memory Tracking for ONNX Neural Network):
 
-`mvn spring-boot:run -P withTomcat -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=withTomcat -Denvironment=development -XX:NativeMemoryTracking=summary"`
+`mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Denvironment=development -XX:NativeMemoryTracking=summary"`
 
-### 📡 The Configuration
+### 🚀 The Nexus-Backend Configuration
 
 By default, it uses `8082` port and the Servlet Context `/nexus-backend`.
 
@@ -502,6 +504,79 @@ The Config keys and values can be modified or override by external path files, h
  * file `{user.home}/conf-global/config.properties`
  * file `{user.home}/conf/config.properties`
  * file `{user.home}/cfg/nexus-backend/config.properties`
+
+
+### 📡 The Default Tomcat 10.xx Configuration
+
+**Default Custom Tomcat Container**
+
+**Override the config for Embedded Tomcat 10.xx**
+
+- External Files config **web.xml** and **tomcat-users.xml**:
+
+```
+# External config web.xml and tomcat-users
+nexus.backend.tomcat.security.users.file=/apps/apache-tomcat-10.1.54/conf/tomcat-users.xml
+nexus.backend.tomcat.embedded.webxml.path=/apps/apache-tomcat-10.1.54/conf/web.xml
+```
+
+**Load Tomcat Users from Catalina Base Config or Catalina Home Config**
+
+- catalina.base + "conf/tomcat-users.xml"
+- catalina.home + "conf/tomcat-users.xml"
+
+**Load Embedded Tomcat Users from classpath**
+
+- Default Fallback Class PathResource: tomcat-users.xml
+
+**Default Tomcat Security Constraints and Realm Users**
+
+- Memory Realm Encapsulate in a LockOutRealm (**Protection Brute Force**)
+  - FailureCount: 5 failed max
+  - Realm LockOutTime: block 300s
+
+- Default ACL (**Access Restrict List**):
+  - Authorization Method: "BASIC"
+  - Realm Name: "Nexus Backend Realm"
+
+- Default Users Name:
+  - **admin-gui**
+  - **admin-health**
+
+- Default Name Access Constraint, Allowed Authority and Security Path:
+
+```
+Create Security Constraint : Nexus Admin Access Constraint
+- Path Security : /actuator/*
+- Path Security : /nmt/*
+- Role Authority : admin-gui
+Create Security Constraint : Nexus Health Access Constraint
+- Path Security : /health/*
+- Role Authority : admin-health
+- Role Authority : admin-gui
+```
+
+- Default HTTP Connector:
+  - acceptCount=100, 
+  - connectionTimeout=20000, 
+  - maxPostSize=10485760, 
+  - disableUploadTimeout=true,
+  - compression=on,  
+  - compressableMimeType=text/html,text/xml,text/plain,text/javascript,text/css,application/json, 
+  - uriEncoding=UTF-8,
+  - maxHttpHeaderSize=10240, 
+  - rejectIllegalHeader=true, 
+  - serverHeader=git di nexus a
+
+**Default Catalina ErrorReport Valve**
+
+- showReport at false 
+- ShowServerInfo at false
+
+**Default Catalina HealthCheck Valve**
+
+- Path: /health
+
 
 ### 💹 Swagger Tests environment
 
@@ -634,7 +709,7 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 ## 🗒️ Last News
 * Last version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService ResourceLoader, Build WAR external/internal.
 * Version **2.0.0**, released at 18/04/2026 Migration Jdk 21, Spring 6, SpringBoot 3.3.0: Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX.
-* Version **1.0.26**, Last release Spring 5 - SpringBoot 2.7.5 released at 18/04/2026, Fix external Tomcat Initializer.
+* Version **1.0.26**, Last release in Spring 5 - SpringBoot 2.7.5. Released at 18/04/2026, Fix external Tomcat Initializer.
 * Version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent.
 * [...]
 * Initial release **1.0.0** at 03/06/2021.

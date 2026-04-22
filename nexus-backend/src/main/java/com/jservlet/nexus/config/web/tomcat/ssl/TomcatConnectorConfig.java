@@ -37,8 +37,6 @@ import org.springframework.context.annotation.Profile;
  * <br>
  * And Config Embedded Tomcat Connector AJP on the port 8009 with redirection on 8443
  * <br>
- * Only a Spring profile 'withTomcat' (with a Tomcat Embedded by SpringBoot!)
- * <br>
  * <pre>
  *      &lt;Connector SSLEnabled="true" acceptCount="100" clientAuth="false"
  *                disableUploadTimeout="true" enableLookups="false" maxThreads="25"

@@ -1,21 +1,3 @@
-/*
- * Copyright (C) 2001-2026 JServlet.com Franck Andriano.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/gpl-3.0.html>.
- */
-
 package com.jservlet.nexus.shared.service.security.ml;
 
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
@@ -34,8 +16,7 @@ import java.nio.LongBuffer;
 import java.util.Map;
 
 /**
- * Analyzer Request Service with Matrix Batching and Dynamic Context-Preserving Chunking.<br>
- * The DistilBERT Model with HuggingFace Tokenizer in an ONNX Neural Network Environment.
+ * Analyzer Request Service with Sequential Sliding Window and ONNX Tensor Padding.
  *
  * @since version 2.0.0
  */
@@ -49,16 +30,28 @@ public class RequestAnalyzerService {
 
     @Value("${nexus.api.backend.analyzer.onnx.maxLength:512}")
     private String maxLength;
-    @Value("${nexus.api.backend.analyzer.onnx.truncation:false}") // Must be false so we handle chunking ourselves
+
+    // Must be false so we handle chunking manually
+    @Value("${nexus.api.backend.analyzer.onnx.truncation:false}")
     private boolean truncation;
 
     @Value("${nexus.api.backend.analyzer.onnx.path.model:classpath:model/model.onnx}")
     private String pathModel;
+
     @Value("${nexus.api.backend.analyzer.onnx.path.tokenizer:classpath:model/tokenizer.json}")
     private String pathTokenizer;
 
+    // 4-6 Cpu max recommended
     @Value("${nexus.api.backend.analyzer.onnx.cpu:4}")
-    private int cpu;
+    private int CPU;
+
+    // Strict limits to prevent DoS via massive payloads
+    @Value("${nexus.api.backend.analyzer.onnx.max-chunks-to-scan:15}")
+    private int MAX_CHUNKS_TO_SCAN;
+
+    // Calibrated threshold
+    @Value("${nexus.api.backend.analyzer.onnx.attack.threshold:0.65}")
+    private double THRESHOLD;
 
     private final ResourceLoader resourceLoader;
 
@@ -69,7 +62,7 @@ public class RequestAnalyzerService {
     @PostConstruct
     public void init() throws Exception {
         Map<String, String> optionsHuggingFace = Map.of(
-                "maxLength", maxLength, // input token length maw (!?)
+                "maxLength", maxLength,
                 "truncation", String.valueOf(truncation)
         );
         logger.info("Starting RequestAnalyzer Neural Network AI: {}", optionsHuggingFace);
@@ -77,7 +70,7 @@ public class RequestAnalyzerService {
         // Check Resource tokenizer
         Resource tokenizerResource = resourceLoader.getResource(pathTokenizer);
         if (!tokenizerResource.exists()) {
-            throw new RuntimeException("Tokenizer file not found : " + pathTokenizer);
+            throw new RuntimeException("Tokenizer file not found: " + pathTokenizer);
         }
 
         // Initialize Tokenizer
@@ -91,15 +84,14 @@ public class RequestAnalyzerService {
         OrtSession.SessionOptions optionsSession = new OrtSession.SessionOptions();
         // Maximize CPU performance for ONNX
         optionsSession.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT);
-        // Avoid thread contention with Tomcat (1 or 2 threads per inference is usually best for high-throughput web apps)
-        optionsSession.setIntraOpNumThreads(cpu);
-        // Stealth mode, no internal timing
+        // Avoid thread contention with Tomcat
+        optionsSession.setIntraOpNumThreads(CPU);
         optionsSession.disableProfiling();
 
         // Check Resource Model
         Resource modelResource = resourceLoader.getResource(pathModel);
         if (!modelResource.exists()) {
-            throw new RuntimeException("Model file not found : " + pathModel);
+            throw new RuntimeException("Model file not found: " + pathModel);
         }
 
         // Load the model
@@ -111,85 +103,46 @@ public class RequestAnalyzerService {
     }
 
     /**
-     * Analyze content text with Matrix Batching and Dynamic Context-Preserving Chunking.
+     * Analyze content text with a pure Sequential Sliding Window.
+     * Exact tensor sizing (No forced 512 padding) and sequential execution.
      */
     public boolean isMalicious(String requestPayload) throws Exception {
         long startTime = System.currentTimeMillis();
 
-        // Tokenize initial
+        // Transform entire text to Tokens natively
         Encoding encoding = tokenizer.encode(requestPayload);
         long[] allInputIds = encoding.getIds();
         long[] allAttentionMask = encoding.getAttentionMask();
 
         int totalTokens = allInputIds.length;
-        int MAX_TOKENS = 512;
+        int MAX_TOKENS = Integer.parseInt(maxLength); // Mandatory 512!
+        int STRIDE = 450; // Stride size to create overlap (0-512, 450-962, 900-1412, etc...)
 
-        // Dynamic prefix detection (HTTP context)
-        int bodySeparatorIndex = requestPayload.indexOf("\nBODY:\n");
-        int prefixTokensSize = Math.min(64, totalTokens);
+        int chunksProcessed = 0; // Counter Chunks!
+        int numChunks = (int) Math.ceil((double) totalTokens / STRIDE); // Count all Stride Chunks!
 
-        if (bodySeparatorIndex != -1) {
-            String prefixStr = requestPayload.substring(0, bodySeparatorIndex + 7);
-            Encoding prefixEncoding = tokenizer.encode(prefixStr);
-            prefixTokensSize = Math.min(prefixEncoding.getIds().length, totalTokens);
-            prefixTokensSize = Math.min(prefixTokensSize, 200);
-        }
+        // Pure Chunking with Stride (Overlapping windows over raw tokens)
+        for (int start = 0; start < totalTokens; start += STRIDE) {
 
-        // OPTIMIZED sliding window calculation
-        int maxBodyTokensPerChunk = MAX_TOKENS - prefixTokensSize - 1;
-
-        // Fixed overlap of 40 tokens instead of 50% (We're progressing much faster!)
-        int overlap = 40;
-        int stride = Math.max(1, maxBodyTokensPerChunk - overlap);
-
-        int numChunks = 1;
-        if (totalTokens > MAX_TOKENS) {
-            int bodyTokensToProcess = totalTokens - prefixTokensSize;
-            numChunks = (int) Math.ceil((double) bodyTokensToProcess / stride);
-        }
-
-        // Strict scan limit (CPU protection)
-        // Scanning 3 chunks (~1500 tokens) is the sweet spot between security and performance
-        int MAX_CHUNKS_TO_SCAN = 3;
-        int chunksToProcess = Math.min(numChunks, MAX_CHUNKS_TO_SCAN);
-
-        // SEQUENTIAL ASSESSMENT
-        for (int i = 0; i < chunksToProcess; i++) {
-
-            int bodyStart = prefixTokensSize + (i * stride);
-            bodyStart = Math.min(bodyStart, totalTokens);
-
-            int tokensRemaining = totalTokens - bodyStart;
-            int copyLength = Math.min(maxBodyTokensPerChunk, tokensRemaining);
-
-            int currentChunkLength;
-            if (totalTokens > MAX_TOKENS && copyLength > 0) {
-                currentChunkLength = prefixTokensSize + copyLength + 1; // +1 for the artificial [SEP]
-            } else {
-                currentChunkLength = totalTokens;
+            if (chunksProcessed >= MAX_CHUNKS_TO_SCAN) {
+                logger.warn("WAF AI reached maximum chunks limit ({}). Scan aborted early.", MAX_CHUNKS_TO_SCAN);
+                break;
             }
 
-            long[] chunkInputIds = new long[currentChunkLength];
-            long[] chunkAttentionMask = new long[currentChunkLength];
+            // Calculate the end of the current chunk (without exceeding total size)
+            int end = Math.min(start + MAX_TOKENS, totalTokens);
+            int currentChunkSize = end - start;
 
-            // Prefix Fill
-            System.arraycopy(allInputIds, 0, chunkInputIds, 0, prefixTokensSize);
-            System.arraycopy(allAttentionMask, 0, chunkAttentionMask, 0, prefixTokensSize);
+            // We only create the space that is strictly necessary (no forced padding of 512!)
+            long[] chunkInputIds = new long[currentChunkSize];
+            long[] chunkAttentionMask = new long[currentChunkSize];
 
-            // Body filling for this chunk
-            if (totalTokens > MAX_TOKENS && copyLength > 0) {
-                System.arraycopy(allInputIds, bodyStart, chunkInputIds, prefixTokensSize, copyLength);
-                System.arraycopy(allAttentionMask, bodyStart, chunkAttentionMask, prefixTokensSize, copyLength);
-                // Force the [SEP] token at the end
-                chunkInputIds[currentChunkLength - 1] = 102L;
-                chunkAttentionMask[currentChunkLength - 1] = 1L;
-            } else if (totalTokens <= MAX_TOKENS) {
-                System.arraycopy(allInputIds, prefixTokensSize, chunkInputIds, prefixTokensSize, totalTokens - prefixTokensSize);
-                System.arraycopy(allAttentionMask, prefixTokensSize, chunkAttentionMask, prefixTokensSize, totalTokens - prefixTokensSize);
-            }
+            // Extract subarrays for this chunk
+            System.arraycopy(allInputIds, start, chunkInputIds, 0, currentChunkSize);
+            System.arraycopy(allAttentionMask, start, chunkAttentionMask, 0, currentChunkSize);
 
-            // The tensor is sent individually (Size [1, X])
-            long[] shape = new long[]{1, currentChunkLength};
+            // Dynamic Shape: [1, 89] ou [1, 512], The CPU calculates the minimum!
+            long[] shape = new long[]{1, currentChunkSize};
 
             try (
                     OnnxTensor inputIdsTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(chunkInputIds), shape);
@@ -200,42 +153,55 @@ public class RequestAnalyzerService {
                         "attention_mask", attentionMaskTensor
                 );
 
+                // Execute the model for this specific chunk
                 try (OrtSession.Result results = session.run(inputs)) {
+
                     float[][] output = (float[][]) results.get(0).getValue();
 
-                    // The output matrix is [1][2] (1 chunk, 2 probabilities)
-                    float logitSafe = output[0][0];
-                    float logitMalicious = output[0][1];
-
-                    double expSafe = Math.exp(logitSafe);
-                    double expMalicious = Math.exp(logitMalicious);
+                    // Applying the SOFTMAX function (Conversion to Percentages)
+                    double expSafe = Math.exp(output[0][0]); // Raw Log Retrieval
+                    double expMalicious = Math.exp(output[0][1]);
                     double attackProbability = expMalicious / (expSafe + expMalicious);
 
+                    // Optional: Log to track the analysis of each chunk
                     if (logger.isDebugEnabled()) {
-                        logger.debug("WAF AI Score (Chunk {}/{}) - Safe: {}%, Attack: {}%",
-                                i + 1, numChunks,
+                        logger.debug("WAF AI Score (Chunk {}/{} - Tokens {}-{}) - Safe: {}%, Attack: {}%",
+                                chunksProcessed + 1, numChunks, start, end,
                                 String.format("%.2f", (1.0 - attackProbability) * 100),
                                 String.format("%.2f", attackProbability * 100));
                     }
 
-                    if (attackProbability > 0.65) {
+                    // Checking the calibrated threshold
+                    // 0.50 = Very strict WAF (blocks at the slightest doubt)
+                    // 0.65 = Balanced WAF (tolerates noise, blocks real attacks)
+                    // 0.85 = Permissive WAF (only blocks absolutely obvious threats)
+                    if (attackProbability > THRESHOLD) {
                         if (logger.isWarnEnabled()) {
-                            logger.warn("Attack detected in chunk {} !", i + 1);
+                            logger.warn("Attack detected in chunk {} (Tokens {}-{})!", chunksProcessed + 1, start, end);
                         }
                         if (logger.isDebugEnabled()) {
                             long endTime = System.currentTimeMillis();
-                            logger.debug("WAF Analysis Aborted early at chunk {}. Exec Time: {} ms", (i + 1), (endTime - startTime));
+                            logger.debug("WAF Analysis Execution Time ({} chunks): {} ms", chunksProcessed, (endTime - startTime));
                         }
                         return true;
                     }
                 }
             }
+
+            chunksProcessed++;
+
+            // Optimization: if this chunk reached the absolute end of the payload,
+            // no need to compute further overlapping chunks that would just be subsets.
+            if (end == totalTokens) {
+                break;
+            }
         }
 
         if (logger.isDebugEnabled()) {
             long endTime = System.currentTimeMillis();
-            logger.debug("WAF Analysis Execution Time ({} chunks): {} ms", numChunks, (endTime - startTime));
+            logger.debug("WAF Analysis Execution Time ({} chunks): {} ms", chunksProcessed, (endTime - startTime));
         }
+        // If all chunks have been analyzed and none exceeded the threshold, the request is safe.
         return false;
     }
 
