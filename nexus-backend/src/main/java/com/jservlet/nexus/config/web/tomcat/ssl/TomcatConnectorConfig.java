@@ -52,6 +52,7 @@ import org.springframework.context.annotation.Profile;
 
 @Configuration
 @ConditionalOnProperty(value = "nexus.backend.tomcat.connector.https.enable")
+@Profile("withTomcat") // Embedded!
 public class TomcatConnectorConfig {
 
     private final static Logger logger = LoggerFactory.getLogger(TomcatConnectorConfig.class);

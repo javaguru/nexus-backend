@@ -29,6 +29,26 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 
 **Tomcat Servlet Containers under Servlet version 6.x**
 
+### 🛸 Nexus-Backend Services functionalities implemented
+
+* Implements a **BackendService** Ability to request typed response Object class or ParameterizedTypeReference, requested a Rest-Api Backend Server.
+* Implements an **EntityBackend** JSON Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 from the Backend Server.
+* Implements a **WEB HttpFirewall** Filter protection against evasion, rejected any suspicious Requests Encoding and log IP address at fault
+* Implements a **WAF Filter** Predicate Patterns protection against evasion on the Http JSON BodyRequest, Headers, Keys, Parameters and log IP address at fault.
+* Implements a **Nano AI DistilBERT ONNX** Nexus AI WAF Engine detect malicious Http requests and log IP address at fault.
+* Implements a **AnalyzerRequest** Analyze content text with a pure Sequential Sliding Window.
+* Implements a **Native Memory Tracking Monitoring** NMT: System calls, Tracks the actual RAM footprint, allowing jcmd to generate reports.
+* Implements a **CORS Security Request** Filter, authorize request based on Origin Domains and Methods.
+* Implements a **Content Security Policy** Filter define your own policy rules CSP.
+* Implements a **RateLimit** Interceptor, allows 1000 requests per minutes and per-IP-address.
+* Implements a **Fingerprint** Each Http header Request generate a unique trackable Token APP-REQUEST-ID in the access logs.
+* Implements a **HttpMethodOverride** Filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override.
+* Implements a **ForwardedHeader** filter, set removeOnly at true by default, remove "Forwarded" and "X-Forwarded-*" headers.
+* Implements a **FormContent** filter, parses form data for Http PUT, PATCH, and DELETE requests and exposes it as Servlet request parameters.
+* Implements a **Compressing** filter Gzip compression for the Http Responses.
+* Implements a **CharacterEncoding** filter, UTF-8 default encoding for requests.
+
+
 **Examples forwarded requests and responses through the Nexus-Backend Service:**
 
 | REST Clients          | RestApi Nexus-Backend Service                      | Backend Server Services                         |
@@ -39,26 +59,73 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 
 ***An Ajax Single Page Application communicate through the Rest Controller ApiBackend and its BackendService to a RestApi Backend Server.***
 
+## 🛠️ Build Nexus-Backend
 
-### ⚙️ Ability to Secure all RestApi Request to a Backend Server
+### ✅ Build requirements
 
- * Implements a **BackendService**, ability to request typed response Object class or ParameterizedTypeReference, requested on all HTTP methods to a RestApi Backend Server.
- * Implements an **EntityBackend** JSON Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
- * Implements a **HttpFirewall** filter protection against evasion, rejected any suspicious Requests Encoding, and log IP address at fault
- * Implements a **WAF Filter Patterns** protection against evasion on the Http JSON BodyRequest, Headers, Keys, Parameters, and log IP address at fault.
- * Implements a **AI WAF Engine DistilBERT ONNX** detect miscellaneous Http requests, and log IP address at fault.
- * Implements a **AnalyzerRequest** with Matrix Batching and Dynamic Context-Preserving Chunking.
- * Implements a **Native Memory Tracking** Monitoring System calls, Tracks the actual RAM footprint, allowing jcmd to generate reports.
- * Implements a **CORS Security Request** filter, authorize request based on Origin Domains and Methods.
- * Implements a **Content Security Policy** filter, define your own policy rules CSP.
- * Implements a **RateLimit** interceptor, allows 1000 requests per minutes and per-IP-address.
- * Implements a **Fingerprint** for each Http header Request, generate a unique trackable Token APP-REQUEST-ID in the access logs.
- * Implements a **HttpMethod Override** filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override.
- * Implements a **Forwarded Header** filter, set removeOnly at true by default, remove "Forwarded" and "X-Forwarded-*" headers.
- * Implements a **FormContent** filter, parses form data for Http PUT, PATCH, and DELETE requests and exposes it as Servlet request parameters.
- * Implements a **Compressing** filter Gzip compression for the Http Responses.
- * Implements a **CharacterEncoding** filter, UTF-8 default encoding for requests.
+* **Java >= 21 (Virtual Threads)** [Java](https://jdk.java.net/archive/)
+* **SpringBoot 3.3.0** [SpringBoot](https://projects.spring.io/spring-boot/)
+* **Apache Tomcat 10.0.54 & Servlet 6.0.0 (Jakarta)** [Tomcat](https://tomcat.apache.org/download-10.cgi)
+* **Apache Maven >= 3.9.3** [Maven](https://maven.apache.org/download.cgi)
 
+### 🏭 Build WAR Tomcat 10.xx (Embedded or External Tomcat)
+
+Maven clean, compile, package or install:
+
+* `mvn clean compile`
+* `mvn clean package `
+* `mvn clean install`
+
+and look for the war at `target/nexus-backend-{version}.war`
+
+### 📋 Get the Javadoc
+
+`mvn javadoc:javadoc`
+
+### 🔥 Run SpringBoot App
+
+Prerequisites set the Jdk 21 as JAVA_HOME: set JAVA_HOME={Path_JDK}\jdk-21.0.1`
+
+Maven clean and package nexus-backend (also-make multi-module and skip Tests):
+
+`mvn clean package -pl nexus-backend -am -DskipTests`
+
+Maven clean and install nexus-backend:
+
+`mvn clean install`
+
+with Java, Embedded Tomcat and custom embedded Tomcat Container (Profile withTomcat) and NativeMemoryTracking:
+
+`java -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+
+with Java, Development environment, Embedded Tomcat and  custom embedded Tomcat Container, and NativeMemoryTracking:
+
+`java -Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+
+💡 Noted: Profile withTomcat activated a custom embedded Tomcat Container with Security Constraints (equivalent to a web.xml) and load a predefined embedded tomcat-user.xml
+I recommended you to externalized own tomcat-user.xml, see config
+
+with Maven, we need change dir to /nexus-backend (prerequisite compile the project!):
+
+`cd nexus-backend`
+
+And run Spring-boot (-XX:NativeMemoryTracking=summary for monitored Native Memory Tracking for ONNX Neural Network):
+
+`mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary"`
+
+### 🚀 The Nexus-Backend Configuration
+
+By default, it uses `8082` port and the Servlet Context `/nexus-backend`.
+
+The default SpringBoot config is in `/src/main/resources/application.properties` file.
+
+The default NexusBackend config in `/src/main/resources/settings.properties` file.
+
+The Config keys and values can be modified and override by external path files, here:
+
+* file `{user.home}/conf-global/config.properties`
+* file `{user.home}/conf/config.properties`
+* file `{user.home}/cfg/nexus-backend/config.properties`
 
 ### 💡 Specials config Http Headers
 
@@ -106,6 +173,7 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 | **WAF**                                         |                          |                                 |                                                      |
 | nexus.api.backend.filter.waf.reactive.mode      | STRICT_ONNX_AI           | ONNX_AI                         | Default Strict HttpFirewall <br/>+ AI Neural Network |
 | nexus.api.backend.filter.waf.deepscan.cookie    | false                    | true                            | Activated Deep Scan Cookie                           |
+| nexus.api.backend.filter.waf.incidents.path     |                          | /var/log/nexus/waf_audits/      | The Path folder audits incidents with the payload    |
 | **Headers**                                     |                          |                                 |                                                      |
 | nexus.backend.header.remove                     | **true**                 | true                            | Remove all Headers                                   |
 | nexus.backend.header.host.remove                | false                    | false                           | Remove just host Header                              |
@@ -440,77 +508,11 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
 
-## 🛠️ Build Nexus-Backend
-
-### ✅ Build requirements 
-
-* **Java >= 21 (Virtual Threads)** [Java](https://jdk.java.net/archive/)
-* **SpringBoot 3.3.0** [SpringBoot](https://projects.spring.io/spring-boot/)
-* **Apache Tomcat 10.0.54 & Servlet 6.0.0 (Jakarta)** [Tomcat](https://tomcat.apache.org/download-10.cgi)
-* **Apache Maven >= 3.9.3** [Maven](https://maven.apache.org/download.cgi)
-
-### 🏭 Build WAR Tomcat 10.xx (Embedded or External Tomcat)
-
-Maven clean, compile, package or install:
-
-* `mvn clean compile`
-* `mvn clean package `
-* `mvn clean install`
-
-and look for the war at `target/nexus-backend-{version}.war`
-
-### 📋 Get the Javadoc
-
-`mvn javadoc:javadoc`
-
-### 🔥  Run SpringBoot App
-
-Prerequisites set the Jdk 21 as JAVA_HOME: set JAVA_HOME={Path_JDK}\jdk-21.0.1`
-
-Maven clean and package nexus-backend (skip Tests):
-
-`mvn clean package -pl nexus-backend -am -DskipTests`
-
-Maven clean and install nexus-backend:
-
-`mvn clean install`
-
-with Java:
-
-`java -Denvironment=development -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
-
-with Java and Development environment:
-
-`java -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
-
-with Maven change dir to /nexus-backend:
-
-`cd nexus-backend`
-
-And run Spring-boot (-XX:NativeMemoryTracking=summary for monitored Native Memory Tracking for ONNX Neural Network):
-
-`mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Denvironment=development -XX:NativeMemoryTracking=summary"`
-
-### 🚀 The Nexus-Backend Configuration
-
-By default, it uses `8082` port and the Servlet Context `/nexus-backend`.
-
-The default SpringBoot config is in `/src/main/resources/application.properties` file.
-
-The default NexusBackend config in `/src/main/resources/settings.properties` file.  
-
-The Config keys and values can be modified or override by external path files, here:
-
- * file `{user.home}/conf-global/config.properties`
- * file `{user.home}/conf/config.properties`
- * file `{user.home}/cfg/nexus-backend/config.properties`
-
-
 ### 📡 The Default Tomcat 10.xx Configuration
 
 **Default Custom Tomcat Container**
 
-**Override the config for Embedded Tomcat 10.xx**
+**💡 Override the config for Embedded Tomcat 10.xx**
 
 - External Files config **web.xml** and **tomcat-users.xml**:
 
@@ -585,7 +587,7 @@ See RestControllerTest is in interaction with the MockController, run the tests 
 The Swagger Mock-Api is only available in Dev mode, added in JVM Options: -Denvironment=development
 
 
-### 📊 Monitor MNT - Native Memory Tracking
+### 🛰️ Monitor MNT - Native Memory Tracking
 
 See NmtMonitorService is in interaction with the NmtController to reports the Native Memory Tracking:  
 
@@ -646,14 +648,14 @@ Normally, it communicates to an API interface Backend.
  
 ### 📃 Samples BackendService API
 
-#### 📂 Prerequisites:
+#### ☣️ Prerequisites:
 
-* **RestOperations** should be configured with an Apache-HttpClient and a Pooling connection should be properly configured.
+* **RestOperations** should be configured with an Apache-HttpClient5 and a Pooling connection should be properly configured.
 * **HttpMessageConverter** are also mandatory, StringHttp, FormHttp, ByteArrayHttp, ResourceHttp and MappingJackson2Http are the minimal.
 * **Typed Response** parameter Class Object or a ParameterizedTypeReference are mandatory
 * **Object.class** cannot be converted in a Resource or ByteArray directly without a minimal support Typed Response.
 
-#### Initialize the RestApi BackendService
+####  Initialize the RestApi BackendService
 
 ```
 BackendService backendService = new BackendServiceImpl();

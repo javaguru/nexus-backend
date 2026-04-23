@@ -54,6 +54,11 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
+
 /**
  * WebFilter class implements a secure WAF protection for request Body.<br>
  * Http request Cookies, Headers, Parameters and Body can be filtered.
@@ -103,6 +108,10 @@ public class WAFFilter extends ApiBase implements Filter {
     // Max WAF Regex scan limit (ex: 1MB) to prevent RAM OutOfMemory (DoS attack)
     @Value("${nexus.api.backend.filter.waf.maxRegexLength:1048576}")
     private int maxRegexLength = 1024 * 1024;
+
+    // Path file incidents AI
+    @Value("${nexus.api.backend.filter.waf.incidents.path:}")
+    private String incidentPath;
 
     private final RequestAnalyzerService mlAnalyzer;
     private final WAFPredicate wafPredicate;
@@ -317,13 +326,38 @@ public class WAFFilter extends ApiBase implements Filter {
             boolean isMalicious = mlAnalyzer.isMalicious(safePayload);
 
             if (isMalicious) {
-                logger.warn("AI WAF engine detected a malicious payload: \n{}", safePayload);
+                String incidentId = "WAF_AI_INCIDENT_" + UUID.randomUUID();
+                logger.warn("AI WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId, safePayload);
+                savePayload(safePayload, incidentId);
                 throw new RequestRejectedException("Request rejected: AI WAF Engine detected a malicious payload.");
             }
         } catch (RequestRejectedException rre) {
             throw rre;
         } catch (Exception e) {
             logger.error("Error during AI WAF inspection: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Log and Save AI request Payload
+     *
+     * @param safePayload String    Safe Payload
+     * @param incidentId String     IncidentId
+     */
+    private void savePayload(String safePayload, String incidentId) {
+        try {
+            if (incidentPath != null && !incidentPath.isEmpty()) {
+                Path auditDir = Paths.get(incidentPath);
+                if (!Files.exists(auditDir)) {
+                    Files.createDirectories(auditDir);
+                }
+                if (Files.exists(auditDir)) {
+                    Path auditFile = auditDir.resolve(incidentId + ".txt");
+                    Files.writeString(auditFile, safePayload);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Could not write WAF audit file for incident {}", incidentId, e);
         }
     }
 

@@ -31,9 +31,12 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -52,6 +55,7 @@ import java.util.List;
  * - Configuration ACL / Security constraint <br>
  */
 @Component
+@Profile("withTomcat") // Embedded!
 public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatServletWebServerFactory> {
 
     private final static Logger logger = LoggerFactory.getLogger(TomcatCustomContainer.class);
