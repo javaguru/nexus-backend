@@ -102,13 +102,6 @@
         <appender-ref ref="ASYNC"/>
     </logger>
 
-    <logger name="com.bucket4j" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC"/>
-    </logger>
-    <logger name="com.giffing.bucket4j" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC"/>
-    </logger>
-
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC"/>

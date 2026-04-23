@@ -34,8 +34,19 @@ import java.nio.LongBuffer;
 import java.util.Map;
 
 /**
- * Analyzer Request Service with a Sequential Sliding Window.<br>
- * Use DistilBERT Model with HuggingFace Tokenizer into ONNX Neural Network Environment.
+ * AnalyzerRequestService analyze content text with a pure Sequential Sliding Window(Performance <50 ms).<br>
+ * <p>
+ * Use DistilBERT Model ONNX Environment (Open Neural Network Exchange) with HuggingFace Tokenizer.<br>
+ * <br>
+ * Recommendations:<br>
+ * - 4-6 Cpu max recommended<br>
+ * - Strict limits to prevent DoS via massive payloads ~6500 Tokens maximum for 15 Chunks<br>
+ * - Calibrated threshold:<br>
+ *   0.50 = Very strict WAF (blocks at the slightest doubt)<br>
+ *   0.65 = Balanced WAF (tolerates noise, blocks real attacks)<br>
+ *   0.85 = Permissive WAF (only blocks absolutely obvious threats)<br>
+ * </p>
+ * Model ONNX INT18 Nexus v10.14 - model/nexus_v10_14_int8.onnx
  *
  * @since version 2.0.0
  */
@@ -53,22 +64,31 @@ public class RequestAnalyzerService {
     // Must be false so we handle chunking manually
     @Value("${nexus.api.backend.analyzer.onnx.truncation:false}")
     private boolean truncation;
-
+    // Model ONNX
     @Value("${nexus.api.backend.analyzer.onnx.path.model:classpath:model/model.onnx}")
     private String pathModel;
-
+    // Tokenizer JSON
     @Value("${nexus.api.backend.analyzer.onnx.path.tokenizer:classpath:model/tokenizer.json}")
     private String pathTokenizer;
 
-    // 4-6 Cpu max recommended
+    /*
+     * 4-6 Cpu max recommended
+     */
     @Value("${nexus.api.backend.analyzer.onnx.cpu:4}")
     private int CPU;
 
-    // Strict limits to prevent DoS via massive payloads
+    /*
+     * Strict limits to prevent DoS via massive payloads (~6500 Tokens maximum for 15 Chunks)
+     */
     @Value("${nexus.api.backend.analyzer.onnx.max-chunks-to-scan:15}")
     private int MAX_CHUNKS_TO_SCAN;
 
-    // Calibrated threshold
+    /*
+     *  Calibrated threshold
+     * - 0.50 = Very strict WAF (blocks at the slightest doubt)
+     * - 0.65 = Balanced WAF (tolerates noise, blocks real attacks)
+     * - 0.85 = Permissive WAF (only blocks absolutely obvious threats)
+     */
     @Value("${nexus.api.backend.analyzer.onnx.attack.threshold:0.65}")
     private double THRESHOLD;
 
@@ -191,9 +211,6 @@ public class RequestAnalyzerService {
                     }
 
                     // Checking the calibrated threshold
-                    // 0.50 = Very strict WAF (blocks at the slightest doubt)
-                    // 0.65 = Balanced WAF (tolerates noise, blocks real attacks)
-                    // 0.85 = Permissive WAF (only blocks absolutely obvious threats)
                     if (attackProbability > THRESHOLD) {
                         if (logger.isWarnEnabled()) {
                             logger.warn("Attack detected in chunk {} (Tokens {}-{})!", chunksProcessed + 1, start, end);
