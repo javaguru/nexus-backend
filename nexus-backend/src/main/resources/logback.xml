@@ -98,6 +98,7 @@
     <logger name="com.jservlet.nexus" additivity="false" level="INFO">
         <appender-ref ref="ASYNC"/>
     </logger>
+    <!-- set WARN attack or set DEBUG time, default INFO -->
     <logger name="com.jservlet.nexus.shared.service.security.ml.RequestAnalyzerService" additivity="false" level="INFO">
         <appender-ref ref="ASYNC"/>
     </logger>
