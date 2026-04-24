@@ -84,7 +84,10 @@ and look for the war at `target/nexus-backend-{version}.war`
 
 ### 🔥 Run SpringBoot App
 
-Prerequisites set the Jdk 21 as JAVA_HOME: set JAVA_HOME={Path_JDK}\jdk-21.0.1`
+The prerequisite is to define the JAVA_HOME environment variable points to the directory containing the JRE (Java Runtime Environment) of JDK 21:
+Set the path folder of your JDK folder:
+
+"set JAVA_HOME={Path_folder_JDK}\jdk-21.0.1"
 
 Maven clean and package nexus-backend (also-make multi-module and skip Tests):
 
@@ -102,10 +105,10 @@ with Java, Development environment, Embedded Tomcat and  custom embedded Tomcat 
 
 `java -Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
 
-💡 Noted: Profile withTomcat activated a custom embedded Tomcat Container with Security Constraints (equivalent to a web.xml) and load a predefined embedded tomcat-user.xml
-I recommended you to externalized own tomcat-user.xml, see config
+💡 Note: The Tomcat profile enables a custom Embedded Tomcat Container with Security Constraints (equivalent to a web.xml file)
+and loads a predefined embedded tomcat-user.xml file. I recommend externalizing your own tomcat-user.xml file, see next part the configuration.
 
-with Maven, we need change dir to /nexus-backend (prerequisite compile the project!):
+with Maven, we need change dir to /nexus-backend (prerequisite compile the project):
 
 `cd nexus-backend`
 
@@ -115,7 +118,7 @@ And run Spring-boot (-XX:NativeMemoryTracking=summary for monitored Native Memor
 
 ### 🚀 The Nexus-Backend Configuration
 
-By default, it uses `8082` port and the Servlet Context `/nexus-backend`.
+By default, it uses `8082` port and the Servlet Context is `/nexus-backend`.
 
 The default SpringBoot config is in `/src/main/resources/application.properties` file.
 
@@ -125,7 +128,7 @@ The Config keys and values can be modified and override by external path files, 
 
 * file `{user.home}/conf-global/config.properties`
 * file `{user.home}/conf/config.properties`
-* file `{user.home}/cfg/nexus-backend/config.properties`
+* file `{user.home}/cfg/{appName}/config.properties`
 
 ### 💡 Specials config Http Headers
 
@@ -154,7 +157,7 @@ The Config keys and values can be modified and override by external path files, 
 | nexus.backend.tomcat.connector.https.enable      | false             | Activated a Connector TLS/SSL in a Embedded Tomcat | 
 | nexus.backend.tomcat.accesslog.valve.enable      | false             | Activated an Accesslog in a Embedded Tomcat        | 
 
-#### Noted the Spring config location can be overridden
+#### 💡 Noted the Spring config location can be overridden
 
 * -Dspring.config.location=/your/config/dir/
 * -Dspring.config.name=spring.properties
@@ -226,14 +229,14 @@ the Http header **'Range: bytes=1-100'** in the request and grabbed only range o
 And the Http Responses didn't come back with a HttpHeader **"Transfer-Encoding: chunked"** cause the header **Content-Length**.
 
 
-**Noted:** For configure **all the Responses** in **Resource** put an empty Method and use the path pattern=/api/**
+**💡 Noted:** For configure **all the Responses** in **Resource** put an empty Method and use the path pattern=/api/**
 
 | **Keys Methods** and **Keys Path pattern**                    | **Default value** |
 |---------------------------------------------------------------|:------------------|
 | nexus.backend.api-backend-resource.matchers.matchers1.method  |                   |
 | nexus.backend.api-backend-resource.matchers.matchers1.pattern | /api/**           |
 
-**Noted bis:** For remove the Http header **"Transfer-Encoding: chunked"** the header Content-Length need to be calculated.
+**💡 Noted bis:** For remove the Http header **"Transfer-Encoding: chunked"** the header Content-Length need to be calculated.
 
 Enable the **ShallowEtagHeader Filter** in the configuration for force to calculate the header **Content-Length**
 for all the **Response JSON Entity Object**, no more HttpHeader **"Transfer-Encoding: chunked"**.
@@ -282,7 +285,7 @@ The default Cors Configuration:
 | nexus.backend.security.cors.exposedHeaders        |                                                                            | Link,X-Custom-Header                               | List Exposed Headers   |  
 | nexus.backend.security.cors.maxAge                | 3600                                                                       | 1800                                               | Max Age cached         |  
 
-**Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
+**💡 Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
 
 Exposed headers
 
@@ -316,7 +319,7 @@ The default Cors Configuration:
 | spring.servlet.multipart.max-file-size       | 15MB              | 150MB             | Max file size       |   
 | spring.servlet.multipart.max-request-size    | 15MB              | 150MB             | Max request size    |   
 
-**Noted** All the HttpRequests with a **Content-Type multipart/form-data** will be managed by a temporary **BackendResource**.
+**💡 Noted** All the HttpRequests with a **Content-Type multipart/form-data** will be managed by a temporary **BackendResource**.
 
 ~~This BackendResource can convert a **MultipartFile** to a temporary **Resource**, ready to be sent to the **Backend Server**.~~
 
@@ -370,7 +373,7 @@ The **WAF Filter** implements a secure WAF protection against evasion on a **Jso
 **Un-normalized** Http requests are automatically rejected by the **StrictHttpFirewall**, 
 and path parameters and duplicate slashes are removed for matching purposes.
 
-**Noted** the valid characters are defined in **RFC 7230** and **RFC 3986** are checked
+**💡 Noted** the valid characters are defined in **RFC 7230** and **RFC 3986** are checked
 by the **Apache Coyote http11 processor** (see coyote Error parsing HTTP request header)
 
 All the Http request with **Cookies, Headers, Parameters and RequestBody** will be filtered and the suspicious **IP address** in fault will be logged.
@@ -503,7 +506,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.tomcat.accesslog.throwOnFailure | true                                                                                                                                               | Throw on failure       |   
 | nexus.backend.tomcat.accesslog.maxDay         | -1                                                                                                                                                 | Max day file retention |   
 
-**Noted** the Full access logs are available with the **CommonsRequestLoggingFilter**, included the **RequestBody**.
+**💡 Noted** the Full access logs are available with the **CommonsRequestLoggingFilter**, included the **RequestBody**.
 
 Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
@@ -512,7 +515,7 @@ Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
 **Default Custom Tomcat Container**
 
-**💡 Override the config for Embedded Tomcat 10.xx**
+**💡 Noted: I recommend to override the config for Embedded Tomcat 10.xx**
 
 - External Files config **web.xml** and **tomcat-users.xml**:
 
@@ -629,7 +632,7 @@ String Deduplication      | 0,00         MB | 0,00         MB
 ===============================================================
 ```
 
-## 💡 The BackendService API Implementation
+## 🚀 The BackendService API Implementation
 
 This API implementation is used for the communication to a backend server.
 It provides methods for all supported http protocols on the backend side. 
