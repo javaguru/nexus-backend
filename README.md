@@ -20,14 +20,14 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 
 **All HttpRequests methods supported:** Get, Post, Post Multipart File, Put, Put Multipart File, Patch, Patch Multipart File, Delete.
 
-* Full support **Request JSON Entity Object**: application/json, application/x-www-form-urlencoded
-* Full support **MultipartRequest Resources and Map parameters**, and embedded form **Json Entity Object**: multipart/form-data
-* Full support **Response in JSON Entity Object**: application/json
-* Full support **Response in ByteArray Resource file**: application/octet-stream
-* Full support **Streaming Http Response JSON Entity Object**: application/octet-stream, accept header Range bytes
-* Full support **Cookie manage** during a redirection Http status 3xx  
+* Full support **Request JSON Entity Object**: application/json, application/x-www-form-urlencoded.
+* Full support **MultipartRequest Resources and Map parameters**, and embedded form **Json Entity Object**: multipart/form-data.
+* Full support **Response in JSON Entity Object**: application/json.
+* Full support **Response in ByteArray Resource file**: application/octet-stream.
+* Full support **Streaming Http Response JSON Entity Object**: application/octet-stream, accept header Range bytes.
+* Full support **Cookie managed** during a redirection Http status 3xx.  
 
-**Tomcat Servlet Containers under Servlet version 6.x**
+**🐱 Tomcat Servlet Containers under Servlet Specification version 6.x**
 
 ### 🛸 Nexus-Backend Services functionalities implemented
 
@@ -202,7 +202,107 @@ The Config keys and values can be modified and override by external path files, 
 * **${user.home}**/cfg/**${servletContextPath}**/config.properties
 
 
-###  ⚙️️ The ApiBackend Configuration JSON Entity Object or a ByteArray Resource
+### 🛡️ The Nexus-Backend Firewall and the WAF Filter Configuration
+
+The **Nexus-Backend** implements a **Web Application Firewall**. The **WAF Filter** protection against evasion and rejected
+any suspicious Http Request on the Headers, Cookies, Parameters, the Keys or Values and **Json Http RequestBody**.
+
+**Un-normalized** Http requests are automatically rejected by the **WebHttpFirewall**,
+and path parameters and duplicate slashes are removed for matching purposes.
+
+**💡 Noted** the valid characters are defined in **RFC 7230** and **RFC 3986** are checked
+by the **Apache Coyote http11 processor** (see coyote Error parsing HTTP request header)
+
+All the Http request with **Cookies, Headers, Parameters and RequestBody** will be filtered and the suspicious
+**IP address** in fault will be logged.
+
+**Settings keys settings.properties:**
+
+| **Keys**                                                   | **Default value**                           | **Descriptions**                      |
+|------------------------------------------------------------|:--------------------------------------------|:--------------------------------------|
+| nexus.backend.security.allowedHttpMethods                  | GET,POST,PUT,OPTIONS,<br/>HEAD,DELETE,PATCH | Allowed Http Methods                  |
+| nexus.backend.security.allowSemicolon                      | false                                       | Allowed Semi Colon                    |                                
+| nexus.backend.security.allowUrlEncodedSlash                | false                                       | Allow url encoded Slash               |                              
+| nexus.backend.security.allowUrlEncodedDoubleSlash          | false                                       | Allow url encoded double Slash        |                             
+| nexus.backend.security.allowUrlEncodedPeriod               | false                                       | Allow url encoded Period              |                            
+| nexus.backend.security.allowBackSlash                      | false                                       | Allow BackSlash                       |                            
+| nexus.backend.security.allowNull                           | false                                       | Allow Null                            |                           
+| nexus.backend.security.allowUrlEncodedPercent              | false                                       | Allow url encoded Percent             |                          
+| nexus.backend.security.allowUrlEncodedCarriageReturn       | false                                       | Allow url encoded Carriage Return     |                         
+| nexus.backend.security.allowUrlEncodedLineFeed             | false                                       | Allow url encoded Line Feed           |                        
+| nexus.backend.security.allowUrlEncodedParagraphSeparator   | false                                       | Allow url encoded Paragraph Separator |                       
+| nexus.backend.security.allowUrlEncodedLineSeparator        | false                                       | Allow url encoded Line Separator      |                           
+
+**🎯 The WAF Utilities Predicates checked for potential evasion:**
+
+* XSS script injection
+* SQL injection
+* Google injection
+* Command injection
+* File injection
+* Link injection
+
+**📃 Implements a WAF Predicate for potential evasion by Headers or Parameters:**
+
+* Header Names / Header Values
+* Parameter Names / Parameter Values
+* Hostnames
+* UserAgent
+* AI UserAgent
+
+**⚙️ And check for Buffer Overflow evasion by the Length:**
+
+* Parameter Names 255 characters max. / Values 1000000 characters max.
+* Header Names 255 characters max. / Values 25000 characters max.
+* Hostnames 255 characters max.
+
+**🛡️ The WAF Reactive mode configuration:**
+
+* **STRICT_ONNX_AI**:  STRICT HttpFirewall + Artificial Intelligence Scan by ONNX Neural Network
+* **ONNX_AI**:  Artificial Intelligence Scan by ONNX Neural Network
+* **STRICT**:  Strict HttpFirewall + JSON RequestBody
+* **PASSIVE**: Strict HttpFirewall + Clean JSON RequestBody and Parameters Map
+* **UNSAFE**:  Strict HttpFirewall + No check JSON RequestBody!
+
+**🛸 The AI Model ONNX**
+
+The AnalyzerRequestService analyze content text with a pure Sequential Sliding Window(Performance <50 ms).
+Use **DistilBERT Model ONNX Environment** an **Open Neural Network Exchange** with **HuggingFace Tokenizer**.
+
+**Recommendations:**
+- 4-6 Cpu max recommended
+- Strict limits to prevent DoS via massive payloads **~6500 Tokens maximum for 15 Chunks**
+- Calibrated threshold:
+  - 0.50 = Very strict WAF (blocks at the slightest doubt)
+  - 0.65 = Balanced WAF (tolerates noise, blocks real attacks)
+  - 0.85 = Permissive WAF (only blocks absolutely obvious threats)
+
+**Settings keys settings.properties:** Define file model and tokenizer
+
+| **Keys**                                       | **Default value**            | **Descriptions**   |
+|------------------------------------------------|:-----------------------------|:-------------------|
+| nexus.api.backend.analyzer.onnx.maxLength      | 512                          | Length max Token   |   
+| nexus.api.backend.analyzer.onnx.truncation     | false                        | Truncation         |   
+| nexus.api.backend.analyzer.onnx.path.model     | model/nexus_v10_14_int8.onnx | AI Model ONNX INT8 |   
+| nexus.api.backend.analyzer.onnx.path.tokenizer | model/tokenizer.json         | File Tokenizer     |   
+| nexus.api.backend.analyzer.onnx.cpu            | 4                            | Number of CPU      |   
+
+**⚔️ Web HttpFirewall**
+
+**Settings keys settings.properties:** Define a max length for Keys/Values Headers or Parameters
+
+| **Keys**                                                 | **Default value** | **Descriptions**                |
+|----------------------------------------------------------|:------------------|:--------------------------------|
+| nexus.backend.security.predicate.parameterNamesLength    | 255               | Parameter names length max      |   
+| nexus.backend.security.predicate.parameterValuesLength   | 1000000           | Parameter values length max     |   
+| nexus.backend.security.predicate.headerNamesLength       | 255               | Header names length max         |   
+| nexus.backend.security.predicate.headerNamesValuesLength | 25000             | Header values length max        |   
+| nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max           |   
+| nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter         |   
+| nexus.backend.security.predicate.userAgent.blocked       | false             | Active Scanner UserAgent filter |   
+| nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
+
+### ⚙️️ The ApiBackend Configuration JSON Entity Object or a ByteArray Resource
 
 **ApiBackend ResponseType** can be now a **ByteArray Resource.** 
 
@@ -224,8 +324,9 @@ and on specific Methods **GET, POST, PUT, PATCH** and Ant Path pattern:
 | nexus.backend.api-backend-resource.matchers.{name}[X].method  | Methods                |                          |  
 | nexus.backend.api-backend-resource.matchers.{name}[X].pattern | Patterns               |                          | 
 
-**Http Responses** are considerate as **Resources**, the Http header **"Accept-Ranges: bytes"** is injected and allow you to use
-the Http header **'Range: bytes=1-100'** in the request and grabbed only range of Bytes desired. <br>
+**Http Responses** are considerate as **Resources**, the Http header **"Accept-Ranges: bytes"** is injected and allow you
+to use the Http header **'Range: bytes=1-100'** in the request and grabbed only range of Bytes desired. 
+
 And the Http Responses didn't come back with a HttpHeader **"Transfer-Encoding: chunked"** cause the header **Content-Length**.
 
 
@@ -363,97 +464,6 @@ Since the version **1.0.24** no more BackendResource and temporary file. **All i
 | nexus.backend.client.ssl.https.cipherSuites | TLS_AES_256_GCM_SHA384 | The Cipher Suites         |  
 
 
-### 🛡️ The Nexus-Backend Firewall and the WAF Filter Configuration 
-
-The **Nexus-Backend** implements a **HttpFirewall** protection against evasion and rejected any suspicious Http Request 
-on the Headers and Cookies, the Parameters, the keys and Values.
-
-The **WAF Filter** implements a secure WAF protection against evasion on a **Json Http RequestBody**.
-
-**Un-normalized** Http requests are automatically rejected by the **StrictHttpFirewall**, 
-and path parameters and duplicate slashes are removed for matching purposes.
-
-**💡 Noted** the valid characters are defined in **RFC 7230** and **RFC 3986** are checked
-by the **Apache Coyote http11 processor** (see coyote Error parsing HTTP request header)
-
-All the Http request with **Cookies, Headers, Parameters and RequestBody** will be filtered and the suspicious **IP address** in fault will be logged.
-
- **Settings keys settings.properties:**
- 
-| **Keys**                                                   | **Default value**                           | **Descriptions**                      |
-|------------------------------------------------------------|:--------------------------------------------|:--------------------------------------|
-| nexus.backend.security.allowedHttpMethods                  | GET,POST,PUT,OPTIONS,<br/>HEAD,DELETE,PATCH | Allowed Http Methods                  |
-| nexus.backend.security.allowSemicolon                      | false                                       | Allowed Semi Colon                    |                                
-| nexus.backend.security.allowUrlEncodedSlash                | false                                       | Allow url encoded Slash               |                              
-| nexus.backend.security.allowUrlEncodedDoubleSlash          | false                                       | Allow url encoded double Slash        |                             
-| nexus.backend.security.allowUrlEncodedPeriod               | false                                       | Allow url encoded Period              |                            
-| nexus.backend.security.allowBackSlash                      | false                                       | Allow BackSlash                       |                            
-| nexus.backend.security.allowNull                           | false                                       | Allow Null                            |                           
-| nexus.backend.security.allowUrlEncodedPercent              | false                                       | Allow url encoded Percent             |                          
-| nexus.backend.security.allowUrlEncodedCarriageReturn       | false                                       | Allow url encoded Carriage Return     |                         
-| nexus.backend.security.allowUrlEncodedLineFeed             | false                                       | Allow url encoded Line Feed           |                        
-| nexus.backend.security.allowUrlEncodedParagraphSeparator   | false                                       | Allow url encoded Paragraph Separator |                       
-| nexus.backend.security.allowUrlEncodedLineSeparator        | false                                       | Allow url encoded Line Separator      |                           
-
-**☠️ The WAF Utilities Predicates checked for potential evasion:**
-
-* XSS script injection
-* SQL injection
-* Google injection
-* Command injection
-* File injection
-* Link injection
- 
-**📃 Implements a WAF Predicate for potential evasion by Headers or Parameters:**
-
- * Header Names / Header Values
- * Parameter Names / Parameter Values
- * Hostnames
- * UserAgent
- * AI UserAgent
-
-**⚙️ And check for Buffer Overflow evasion by the Length:**
-
- * Parameter Names 255 characters max. / Values 1000000 characters max.
- * Header Names 255 characters max. / Values 25000 characters max.
- * Hostnames 255 characters max.
-
-**🛡️ The WAF Reactive mode configuration:**
-
- * **STRICT_ONNX_AI**:  STRICT mode + Artificial Intelligence Scan by ONNX Neural Network
- * **ONNX_AI**:  Artificial Intelligence Scan by ONNX Neural Network
- * **STRICT**:  Strict HttpFirewall + JSON RequestBody
- * **PASSIVE**: Strict HttpFirewall + Clean JSON RequestBody and Parameters Map
- * **UNSAFE**:  Strict HttpFirewall + No check JSON RequestBody!
-
-**🛸 AI Model ONNX model/model.onnx**
-
-**Settings keys settings.properties:** Define file model and tokenizer
-
-| **Keys**                                       | **Default value**            | **Descriptions** |
-|------------------------------------------------|:-----------------------------|:-----------------|
-| nexus.api.backend.analyzer.onnx.maxLength      | 512                          | Length max Token |   
-| nexus.api.backend.analyzer.onnx.truncation     | false                        | Truncation       |   
-| nexus.api.backend.analyzer.onnx.path.model     | model/nexus_v10_14_int8.onnx | AI Model ONNX    |   
-| nexus.api.backend.analyzer.onnx.path.tokenizer | model/tokenizer.json         | File Tokenizer   |   
-| nexus.api.backend.analyzer.onnx.cpu            | 4                            | Number CPU       |   
-
-**⚔️ Web HttpFirewall**
-
-**Settings keys settings.properties:** Define a max length for Keys/Values Headers or Parameters 
-
-| **Keys**                                                 | **Default value** | **Descriptions**                |
-|----------------------------------------------------------|:------------------|:--------------------------------|
-| nexus.backend.security.predicate.parameterNamesLength    | 255               | Parameter names length max      |   
-| nexus.backend.security.predicate.parameterValuesLength   | 1000000           | Parameter values length max     |   
-| nexus.backend.security.predicate.headerNamesLength       | 255               | Header names length max         |   
-| nexus.backend.security.predicate.headerNamesValuesLength | 25000             | Header values length max        |   
-| nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max           |   
-| nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter         |   
-| nexus.backend.security.predicate.userAgent.blocked       | false             | Active Scanner UserAgent filter |   
-| nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
-
-
 ### ⚙️ Tomcat 10.xx Embedded with external configuration
 
 **Settings keys settings.properties:** *nexus.backend.client.ssl.mtls.enable* at **true** for activated the mTLS connection
@@ -467,7 +477,6 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.tomcat.security.health.patterns | /health/*                 | Pattern match paths                       |   
 | nexus.backend.tomcat.embedded.webxml.file     |                           | /apps/apache-tomcat/conf/web.xml          |   
 | nexus.backend.tomcat.security.users.file      |                           | /apps/apache-tomcat/conf/tomcat-users.xml |   
-
 
 
 ### ⚙️ Activated Tomcat Catalina Connector TLS/SSL on a wildcard domain Certificate
@@ -511,7 +520,7 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
 
-### 📡 The Default Tomcat 10.xx Configuration
+### 🐱 The Default Tomcat 10.xx Configuration
 
 **Default Custom Tomcat Container**
 
@@ -594,8 +603,8 @@ The Swagger Mock-Api is only available in Dev mode, added in JVM Options: -Denvi
 
 See NmtMonitorService is in interaction with the NmtController to reports the Native Memory Tracking:  
 
-- Native: System calls (malloc/mmap) in C++, ONNX model.<br>
-- Memory: Tracks the actual RAM footprint.<br>
+- Native: System calls (malloc/mmap) in C++, ONNX model.
+- Memory: Tracks the actual RAM footprint.
 - Tracking: The -XX:NativeMemoryTracking=summary option enables internal instrumentation, allowing jcmd to generate reports.
 
 Lists the instrumented Java Virtual Machines (JVMs) on the target system, see [Doc Oracle JPS](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jps.html).
@@ -712,11 +721,40 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## 🗒️ Last News
-* Last version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService ResourceLoader, Build WAR external/internal.
-* Version **2.0.0**, released at 18/04/2026 Migration Jdk 21, Spring 6, SpringBoot 3.3.0: Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX.
+
+* Last version **2.0.2**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService ResourceLoader, Build WAR external/internal.
+* Version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService ResourceLoader, Build WAR external/internal.
+* Version **2.0.0**, released at 18/04/2026  **Jdk 21, Spring 6, Spring Boot 3.3.0, Tomcat 10.xx Servlet Specification 6.0**:
+ Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX.
+
+**Version < 1.0.27 under Jdk 13, Spring 5, Spring Boot 2.7.18, Tomcat 9.xx Servlet Specification 4.0.1**
+ 
 * Version **1.0.26**, Last release in Spring 5 - SpringBoot 2.7.5. Released at 18/04/2026, Fix external Tomcat Initializer.
 * Version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent.
-* [...]
+* Version **1.0.24**, released at 01/09/2025  Forwarded headers Client and Transfer headers Backend Server, Cors headers exposed
+* Version **1.0.23**, released at 22/08/2025 Reorganize WAFFilter Multipart, CorsConfiguration, Cookie client stateful
+* Version **1.0.22**, released at 31/07/2025 Fix Security RateLimit, Content Security Policy and Referrer-Policy
+* Version **1.0.21**, released at 29/07/2025 Fix Predicate for Hostnames, Shared CookieRedirectInterceptor, Postman-Echo performance
+* Version **1.0.20**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate - Bis
+* Version **1.0.19**, released at 26/07/2025 Fix Spring Security dependencies, Improve security WAFFilter and WAFPredicate
+* Version **1.0.18**, released at 10/05/2025 Fix manage Cookie during a redirection 3xx
+* Version **1.0.17**, released at 04/05/2025 Fix manage Cookie, Gateway is stateless!
+* Version **1.0.16**, released at 03/11/2024 Fix CORS Security configuration Spring 5/6
+* Version **1.0.15**, released at 23/10/2024 Fix missing method addCorsMappings
+* Version **1.0.14**, released at 14/10/2024 Support Backend Headers and Support ContentNegotiation Header Strategy for Resources
+* Version **1.0.13**, released at 06/10/2024 Full support Response in ByteArray Resource and Streaming Http Response Range Bytes
+* Version **1.0.12**, released at 02/10/2024 Fix ApiBase error Message super.getResponseEntity
+* Version **1.0.11**, released at 30/09/2024 Does not encode the URI template!
+* Version **1.0.10**, released at 29/09/2024 Add full support MultipartRequest content type multipart/form-data
+* Version **1.0.9**, released at 24/09/2024 Fix replicate requests ApiBackend.requestEntity
+* Version **1.0.8**, released at 13/08/2024 Re-encoding HttpUrl, Special Characters are re-interpreted
+* Version **1.0.7**, released at 03/08/2024 All is Bytes.
+* Version **1.0.6**, released at 14/07/2024 Clarify Byte Array deserialization.
+* Version **1.0.5**, released at 13/07/2024 Optimize build war/jar.
+* Version **1.0.4**, released at 08/07/2024.
+* Version **1.0.3**, released at 23/06/2024 Reinit project.
+* Version **1.0.2** released at 28/04/2024.
+* Version **1.0.1** released at 21/11/2022.
 * Initial release **1.0.0** at 03/06/2021.
 
 ## 👨‍🚀 Support
@@ -728,7 +766,7 @@ To help **Nexus-Backend / ApiBackend / BackendService** development you are enco
 * pull requests for new features
 * Star :star2: the project
 
-## 📖 License
+## 📃 License
 
 This project is an Open Source Software released under the [GPL-3.0 license](https://github.com/javaguru/nexus-backend/blob/master/LICENSE.txt).
 
