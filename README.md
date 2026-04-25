@@ -32,17 +32,22 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 ### 🛸 Nexus-Backend Services functionalities implemented
 
 * Implements a **BackendService** Ability to request typed response Object class or ParameterizedTypeReference, requested a Rest-Api Backend Server.
-* Implements an **EntityBackend** JSON Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 from the Backend Server.
+  * Features an **EntityBackend** JSON Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 from the Backend Server.
 * Implements a **WEB HttpFirewall** Filter protection against evasion, rejected any suspicious Requests Encoding and log IP address at fault
 * Implements a **WAF Filter** Predicate Patterns protection against evasion on the Http JSON BodyRequest, Headers, Keys, Parameters and log IP address at fault.
 * Implements a **Nano AI DistilBERT ONNX** Nexus AI WAF Engine detect malicious Http requests and log IP address at fault.
-* Implements a **AnalyzerRequest** Analyze content text with a pure Sequential Sliding Window.
-* Implements a **Native Memory Tracking Monitoring** NMT: System calls, Tracks the actual RAM footprint, allowing jcmd to generate reports.
-* Implements a **CORS Security Request** Filter, authorize request based on Origin Domains and Methods.
-* Implements a **Content Security Policy** Filter define your own policy rules CSP.
-* Implements a **RateLimit** Interceptor, allows 1000 requests per minutes and per-IP-address.
+  * Features a **AnalyzerRequest** Analyze content text with a pure Sequential Sliding Window.
+  * Features a **Native Memory Tracking Monitoring** NMT: System calls, Tracks the actual RAM footprint, allowing jcmd to generate reports.
+* **Rate Limiting:** Implements a per-IP rate limit interceptor using **Bucket4j** and **JCache**, allowing a maximum of 1,000 requests per minute to protect against abuse and DDoS attacks. Returns `429 Too Many Requests` when the quota is exceeded.
+* **Circuit Breaker & Retry:** Implements **Resilience4j** to protect downstream backend communications.
+  * Features a **Retry** mechanism (3 attempts max) for transient network glitches.
+  * Features a **Circuit Breaker** that fails fast and blocks requests if the backend error rate exceeds 30%, preventing cascading failures.
+  * Provides a graceful fallback returning a formatted `503 Service Unavailable` JSON response.
+* **Observability:** Both the Circuit Breaker and the Rate Limiter states are exposed in real-time via **Spring Boot Actuator** (`/actuator/health`, `/actuator/circuitbreakers`).
 * Implements a **Fingerprint** Each Http header Request generate a unique trackable Token APP-REQUEST-ID in the access logs.
 * Implements a **HttpMethodOverride** Filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override.
+* Implements a **CORS Security Request** Filter, authorize request based on Origin Domains and Methods.
+* Implements a **Content Security Policy** Filter define your own policy rules CSP.
 * Implements a **ForwardedHeader** filter, set removeOnly at true by default, remove "Forwarded" and "X-Forwarded-*" headers.
 * Implements a **FormContent** filter, parses form data for Http PUT, PATCH, and DELETE requests and exposes it as Servlet request parameters.
 * Implements a **Compressing** filter Gzip compression for the Http Responses.
@@ -302,6 +307,37 @@ Use **DistilBERT Model ONNX Environment** an **Open Neural Network Exchange** wi
 | nexus.backend.security.predicate.userAgent.blocked       | false             | Active Scanner UserAgent filter |   
 | nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
 
+### ⚙️ The CircuitBreaker Resilient4j Configuration
+
+**Settings keys settings.properties:**
+
+The default CircuitBreaker Configuration:
+
+| **CircuitBreaker Configuration**                      | **Default value** | **Example value** | **Descriptions** |
+|-------------------------------------------------------|:------------------|:------------------|:-----------------|
+| nexus.backend.interceptor.ratelimit.refillToken       | 1000              | 100               | Filled tokens    |  
+| nexus.backend.interceptor.ratelimit.refillMinutes     | 1                 | 1                 | Duration minutes |  
+| nexus.backend.interceptor.ratelimit.bandwidthCapacity | 1000              | 100               | Bucket capacity  |  
+
+
+
+### ⚙️ The RateLimit Configuration
+
+**Rate limit** 1000 per minutes and per-IP-address.
+
+**SpringBoot key** *nexus.api.backend.interceptor.ratelimit.enabled* at **true** for activated the RateLimit.
+
+**Settings keys settings.properties:**
+
+The default Cors Configuration:
+
+| **Cors Configuration**                                 | **Default value** | **Example value** | **Descriptions** |
+|--------------------------------------------------------|:------------------|:------------------|:-----------------|
+| nexus.backend.interceptor.ratelimit.refillToken        | 1000              | 100               | Filled tokens    |  
+| nexus.backend.interceptor.ratelimit.refillMinutes      | 1                 | 1                 | Duration minutes |  
+| nexus.backend.interceptor.ratelimit.bandwidthCapacity  | 1000              | 100               | Bucket capacity  |  
+
+
 ### ⚙️️ The ApiBackend Configuration JSON Entity Object or a ByteArray Resource
 
 **ApiBackend ResponseType** can be now a **ByteArray Resource.** 
@@ -387,24 +423,6 @@ The default Cors Configuration:
 | nexus.backend.security.cors.maxAge                | 3600                                                                       | 1800                                               | Max Age cached         |  
 
 **💡 Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
-
-Exposed headers
-
-### ⚙️ The RateLimit Configuration
-
-**Rate limit** 1000 per minutes and per-IP-address.
-
-**SpringBoot key** *nexus.api.backend.interceptor.ratelimit.enabled* at **true** for activated the RateLimit.
-
-**Settings keys settings.properties:**
-
-The default Cors Configuration:
-
-| **Cors Configuration**                                 | **Default value** | **Example value** | **Descriptions** |
-|--------------------------------------------------------|:------------------|:------------------|:-----------------|
-| nexus.backend.interceptor.ratelimit.refillToken        | 1000              | 100               | Filled tokens    |  
-| nexus.backend.interceptor.ratelimit.refillMinutes      | 1                 | 1                 | Duration minutes |  
-| nexus.backend.interceptor.ratelimit.bandwidthCapacity  | 1000              | 100               | Bucket capacity  |  
 
 
 ### ⚙️ The Nexus-Backend provides a full support MultipartRequest and Map parameters inside a form-data HttpRequest

@@ -24,12 +24,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.config.web.WebConfig;
 import com.jservlet.nexus.config.web.WebSecurityConfig;
 import com.jservlet.nexus.config.web.tomcat.ssl.TomcatConnectorConfig;
-import com.jservlet.nexus.shared.config.annotation.ConfigProperties;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl;
+import com.jservlet.nexus.shared.service.backend.api.ResilientBackendServiceWrapper;
 import com.jservlet.nexus.shared.web.controller.api.ApiBackend;
 import com.jservlet.nexus.shared.web.interceptor.CookieRedirectInterceptor;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.retry.Retry;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -181,19 +183,23 @@ public class ApplicationConfig  {
      * The Backend Service
      *
      * @param backendUrl        The Backend Url
-     * @param restOperations    RestOperations
-     * @param objectMapper      ObjectMapper
+     * @param circuitBreaker    The CircuitBreaker
+     * @param retry             The Retry process CircuitBreaker
+     * @param restOperations    The RestOperations
+     * @param objectMapper      The ObjectMapper
      * @return BackendService
      */
     @Bean
     public BackendService backendService(@Value("${nexus.backend.url}") String backendUrl,
+                                         CircuitBreaker circuitBreaker,
+                                         Retry retry,
                                          RestOperations restOperations,
                                          ObjectMapper objectMapper) {
         final BackendServiceImpl backendService = new BackendServiceImpl(true); // return a Generics Object!
         backendService.setBackendURL(backendUrl);
         backendService.setRestOperations(restOperations);
         backendService.setObjectMapper(objectMapper);
-        return backendService;
+        return new ResilientBackendServiceWrapper(backendService, circuitBreaker, retry); // Wrap CircuitBreaker!
     }
 
     @Bean

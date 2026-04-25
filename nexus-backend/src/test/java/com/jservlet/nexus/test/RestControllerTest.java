@@ -81,7 +81,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
     }
 
     @Test
-    void testGetBytesBackend() throws NexusGetException, NexusResourceNotFoundException {
+    void testGetBytesBackend() throws NexusGetException, NexusResourceNotFoundException, NexusServiceUnavailableException {
         String url = "/mock/v1/dataBytes";
         byte[] data = backendService.get(url, BYTES_RESPONSE_TYPE);
         logger.debug(Arrays.toString(data));
@@ -91,14 +91,14 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
     }
 
     @Test
-    void testGetBackend() throws NexusGetException, NexusResourceNotFoundException {
+    void testGetBackend() throws NexusGetException, NexusResourceNotFoundException, NexusServiceUnavailableException {
         String url = "/mock/v1/data";
         Data data = backendService.get(url, DATA_RESPONSE_TYPE);
         assertNotNull(data);
     }
 
     @Test
-    void testGetListBackend() throws NexusGetException, NexusResourceNotFoundException {
+    void testGetListBackend() throws NexusGetException, NexusResourceNotFoundException, NexusServiceUnavailableException {
         String url = "/mock/v1/dataList";
         List<Data> list = backendService.get(url, DATA_LIST_RESPONSE_TYPE);
         assertNotNull(list);
@@ -106,7 +106,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
 
     @Test
     void testPostBackend() throws NexusGetException, NexusResourceNotFoundException,
-            NexusCreationException, NexusResourceExistsException {
+            NexusCreationException, NexusResourceExistsException, NexusServiceUnavailableException {
         String url = "/mock/v1/data";
         Data data = backendService.get(url, DATA_RESPONSE_TYPE);
         Boolean status = backendService.post(url, data, BOOL_RESPONSE_TYPE);
@@ -116,7 +116,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
 
     @Test
     void testPutBackend() throws NexusGetException, NexusResourceNotFoundException,
-            NexusModificationException, NexusResourceExistsException {
+            NexusModificationException, NexusResourceExistsException, NexusServiceUnavailableException {
         String url = "/mock/v1/data";
         Data data = backendService.get(url, DATA_RESPONSE_TYPE);
         Boolean status = backendService.put(url, data, BOOL_RESPONSE_TYPE);
@@ -126,7 +126,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
 
     @Test
     void testPatchBackend() throws NexusGetException, NexusResourceNotFoundException,
-            NexusModificationException, NexusResourceExistsException {
+            NexusModificationException, NexusResourceExistsException, NexusServiceUnavailableException {
         String url = "/mock/v1/data";
         Data data = backendService.get(url, DATA_RESPONSE_TYPE);
         Boolean status = backendService.patch(url, data, BOOL_RESPONSE_TYPE);
@@ -136,7 +136,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
 
     @Test
     void testPatchFileBackend() throws NexusGetException, NexusResourceNotFoundException,
-            NexusModificationException, NexusResourceExistsException, IOException {
+            NexusModificationException, NexusResourceExistsException, IOException, NexusServiceUnavailableException {
         Resource image = backendService.getFile(urlImage);
         assertNotNull(image); // Remplacement de Assert.assertNotNull
         if (image.exists()) {
@@ -150,7 +150,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
     }
 
     @Test
-    void testGetFileBackend() throws NexusGetException, NexusResourceNotFoundException, IOException {
+    void testGetFileBackend() throws NexusGetException, NexusResourceNotFoundException, IOException, NexusServiceUnavailableException {
         Resource image = backendService.getFile(urlImage);
         logger.debug(String.valueOf(image.contentLength()));
         logger.debug(image.getFilename());
@@ -161,7 +161,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
 
     @Test
     void testPostFileBackend() throws NexusGetException, NexusResourceNotFoundException,
-            NexusCreationException, NexusResourceExistsException, IOException {
+            NexusCreationException, NexusResourceExistsException, IOException, NexusServiceUnavailableException {
         Resource image = backendService.getFile(urlImage);
         assertNotNull(image);
         if (image.exists()) {
@@ -176,7 +176,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
 
     @Test
     void testPutFileBackend() throws NexusGetException, NexusResourceNotFoundException,
-            NexusModificationException, NexusResourceExistsException, IOException {
+            NexusModificationException, NexusResourceExistsException, IOException, NexusServiceUnavailableException {
         Resource image = backendService.getFile(urlImage);
         assertNotNull(image);
         if (image.exists()) {
@@ -190,14 +190,14 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
     }
 
     @Test
-    void testDeleteFileBackend() throws NexusResourceNotFoundException, NexusDeleteException {
+    void testDeleteFileBackend() throws NexusResourceNotFoundException, NexusDeleteException, NexusServiceUnavailableException {
         String url = "/mock/v1/datafile";
         backendService.delete(url);
         assertTrue(true);
     }
 
     @Test
-    void testEchoBackend() throws NexusGetException, NexusResourceNotFoundException {
+    void testEchoBackend() throws NexusGetException, NexusResourceNotFoundException, NexusServiceUnavailableException {
         String url = "/mock/v1/echo";
         byte[] data = backendService.get(url, BYTES_RESPONSE_TYPE);
         logger.debug(Arrays.toString(data));
@@ -207,7 +207,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
     }
 
     @Test
-    void testEchoProxyBackend() throws NexusCreationException, NexusResourceExistsException {
+    void testEchoProxyBackend() throws NexusCreationException, NexusResourceExistsException, NexusServiceUnavailableException {
         String url = "/mock/v1/proxy";
         byte[] data = backendService.post(url, null, BYTES_RESPONSE_TYPE);
         logger.debug(Arrays.toString(data));
@@ -244,7 +244,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
     }
 
     @Test
-    void testXErrorBackend400() throws NexusResourceNotFoundException {
+    void testXErrorBackend400() throws NexusResourceNotFoundException, NexusServiceUnavailableException {
         try {
             String url = "/mock/v1/dataError400";
             backendService.get(url, OBJECT_RESPONSE_TYPE);
@@ -254,7 +254,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
     }
 
     @Test
-    void testXErrorBackend500() throws NexusResourceNotFoundException {
+    void testXErrorBackend500() throws NexusResourceNotFoundException, NexusServiceUnavailableException {
         try {
             String url = "/mock/v1/dataError500";
             backendService.get(url, OBJECT_RESPONSE_TYPE);
@@ -264,7 +264,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
     }
 
     @Test
-    void testXErrorBackend401() throws NexusResourceNotFoundException {
+    void testXErrorBackend401() throws NexusResourceNotFoundException, NexusServiceUnavailableException {
         try {
             String url = "/mock/v1/dataError401";
             backendService.get(url, OBJECT_RESPONSE_TYPE);
@@ -274,8 +274,7 @@ class RestControllerTest { // No "extends TestCase" no "implements ResourceLoade
     }
 
     private static void testException(NexusGetException e) {
-        if (e.getCause() instanceof HttpClientErrorException) {
-            HttpClientErrorException cause = (HttpClientErrorException) e.getCause();
+        if (e.getCause() instanceof HttpClientErrorException cause) {
             assertNotNull(cause.getStatusCode());
             logger.debug("Error: {} {}", cause.getStatusCode(), cause.getResponseBodyAsString());
         } else {
