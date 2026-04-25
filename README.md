@@ -493,7 +493,6 @@ Since the version **1.0.24** no more BackendResource and temporary file. **All i
 | nexus.backend.tomcat.security.patterns        | /actuator/*,/mnt/admin/** | Pattern match paths actuator              |   
 | nexus.backend.tomcat.security.health.roles    | **admin-health**          | Roles Health status                       |   
 | nexus.backend.tomcat.security.health.patterns | /health/*                 | Pattern match paths                       |   
-| nexus.backend.tomcat.embedded.webxml.file     |                           | /apps/apache-tomcat/conf/web.xml          |   
 | nexus.backend.tomcat.security.users.file      |                           | /apps/apache-tomcat/conf/tomcat-users.xml |   
 
 

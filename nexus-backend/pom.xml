@@ -340,7 +340,7 @@
 
                     <!-- Swagger ui open-api security -->
                     <include>api-ui/api-docs.yaml</include>
-                    <!-- Default embedded Tomcat users -->
+                    <!-- WARN: Default Embedded Tomcat users, none for an External Tomcat (Override it!)-->
                     <include>tomcat-users.xml</include>
 
                     <!-- Servlet Container Initializer Tomcat -->
@@ -365,6 +365,7 @@
                 <includes>
                     <include>**/*</include>
                 </includes>
+                <!-- WARN: Not used for External or Embedded Tomcat -->
                 <excludes>
                     <exclude>WEB-INF/web.xml</exclude>
                 </excludes>

@@ -27,33 +27,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
-import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+
+import java.net.InetAddress;
 
 /**
  * Config Embedded Tomcat Connector TLS/SSL on the default port 8443 (HTTP/1.1)
  * <br>
  * And Config Embedded Tomcat Connector AJP on the port 8009 with redirection on 8443
- * <br>
- * <pre>
- *      &lt;Connector SSLEnabled="true" acceptCount="100" clientAuth="false"
- *                disableUploadTimeout="true" enableLookups="false" maxThreads="25"
- *                port="8443" keystoreFile="/home/root/.keystore"
- *                keystorePass="changeit"
- *                protocol="org.apache.coyote.http11.Http11NioProtocol" scheme="https"
- *                secure="true" sslProtocol="TLS" /&gt;
- * </pre>
- * <pre>
- *      &lt;Connector port="8009" protocol="AJP/1.3" redirectPort="8443"/&gt;
- * </pre>
  */
 
 @Configuration
 @ConditionalOnProperty(value = "nexus.backend.tomcat.connector.https.enable")
 @Profile("withTomcat") // Embedded!
-public class TomcatConnectorConfig {
+public class TomcatConnectorConfig implements WebServerFactoryCustomizer<TomcatServletWebServerFactory> {
 
     private final static Logger logger = LoggerFactory.getLogger(TomcatConnectorConfig.class);
 
@@ -78,36 +67,55 @@ public class TomcatConnectorConfig {
     @Value("${nexus.backend.tomcat.ssl.ajp.connector.protocol:AJP/1.3}")
     private String AJP_PROTOCOL;
 
-    @Bean
-    public ServletWebServerFactory servletContainer() {
-        logger.info("Starting TLS/SSL Tomcat Factory");
-        TomcatServletWebServerFactory tomcat = new TomcatServletWebServerFactory();
-        if (enableAjp) tomcat.addAdditionalTomcatConnectors(sslConnector(), ajpConnector());
-        else tomcat.addAdditionalTomcatConnectors(sslConnector());
-        return tomcat;
+    @Override
+    public void customize(TomcatServletWebServerFactory factory) {
+        logger.info("Customizing Tomcat Factory with Additional TLS/SSL or AJP Connectors");
+
+        // Add additional connectors strictly once
+        if (enableAjp) {
+            factory.addAdditionalTomcatConnectors(sslConnector(), ajpConnector());
+            logger.info("HTTPS and AJP Connectors successfully added to Tomcat");
+        } else {
+            factory.addAdditionalTomcatConnectors(sslConnector());
+            logger.info("HTTPS Connector successfully added to Tomcat (AJP disabled)");
+        }
     }
 
+    /**
+     * Helper method to build the AJP Connector.
+     * WARNING: Do NOT annotate this with @Bean.
+     */
     private Connector ajpConnector() {
-        // Define an AJP 1.3 Connector on port 8009
         Connector connector = new Connector(AJP_PROTOCOL);
         connector.setPort(AJP_PORT);
         connector.setRedirectPort(HTTPS_PORT);
-        // Disabled required secret
-        ((AbstractAjpProtocol<?>) connector.getProtocolHandler()).setSecretRequired(secretRequiredAjp);
+
+        AbstractAjpProtocol<?> protocol = (AbstractAjpProtocol<?>) connector.getProtocolHandler();
+        protocol.setSecretRequired(secretRequiredAjp);
+
+        // Bind AJP strictly to localhost IPv6 loopback, replicating address="::1"
+        try {
+            protocol.setAddress(InetAddress.getByName("::1"));
+        } catch (Exception e) {
+            logger.error("Failed to bind AJP address to ::1", e);
+        }
+
         return connector;
     }
 
-    private Connector sslConnector(){
-        // Connector Apache Coyote Http11NioProtocol
+    /**
+     * Helper method to build the HTTPS/TLS Connector.
+     * WARNING: Do NOT annotate this with @Bean.
+     */
+    private Connector sslConnector() {
         Connector httpsConnector = new Connector(TomcatServletWebServerFactory.DEFAULT_PROTOCOL);
         httpsConnector.setPort(HTTPS_PORT);
         httpsConnector.setSecure(true);
         httpsConnector.setScheme("https");
         httpsConnector.setProperty("SSLEnabled", "true");
         httpsConnector.setEnableLookups(enableLookups);
-        logger.info("Protocol: {}", httpsConnector.getProtocol());
 
-        // Now create a SSLHostConfig with the Root RSA Certificate
+        // Configure the SSL/TLS Certificate
         SSLHostConfig sslConfig = new SSLHostConfig();
         SSLHostConfigCertificate certConfig = new SSLHostConfigCertificate(sslConfig, SSLHostConfigCertificate.Type.RSA);
         certConfig.setCertificateKeystoreFile(pathJKS);
@@ -115,8 +123,18 @@ public class TomcatConnectorConfig {
         certConfig.setCertificateKeyAlias(certificateAlias);
         sslConfig.addCertificate(certConfig);
 
-        // Add the SSLHostConfig in the Tomcat Connector
         httpsConnector.addSslHostConfig(sslConfig);
+
+        // Attach the shared ThreadPool created in TomcatCustomContainer
+        httpsConnector.addLifecycleListener(event -> {
+            if (event.getType().equals(org.apache.catalina.Lifecycle.BEFORE_START_EVENT)) {
+                org.apache.catalina.Executor sharedExecutor = httpsConnector.getService().getExecutor("tomcatThreadPool");
+                if (sharedExecutor != null) {
+                    httpsConnector.getProtocolHandler().setExecutor(sharedExecutor);
+                    logger.info("HTTPS Connector successfully attached to shared 'tomcatThreadPool'");
+                }
+            }
+        });
 
         return httpsConnector;
     }
