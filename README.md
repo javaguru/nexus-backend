@@ -64,6 +64,7 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 
 ***An Ajax Single Page Application communicate through the Rest Controller ApiBackend and its BackendService to a RestApi Backend Server.***
 
+
 ## 🛠️ Build Nexus-Backend
 
 ### ✅ Build requirements
@@ -72,6 +73,7 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 * **SpringBoot 3.3.0** [SpringBoot](https://projects.spring.io/spring-boot/)
 * **Apache Tomcat 10.0.54 & Servlet 6.0.0 (Jakarta)** [Tomcat](https://tomcat.apache.org/download-10.cgi)
 * **Apache Maven >= 3.9.3** [Maven](https://maven.apache.org/download.cgi)
+
 
 ### 🏭 Build WAR Tomcat 10.xx (Embedded or External Tomcat)
 
@@ -83,9 +85,11 @@ Maven clean, compile, package or install:
 
 and look for the war at `target/nexus-backend-{version}.war`
 
+
 ### 📋 Get the Javadoc
 
 `mvn javadoc:javadoc`
+
 
 ### 🔥 Run SpringBoot App
 
@@ -102,24 +106,33 @@ Maven clean and install nexus-backend:
 
 `mvn clean install`
 
-with Java, Embedded Tomcat and custom embedded Tomcat Container (Profile withTomcat) and NativeMemoryTracking:
+- With Java, Embedded Tomcat and custom embedded Tomcat Container (Profile withTomcat) and NativeMemoryTracking:
 
 `java -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
 
-with Java, Development environment, Embedded Tomcat and  custom embedded Tomcat Container, and NativeMemoryTracking:
+- With Java, Development environment, Embedded Tomcat and  custom embedded Tomcat Container, and NativeMemoryTracking:
 
 `java -Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
 
 💡 Note: The Tomcat profile enables a custom Embedded Tomcat Container with Security Constraints (equivalent to a web.xml file)
 and loads a predefined embedded tomcat-user.xml file. I recommend externalizing your own tomcat-user.xml file, see next part the configuration.
 
-with Maven, we need change dir to /nexus-backend (prerequisite compile the project):
+- With Java and a Java KeyStore SSL TrustStore, Development environment, Embedded Tomcat and  custom embedded Tomcat Container, and NativeMemoryTracking:
+
+If you are using the Tomcat HTTPS connector, the JKS file must be filled with the certificate of the SSL domain postman-echo.com or others to communicate via the HTTP TLS/SSL protocol.
+
+`java -Djavax.net.ssl.trustStore=/root/.keystore -Djavax.net.ssl.trustStorePassword=changeit -Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+
+💡 Note: Enable the Tomcat connector HTTPS and configure the SSL port 8443 in the config 
+
+- With Maven, we need change dir to /nexus-backend (prerequisite compile the project):
 
 `cd nexus-backend`
 
 And run Spring-boot (-XX:NativeMemoryTracking=summary for monitored Native Memory Tracking for ONNX Neural Network):
 
 `mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary"`
+
 
 ### 🚀 The Nexus-Backend Configuration
 
@@ -700,9 +713,12 @@ Normally, it communicates to an API interface Backend.
 
 ####  Initialize the RestApi BackendService
 
+New instance BackendService:
+
 ```
 BackendService backendService = new BackendServiceImpl();
-backendService.setBackendURL("https://internal.domain.com:9094");
+backendService.setConfig(new BackendConfigProperties());
+backendService.setBackendURL("https://postman-echo.com");
 backendService.setRestOperations(new RestTemplate());
 backendService.setObjectMapper(new ObjectMapper());
 ```

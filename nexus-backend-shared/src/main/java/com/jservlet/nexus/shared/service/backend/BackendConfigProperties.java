@@ -3,6 +3,7 @@ package com.jservlet.nexus.shared.service.backend;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -30,7 +31,7 @@ public class BackendConfigProperties {
     private boolean forwardedHeaders;
 
     @Value("#{'${nexus.backend.forwarded.client.headers:}'.split(',')}")
-    private List<String> forwardedClientHeaders;
+    private List<String> forwardedClientHeaders = new ArrayList<>();
 
     @Value("${nexus.backend.header.host.remove:false}")
     private boolean removeHostHeader;
@@ -42,16 +43,20 @@ public class BackendConfigProperties {
     private boolean truncated;
 
     @Value("${nexus.backend.http.response.truncated.maxLength:1000}")
-    private int maxLengthTruncated;
+    private int maxLengthTruncated = 1000;
 
     @Value("${nexus.backend.header.user-agent:JavaNexus}")
     private String userAgent;
 
     @Value("${nexus.backend.error.message.class:com.jservlet.nexus.shared.service.backend.api.ErrorMessage}")
-    private String errorMessageClassName;
+    private String errorMessageClassName = "com.jservlet.nexus.shared.service.backend.api.ErrorMessage";
 
     public String getBackendUrl() {
         return backendUrl;
+    }
+
+    public void setBackendUrl(String backendUrl) {
+        this.backendUrl = backendUrl;
     }
 
     public String getUsername() {

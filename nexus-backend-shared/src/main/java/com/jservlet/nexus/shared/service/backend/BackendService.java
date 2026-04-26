@@ -18,11 +18,13 @@
 
 package com.jservlet.nexus.shared.service.backend;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.exceptions.*;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.web.client.RestOperations;
 
 /**
  * Rest BackendService
@@ -191,7 +193,13 @@ public interface BackendService {
         ParameterizedTypeReference<T> getResponseParameterizedTypeReference();
     }
 
+    void setBackendURL(String backendURL);
     String getBackendURL();
+
+    void setRestOperations(RestOperations restOperations);
+    void setObjectMapper(ObjectMapper objectMapper);
+
+    void setConfig(BackendConfigProperties backendConfigProperties);
     boolean isRemovedHeaders();
 
 }

@@ -1,5 +1,7 @@
 package com.jservlet.nexus.shared.service.backend.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jservlet.nexus.shared.service.backend.BackendConfigProperties;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
@@ -11,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 
 import com.jservlet.nexus.shared.exceptions.*;
+import org.springframework.web.client.RestOperations;
 
 /**
  * Wrapper BackendService Resilient4j
@@ -229,13 +232,34 @@ public class BackendServiceResilientWrapper implements BackendService {
     }
 
     @Override
+    public void setBackendURL(String backendURL) {
+        backendService.setBackendURL(backendURL);
+    }
+
+    @Override
     public String getBackendURL() {
         return backendService.getBackendURL();
+    }
+
+    @Override
+    public void setRestOperations(RestOperations restOperations) {
+        backendService.setRestOperations(restOperations);
+    }
+
+    @Override
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        backendService.setObjectMapper(objectMapper);
+    }
+
+    @Override
+    public void setConfig(BackendConfigProperties backendConfigProperties) {
+        backendService.setConfig(backendConfigProperties);
     }
 
     @Override
     public boolean isRemovedHeaders() {
         return backendService.isRemovedHeaders();
     }
+
 
 }

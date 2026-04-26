@@ -79,10 +79,12 @@ public final class BackendServiceImpl implements BackendService {
 
     public BackendServiceImpl() {
         this.isHandleBackendEntity = false;
+        this.errorClass = ErrorMessage.class;
     }
 
     public BackendServiceImpl(boolean isHandleBackendEntity) {
         this.isHandleBackendEntity = isHandleBackendEntity;
+        this.errorClass = ErrorMessage.class;
     }
 
     public BackendServiceImpl(BackendConfigProperties config, RestOperations restOperations, ObjectMapper objectMapper, boolean isHandleBackendEntity) {
@@ -103,20 +105,27 @@ public final class BackendServiceImpl implements BackendService {
     }
 
 
+    @Override
     public void setConfig(BackendConfigProperties config) {
         this.config = config;
-        this.setBackendURL(this.config.getBackendUrl());
+        this.backendURL = this.config.getBackendUrl();
         this.config.getForwardedClientHeaders().addAll(STATIC_FORWARDED_HEADERS);
     }
 
+    @Override
     public void setBackendURL(String backendURL) {
         this.backendURL = backendURL;
+        if (this.config != null) {
+            this.config.setBackendUrl(backendURL);
+        }
     }
 
+    @Override
     public void setRestOperations(RestOperations restOperations) {
         this.restOperations = restOperations;
     }
 
+    @Override
     public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
@@ -134,10 +143,6 @@ public final class BackendServiceImpl implements BackendService {
             logger.error("Configured error message class not found: {}. Falling back to default.", className, e);
             errorClass = ErrorMessage.class;
         }
-    }
-
-    @PostConstruct
-    public void init() {
     }
 
 
