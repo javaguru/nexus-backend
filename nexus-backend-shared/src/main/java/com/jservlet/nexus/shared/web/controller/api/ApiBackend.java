@@ -21,6 +21,7 @@ package com.jservlet.nexus.shared.web.controller.api;
 import com.jservlet.nexus.shared.exceptions.NexusHttpException;
 import com.jservlet.nexus.shared.exceptions.NexusIllegalUrlException;
 import com.jservlet.nexus.shared.exceptions.NexusResourceNotFoundException;
+import com.jservlet.nexus.shared.exceptions.NexusServiceUnavailableException;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendService.ResponseType;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl.EntityBackend;
@@ -275,8 +276,22 @@ public class ApiBackend extends ApiBase {
         } catch (NexusResourceNotFoundException e) {
             // Return an error Message NOT_FOUND
             return super.getResponseEntity("404", "ERROR", e, HttpStatus.NOT_FOUND);
+        } catch (NexusServiceUnavailableException e) {
+            // Return an error Message SERVICE_UNAVAILABLE
+            return super.getResponseEntity("503", "ERROR", e, HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
+
+    /*
+     * List restricted headers
+     */
+    private static final Set<String> RESTRICTED_HEADERS = Set.of(
+            HttpHeaders.HOST.toLowerCase(),
+            HttpHeaders.CONNECTION.toLowerCase(),
+            HttpHeaders.CONTENT_LENGTH.toLowerCase(),
+            "keep-alive",
+            "transfer-encoding"
+    );
 
     /**
      * Get all Headers from the HttpServletRequest, apply ID headers set "X-ID" and inject headers X-Forwarded-*
@@ -288,16 +303,10 @@ public class ApiBackend extends ApiBase {
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            headers.add(headerName, request.getHeader(headerName));
+            if (!RESTRICTED_HEADERS.contains(headerName.toLowerCase())) {
+                headers.add(headerName, request.getHeader(headerName));
+            }
         }
-        /*// Backup and remove the original Origin!
-        if (headers.getOrigin() != null) {
-            headers.set(HttpHeaders.ORIGIN + "-Client", headers.getOrigin());
-            headers.setOrigin(null); // remove Origin
-        }
-
-        // Set the current Request as Origin
-        headers.setOrigin(request.getRequestURL().toString());*/
 
         // Injection headers X-Forwarded-*
         if (forwardHeaders) {

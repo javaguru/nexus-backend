@@ -20,6 +20,7 @@ package com.jservlet.nexus.shared.web.filter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.web.firewall.RequestRejectedException;
 
 import java.util.Collections;
 import java.util.List;
@@ -56,9 +57,10 @@ public class WAFPredicate {
 
     // Configurable length limits for various request components
     private int parameterNamesLength = 255;
-    private int parameterValuesLength = 1000000;
+    // Max 1_000_000 / 1Mo - The test will throw a RequestRejectedException!
+    private int parameterValuesLength = 1_000_000;
     private int headerNamesLength = 255;
-    private int headerValuesLength = 25000;
+    private int headerValuesLength = 6000;
     private int hostNamesLength = 255;
 
     // Pattern for allowed hostnames (default allows all if empty pattern)
@@ -99,6 +101,9 @@ public class WAFPredicate {
         @Override
         public boolean test(String value) {
             if (value == null) return true;
+            /*// Protect against ReDos
+            if (value.length() > 1_000_000)
+                throw new RequestRejectedException("WAF Predicate cannot have more than 1_000_000 characters.");*/
             boolean isSafe = !isWAFPattern(value, patterns);
             if (!isSafe) {
                 logger.warn("WAF Blocked by rule [{}]. Value snippet: {}", ruleName, value.substring(0, Math.min(value.length(), 200)));
@@ -118,11 +123,9 @@ public class WAFPredicate {
 
     private static boolean isWAFPattern(String value, List<Pattern> patterns) {
         if (value == null) return false;
-        // Protect against ReDos
-        String safeValue = value.length() > 10000 ? value.substring(0, 10000) : value;
         // matcher pattern find ?
         for (Pattern pattern : patterns) {
-            if (pattern.matcher(safeValue).find())
+            if (pattern.matcher(value).find())
                 return true;
         }
         return false;

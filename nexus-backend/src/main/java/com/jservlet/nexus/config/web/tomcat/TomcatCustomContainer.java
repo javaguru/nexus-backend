@@ -18,12 +18,12 @@
 
 package com.jservlet.nexus.config.web.tomcat;
 
-import org.apache.catalina.Context;
 import org.apache.catalina.authenticator.BasicAuthenticator;
+import org.apache.catalina.core.StandardThreadExecutor;
+import org.apache.catalina.realm.LockOutRealm;
 import org.apache.catalina.realm.MemoryRealm;
 import org.apache.catalina.valves.AccessLogValve;
 import org.apache.catalina.valves.ErrorReportValve;
-import org.apache.catalina.valves.ExtendedAccessLogValve;
 import org.apache.catalina.valves.HealthCheckValve;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
@@ -31,7 +31,6 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Profile;
@@ -43,60 +42,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 
 /**
  * Custom Container with an Embedded Tomcat: <br>
- *  - Customizes Connector Http <br>
- *  - Extended Access Log Valve <br>
- *  - Error ReportValve <br>
- *  - Configuration ACL / Security constraint <br>
- * <br>
- * <br>
- * server.xml
- * <pre>
- * &lt;Connector port="8080" protocol="HTTP/1.1"
- *             executor="tomcatThreadPool"
- *             redirectPort="8443"
- *             enableLookups="false"
- *             acceptCount="100"
- *             connectionTimeout="20000"
- *             maxPostSize="10485760"
- *             disableUploadTimeout="true"
- *             compression="on"
- *             compressableMimeType="text/html,text/xml,text/plain,text/javascript,text/css,application/json"
- *             URIEncoding="UTF-8"
- *             maxHttpHeaderSize="32768"
- * 			   rejectIllegalHeader="true"
- *             server="git di nexus a"
- *     /&gt;
- * </pre>
- * <pre>
- *      &lt;Valve className="org.apache.catalina.valves.ErrorReportValve"
- *            showReport="false"
- *            showServerInfo="false"/&gt;
- * </pre>
- * <pre>
- *      &lt;Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
- *          prefix="localhost_access_log" suffix=".txt"
- *          pattern="%h %l %u %t &quot;%r&quot; %s %b" /&gt;
- * </pre>
- * <br>
- * <br>
- * tomcat-users.xml
- * <pre>
- *      &lt;role rolename="manager-gui"/&gt;
- *      &lt;role rolename="admin-gui"/&gt;
- *      &lt;user username="admin" password="admin" roles="manager-gui,admin-gui"/&gt;
- * </pre>
+ * - Customizes HTTP Connector <br>
+ * - Access Log Valve <br>
+ * - Error Report Valve <br>
+ * - ACL / Security constraint configuration <br>
+ *  <br>
+ *  SpringBoot managed the Server, Catalina Service, Engine and the localhost Host by the WebServerFactoryCustomizer
  */
-@Profile("withTomcat")
 @Component
+@Profile("withTomcat")
 public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatServletWebServerFactory> {
 
     private final static Logger logger = LoggerFactory.getLogger(TomcatCustomContainer.class);
-
-    @Value("${nexus.backend.tomcat.embedded.webxml.path:}")
-    private String externalWebXmlPath;
 
     @Value("${nexus.backend.tomcat.accesslog.valve.enable:false}")
     private boolean accessLogEnabled;
@@ -104,11 +65,10 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     @Value("${nexus.backend.tomcat.healthcheck.enable:true}")
     private boolean healthCheckEnabled;
 
-    // Default HealthCheck endpoint path /health
     @Value("${nexus.backend.tomcat.healthcheck.path:/health}")
     private String healthCheckPath;
 
-    // Default Accesslog properties
+    // Accesslog properties
     @Value("${nexus.backend.tomcat.accesslog.directory:}")
     private String directory;
     @Value("${nexus.backend.tomcat.accesslog.suffix:.log}")
@@ -119,34 +79,36 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     private String pattern;
     @Value("${nexus.backend.tomcat.accesslog.encoding:UTF-8}")
     private String encoding;
-    @Value("${nexus.backend.tomcat.accesslog.checkExists:true}")
+    @Value("${nexus.backend.tomcat.accesslog.checkExists:false}")
     private boolean checkExists;
     @Value("${nexus.backend.tomcat.accesslog.asyncSupported:true}")
     private boolean asyncSupported;
     @Value("${nexus.backend.tomcat.accesslog.renameOnRotate:true}")
     private boolean renameOnRotate;
-    @Value("${nexus.backend.tomcat.accesslog.throwOnFailure:true}")
-    private boolean throwOnFailure;
     @Value("${nexus.backend.tomcat.accesslog.maxDays:-1}")
     private int maxDays;
 
-    // Default errorReport properties
+    // Error Report properties
     @Value("${nexus.backend.tomcat.error-report.showReport:false}")
     private boolean showReport;
     @Value("${nexus.backend.tomcat.error-report.showServerInfo:false}")
     private boolean showServerInfo;
 
-    // Default Security constraint properties
-    @Value("${nexus.backend.tomcat.security.patterns:/actuator/*,/health/*,/nmt/*}")
+    // Security constraints properties
+    @Value("${nexus.backend.tomcat.security.patterns:/actuator/*,/nmt/*}")
     private String[] securityPatterns;
+    @Value("${nexus.backend.tomcat.security.health.patterns:/health/*}")
+    private String[] healthPatterns;
     @Value("${nexus.backend.tomcat.security.admin.acl.enable:true}")
     private boolean adminAclEnabled;
     @Value("${nexus.backend.tomcat.security.users.file:}")
     private String customUsersFilePath;
-    @Value("${nexus.backend.tomcat.security.role:admin-gui}")
-    private String securityRole;
+    @Value("#{'${nexus.backend.tomcat.security.gui.roles:admin-gui}'.split(',')}")
+    private List<String> securitiesRoles;
+    @Value("#{'${nexus.backend.tomcat.security.health.roles:admin-health,admin-gui}'.split(',')}")
+    private List<String> healthRoles;
 
-    // Default Connector properties (HTTP)
+    // Connector properties (HTTP)
     @Value("${nexus.backend.tomcat.connector.accept-count:100}")
     private int acceptCount;
     @Value("${nexus.backend.tomcat.connector.connection-timeout:20000}")
@@ -168,28 +130,21 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     @Value("${nexus.backend.tomcat.connector.server:git di nexus a}")
     private String serverHeader;
 
+    @Value("${nexus.backend.tomcat.executor.maxThreads:300}")
+    private int maxThreads;
+    @Value("${nexus.backend.tomcat.executor.minSpareThreads:4}")
+    private int minSpareThreads;
+
+    @Value("${nexus.backend.tomcat.acl.realm.lock.failureCount:5}")  // Max 5 attempts
+    private int failureCount;
+    @Value("${nexus.backend.tomcat.acl.realm.lock.lockOutTime:300}") // 5 minutes lockout
+    private int lockOutTime;
+
 
     @Override
     public void customize(TomcatServletWebServerFactory factory) {
-        // Config external path Web.xml
-        if (externalWebXmlPath != null && !externalWebXmlPath.isEmpty()) {
-            File webXmlFile = new File(externalWebXmlPath);
 
-            if (webXmlFile.exists()) {
-                factory.addContextCustomizers(new TomcatContextCustomizer() {
-                    @Override
-                    public void customize(Context context) {
-                        logger.info("Force Embedded Tomcat to read external web.xml : {}", webXmlFile.getAbsolutePath());
-                        // Tomcat's magic method to override the default WEB-INF/web.xml
-                        context.setAltDDName(webXmlFile.getAbsolutePath());
-                    }
-                });
-            } else {
-                logger.warn("The external web.xml file was not found.: {}", webXmlFile.getAbsolutePath());
-            }
-        }
-
-        // Config Http connector by default
+        // Configure HTTP Connector and Valves
         factory.addConnectorCustomizers(connector -> {
             connector.setProperty("acceptCount", String.valueOf(acceptCount));
             connector.setProperty("connectionTimeout", String.valueOf(connectionTimeout));
@@ -206,11 +161,30 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
             connector.setProperty("rejectIllegalHeader", String.valueOf(rejectIllegalHeader));
             connector.setProperty("server", serverHeader);
 
-            logger.info("Configured Default HTTP Connector: rejectIllegalHeader={}, serverHeader={}, compression={}",
-                    rejectIllegalHeader, serverHeader, compression);
+            logger.info("Configured Default HTTP Connector: acceptCount={}, connectionTimeout={}, maxPostSize={}, disableUploadTimeout={}," +
+                            "compression={},  compressableMimeType={}, uriEncoding={}," +
+                            "maxHttpHeaderSize={}, rejectIllegalHeader={}, serverHeader={}",
+                    acceptCount, connectionTimeout, maxPostSize, disableUploadTimeout,
+                    compression, compressableMimeType, uriEncoding,
+                    maxHttpHeaderSize, rejectIllegalHeader, serverHeader
+            );
+
+            // Creating the thread pool
+            StandardThreadExecutor executor = new StandardThreadExecutor();
+            executor.setName("tomcatThreadPool");
+            executor.setNamePrefix("catalina-exec-");
+            executor.setMaxThreads(maxThreads);
+            executor.setMinSpareThreads(minSpareThreads);
+
+            // Attachment to the Default HTTP Service and Connector
+            connector.getService().addExecutor(executor);
+            connector.getProtocolHandler().setExecutor(executor);
+
+            logger.info("Global Executor 'tomcatThreadPool' created and attached to default HTTP Connector." +
+                    "maxThreads: {}, minSpareThreads: {}", maxThreads, minSpareThreads);
         });
 
-        // Health Check Tomcat for Load Balancer!
+        // Health Check Valve
         if (healthCheckEnabled) {
             HealthCheckValve healthCheckValve = new HealthCheckValve();
             healthCheckValve.setPath(healthCheckPath);
@@ -218,143 +192,151 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
             logger.info("Starting Tomcat Catalina HealthCheck Valve on path: {}", healthCheckPath);
         }
 
-        // Access logs
+        // Access Log Valve
         if (accessLogEnabled) {
             logger.info("Starting Tomcat Catalina AccessLog Valve");
-            AccessLogValve accessLogValve = getAccessLogValve(); // getExtendedAccessLogValve();
-            factory.addEngineValves(accessLogValve);
-        } else {
-            logger.debug("Tomcat AccessLog Valve is disabled");
+            factory.addEngineValves(getAccessLogValve());
         }
 
-        // Error Report, no server version and no report
+        // Error Report Valve (Hides server version and detailed reports)
         ErrorReportValve errorReportValve = new ErrorReportValve();
         errorReportValve.setShowReport(showReport);
         errorReportValve.setShowServerInfo(showServerInfo);
-        factory.addEngineValves(errorReportValve); // GLOBAL!
-        logger.info("Starting Tomcat Catalina ErrorReport Valve: showReport {} - ShowServerInfo {}", showReport, showServerInfo);
+        factory.addEngineValves(errorReportValve);
+        logger.info("Starting Tomcat Catalina ErrorReport Valve: showReport={}, showServerInfo={}", showReport, showServerInfo);
 
-        // Configuration ACL / Security constraint
+
+        // Unified security configuration (Realm, LockOut, and Constraints)
         if (adminAclEnabled) {
-            logger.info("Configuring Tomcat Security Constraint Pattern path");
             factory.addContextCustomizers(context -> {
-                MemoryRealm realm = new MemoryRealm();
+                MemoryRealm memoryRealm = new MemoryRealm();
                 File userConfigFile = null;
 
                 try {
-                    // specific path
+                    // Check specific path
                     if (customUsersFilePath != null && !customUsersFilePath.isEmpty()) {
                         userConfigFile = new File(customUsersFilePath);
                     }
 
-                    // auto-detect catalina.base
+                    // Auto-detection: catalina.base
                     if ((userConfigFile == null || !userConfigFile.exists()) && System.getProperty("catalina.base") != null) {
                         File candidate = new File(System.getProperty("catalina.base"), "conf/tomcat-users.xml");
-                        if (candidate.exists()) {
-                            userConfigFile = candidate;
-                        }
+                        if (candidate.exists()) userConfigFile = candidate;
                     }
-                    // auto-detect catalina.home
+
+                    // Auto-detection: catalina.home
                     if ((userConfigFile == null || !userConfigFile.exists()) && System.getProperty("catalina.home") != null) {
                         File candidate = new File(System.getProperty("catalina.home"), "conf/tomcat-users.xml");
-                        if (candidate.exists()) {
-                            userConfigFile = candidate;
-                        }
+                        if (candidate.exists()) userConfigFile = candidate;
                     }
 
-                    // Application or Fallback Classpath
+                    // Fallback to embedded classpath resource
                     if (userConfigFile != null && userConfigFile.exists()) {
-                        logger.info("Loading tomcat-users.xml from path {}", userConfigFile.getAbsolutePath());
-                        realm.setPathname(userConfigFile.getAbsolutePath());
+                        logger.info("Loading tomcat-users.xml from path: {}", userConfigFile.getAbsolutePath());
+                        memoryRealm.setPathname(userConfigFile.getAbsolutePath());
                     } else {
-                        // File embedded src/main/resources
-                        logger.info("Loading embedded tomcat-users.xml from classpath");
                         ClassPathResource resource = new ClassPathResource("tomcat-users.xml");
-
                         if (resource.exists()) {
-                            userConfigFile = File.createTempFile("tomcat-users-embedded", ".xml");
+                            userConfigFile = File.createTempFile("users-embedded-", ".xml");
                             userConfigFile.deleteOnExit();
 
                             try (InputStream inputStream = resource.getInputStream()) {
                                 Files.copy(inputStream, userConfigFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                             }
-                            realm.setPathname(userConfigFile.getAbsolutePath()); // WARN set Pathname!
+                            memoryRealm.setPathname(userConfigFile.getAbsolutePath());
                             logger.info("Embedded tomcat-users.xml extracted to: {}", userConfigFile.getAbsolutePath());
                         } else {
-                            logger.error("File tomcat-users.xml not found in classpath!");
+                            logger.error("tomcat-users.xml not found in classpath!");
                         }
                     }
-
                 } catch (IOException e) {
-                    logger.error("Failed to load tomcat-users.xml configuration", e);
+                    logger.error("Failed to manage tomcat-users.xml configuration", e);
                 }
 
-                context.setRealm(realm);
+                // Security Realm configuration (Always Active)
+                logger.info("Initializing Tomcat Security Realm with LockOut Protection");
 
-                SecurityConstraint securityConstraint = new SecurityConstraint();
-                securityConstraint.setUserConstraint("NONE");
-                securityConstraint.setDisplayName("Admin Access Constraint");
-                securityConstraint.setAuthConstraint(true);
+                // Wrap in LockOutRealm to prevent brute force attacks
+                LockOutRealm lockOutRealm = new LockOutRealm();
+                lockOutRealm.addRealm(memoryRealm);
+                lockOutRealm.setFailureCount(failureCount);
+                lockOutRealm.setLockOutTime(lockOutTime);
 
-                SecurityCollection collection = new SecurityCollection();
+                // Assign the realm to the context
+                context.setRealm(lockOutRealm);
 
-                if (securityPatterns != null) {
-                    for (String p : securityPatterns) {
-                        if (!p.trim().isEmpty()) {
-                            collection.addPattern(p.trim());
-                            logger.info("- Constraint Pattern {}", p.trim());
-                        }
-                    }
+                // Programmatic constraints & authenticator (always applied)
+                // Spring Boot Embedded completely ignores web.xml. We MUST define ACLs programmatically.
+                logger.info("Applying programmatic security constraints and authenticator");
+
+                // Admin Area Constraints (/actuator, /nmt)
+                SecurityConstraint adminConstraint = new SecurityConstraint();
+                adminConstraint.setUserConstraint("NONE");
+                adminConstraint.setDisplayName("Nexus Admin Access Constraint");
+                adminConstraint.setAuthConstraint(true);
+
+                SecurityCollection adminCol = new SecurityCollection();
+                for (String p : securityPatterns) {
+                    adminCol.addPattern(p.trim());
+                    logger.info("- Protected Admin path: {}", p.trim());
                 }
+                adminConstraint.addCollection(adminCol);
 
-                securityConstraint.addCollection(collection);
-                securityConstraint.addAuthRole(securityRole); // Utilisation de la variable
+                for (String role : securitiesRoles) {
+                    adminConstraint.addAuthRole(role);
+                    context.addSecurityRole(role);
+                    logger.info("- Authorized Admin role: {}", role);
+                }
+                context.addConstraint(adminConstraint);
 
-                context.addConstraint(securityConstraint);
-                context.addSecurityRole(securityRole);
+                // Health Area Constraints (/health)
+                SecurityConstraint healthConstraint = new SecurityConstraint();
+                healthConstraint.setUserConstraint("NONE");
+                healthConstraint.setDisplayName("Nexus Health Access Constraint");
+                healthConstraint.setAuthConstraint(true);
 
-                // Authentication config method (Browser Pop-up)
+                SecurityCollection healthCol = new SecurityCollection();
+                for (String p : healthPatterns) {
+                    healthCol.addPattern(p.trim());
+                    logger.info("- Protected Health path: {}", p.trim());
+                }
+                healthConstraint.addCollection(healthCol);
+
+                for (String role : healthRoles) {
+                    healthConstraint.addAuthRole(role);
+                    context.addSecurityRole(role);
+                    logger.info("- Authorized Health role: {}", role);
+                }
+                context.addConstraint(healthConstraint);
+
+                // Authentication Method (Programmatic fallback)
                 LoginConfig loginConfig = new LoginConfig();
-                loginConfig.setAuthMethod("BASIC"); // ou "DIGEST", "FORM"
+                loginConfig.setAuthMethod("BASIC");
                 loginConfig.setRealmName("Nexus Backend Realm");
                 context.setLoginConfig(loginConfig);
 
-                // Inject now the basic Authentication
-                BasicAuthenticator basicAuthenticator = new BasicAuthenticator();
-                context.getPipeline().addValve(basicAuthenticator);
+                // Inject the Basic Authenticator Valve
+                context.getPipeline().addValve(new BasicAuthenticator());
+
+                logger.info("Programmatic Security configuration completed.");
             });
         }
     }
 
+    /**
+     * Helper to configure the AccessLog Valve
+     */
     private AccessLogValve getAccessLogValve() {
-        AccessLogValve accessLogValve = new AccessLogValve();
-        accessLogValve.setDirectory(directory);
-        accessLogValve.setPrefix(prefix);
-        accessLogValve.setSuffix(suffix);
-        accessLogValve.setCheckExists(checkExists);
-        accessLogValve.setBuffered(false); /// WARN disable buffer
-        accessLogValve.setPattern(pattern);
-        accessLogValve.setEncoding(encoding);
-        accessLogValve.setAsyncSupported(asyncSupported);
-        accessLogValve.setRenameOnRotate(renameOnRotate);
-        accessLogValve.setMaxDays(maxDays);
-        return accessLogValve;
+        AccessLogValve valve = new AccessLogValve();
+        valve.setDirectory(directory);
+        valve.setPrefix(prefix);
+        valve.setSuffix(suffix);
+        valve.setPattern(pattern);
+        valve.setEncoding(encoding);
+        valve.setAsyncSupported(asyncSupported);
+        valve.setRenameOnRotate(renameOnRotate);
+        valve.setCheckExists(checkExists);
+        valve.setMaxDays(maxDays);
+        return valve;
     }
-
-    /* WARN Display pattern buggy !?
-    private ExtendedAccessLogValve getExtendedAccessLogValve() {
-        ExtendedAccessLogValve accessLogValve = new ExtendedAccessLogValve();
-        accessLogValve.setDirectory(directory);
-        accessLogValve.setSuffix(suffix);
-        accessLogValve.setPrefix(prefix);
-        accessLogValve.setBuffered(false);
-        accessLogValve.setCheckExists(checkExists);
-        accessLogValve.setPattern(pattern);
-        accessLogValve.setEncoding(encoding);
-        accessLogValve.setAsyncSupported(asyncSupported);
-        accessLogValve.setRenameOnRotate(renameOnRotate);
-        accessLogValve.setThrowOnFailure(throwOnFailure);
-        accessLogValve.setMaxDays(maxDays);
-        return accessLogValve;
-    }*/
 }

@@ -48,10 +48,6 @@ public class Application {
      * @param args {@link String[]}
      */
     public static void main(String[] args) {
-        //System.setProperty("spring.devtools.restart.enabled", "false");
-
-        // Fix ClassNotFoundException: org.slf4j.impl.StaticLoggerBinder
-        System.setProperty("org.springframework.boot.logging.LoggingSystem", "none");
         // Swagger is only available in dev!
         String env = System.getProperty("environment", "development");
         if ("development".equals(env))  System.setProperty("springdoc.swagger-ui.enabled", "true");

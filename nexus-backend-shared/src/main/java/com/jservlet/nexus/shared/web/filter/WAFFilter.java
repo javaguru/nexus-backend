@@ -51,7 +51,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
 /**
  * WebFilter class implements a secure WAF protection for request Body.<br>
@@ -82,11 +88,11 @@ public class WAFFilter extends ApiBase implements Filter {
     private static final String SOURCE = "INTERNAL-WAF-NEXUS-BACKEND";
 
     public enum Reactive {
-        STRICT_ONNX_AI, // STRICT mode + Artificial Intelligence Scan by ONNX Neural Network
-        ONNX_AI, // Artificial Intelligence Scan by ONNX Neural Network
-        STRICT,  // Rejects requests with malicious patterns.
-        PASSIVE, // Cleans malicious patterns from the request.
-        UNSAFE   // Performs no checks on the request.
+        STRICT_ONNX_AI, // WebHttpFirewall + STRICT mode + Artificial Intelligence Scan by ONNX Neural Network
+        ONNX_AI, // WebHttpFirewall + Artificial Intelligence Scan by ONNX Neural Network
+        STRICT,  // WebHttpFirewall + Rejects requests with malicious patterns.
+        PASSIVE, // WebHttpFirewall + Cleans malicious patterns from the request.
+        UNSAFE   // WebHttpFirewall + No checks on request body.
     }
 
     @Value("${nexus.api.backend.filter.waf.reactive.mode:STRICT_ONNX_AI}")
@@ -98,6 +104,14 @@ public class WAFFilter extends ApiBase implements Filter {
     // Max WAF file scan limit (ex: 15MB) to prevent RAM OutOfMemory (DoS attack)
     @Value("${nexus.api.backend.filter.waf.maxInMemoryFileSize:15728640}")
     private long maxInMemoryFileSize = 15 * 1024 * 1024;
+
+    // Max WAF Regex scan limit (ex: 1MB) to prevent RAM OutOfMemory (DoS attack)
+    @Value("${nexus.api.backend.filter.waf.maxRegexLength:1048576}")
+    private int maxRegexLength = 1024 * 1024;
+
+    // Path file incidents AI
+    @Value("${nexus.api.backend.filter.waf.incidents.path:}")
+    private String incidentPath;
 
     private final RequestAnalyzerService mlAnalyzer;
     private final WAFPredicate wafPredicate;
@@ -166,7 +180,7 @@ public class WAFFilter extends ApiBase implements Filter {
             boolean isRootPath = uri.equals(contextPath) || uri.equals(contextPath + "/");
 
             if (isRootPath ||
-                    uri.matches(".*\\.(html|htm|css|js|png|jpg|jpeg|ico|woff|woff2|ttf)$") || // svg|
+                    uri.matches(".*\\.(html|htm|css|js|png|jpg|jpeg|ico|woff|woff2|ttf)$") || // svg| max 1 Mo!
                     uri.contains("/swagger-ui") ||
                     uri.contains("/v3/api-docs") ||
                     uri.contains("/swagger-resources")) {
@@ -174,7 +188,7 @@ public class WAFFilter extends ApiBase implements Filter {
                 return;
             }
 
-            // Apply WAF Policies (STRICT applies to both STRICT and PERFORM_AI)
+            // Apply WAF Policies (STRICT applies to both STRICT and STRICT_ONNX_AI)
             if (reactiveMode == Reactive.STRICT || reactiveMode == Reactive.STRICT_ONNX_AI) {
                 handleStrict(processedRequest);
             } else if (reactiveMode == Reactive.PASSIVE) { // WARN PASSIVE mode can be dangerous.
@@ -223,17 +237,17 @@ public class WAFFilter extends ApiBase implements Filter {
             agnosticUri = "/";
         }
 
-        // Add parameter to URI (?param=value) because the Python model learned them that way.
-        // car le modèle Python les a appris ainsi.
+        // Add parameters to the URI (?param=value) to maintain semantic consistency
+        // with the training dataset format used for the Python model.
         String queryString = request.getQueryString();
         if (queryString != null && !queryString.isEmpty()) {
             agnosticUri += "?" + queryString;
         }
 
-        // The exact tags expected by the Transformer
+        // The exact tags expected by the Transformer semantic layout
         aiPayload.append("METHOD: ").append(method).append("\n");
         aiPayload.append("URI: ").append(agnosticUri).append("\n");
-        aiPayload.append("HEADERS:\n"); // <- CRUCIAL
+        aiPayload.append("HEADERS:\n"); // <- CRUCIAL CONTEXT MARKER
 
         // Extract ONLY Security-Relevant Headers
         List<String> relevantHeaders = Arrays.asList("user-agent", "content-type", "cookie", "referer");
@@ -243,6 +257,7 @@ public class WAFFilter extends ApiBase implements Filter {
             if (relevantHeaders.contains(headerName)) {
                 String headerValue = request.getHeader(headerName);
 
+                // Truncate massive cookies to prevent contextual dilution in the AI model
                 if ("cookie".equals(headerName) && headerValue.length() > 200) {
                     headerValue = headerValue.substring(0, 200);
                 }
@@ -258,10 +273,10 @@ public class WAFFilter extends ApiBase implements Filter {
         // Extract JSON/XML Body & Form Parameters
         StringBuilder bodyBuilder = new StringBuilder();
 
-        // Added Form URL-Encoded parameters (only for requests with a body)
+        // Append Form URL-Encoded parameters (strictly for requests containing a body)
         if ("POST".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method) || "PATCH".equalsIgnoreCase(method)) {
             for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
-                // URL parameters are ignored if they have already been included in the URI.
+                // URL parameters are ignored if they have already been included in the URI string above.
                 if (queryString == null || !queryString.contains(entry.getKey() + "=")) {
                     bodyBuilder.append(entry.getKey()).append("=").append(String.join(",", entry.getValue())).append("\n");
                 }
@@ -271,13 +286,14 @@ public class WAFFilter extends ApiBase implements Filter {
         // Extract JSON/XML Body
         String contentType = request.getContentType();
 
-        // IA NLP not read the binary file...
+        // AI NLP cannot process raw binary files. We substitute it with a semantic tag.
         if (contentType != null && contentType.toLowerCase().contains("multipart/form-data")) {
             bodyBuilder.append("[MULTIPART_FILE_UPLOAD_SKIPPED]");
         } else {
-            // Extraction Body
+            // Safely extract the Body content
             String body = IOUtils.toString(request.getReader());
             if (StringUtils.isNotBlank(body)) {
+                // Flatten the body to remove erratic line breaks which might confuse NLP tokenization
                 String flatBody = body.replaceAll("\\r\\n|\\r|\\n", " ").replaceAll("\\s+", " ").trim();
                 bodyBuilder.append(flatBody);
             }
@@ -296,15 +312,13 @@ public class WAFFilter extends ApiBase implements Filter {
             return; // Nothing to scan
         }
 
-        if (payloadToAnalyze.length() > 5000) {
-            payloadToAnalyze = payloadToAnalyze.substring(0, 5000);
-        }
-
-        // Anonymization (Enterprise Strategy). Hides classic sessions and authentication tokens!
+        // Data Anonymization (Enterprise Strategy)
+        // Masks classic sessions and authentication tokens to prevent AI sensitivity to private hashes
         String safePayload = payloadToAnalyze;
         safePayload = safePayload.replaceAll("(?i)(_cfuvid|__cf_bm|sails\\.sid|jsessionid|phpsessid|aspsessionid|xsrf-token|csrf-token|auth)=[^;\\n\\r]+", "$1=[COOKIE]");
         safePayload = safePayload.replaceAll("mac=\"[^\"]+\"", "mac=\"[TOKEN]\"");
-        safePayload = safePayload.replaceAll("(?i)boundary=[a-zA-Z0-9\\-_]+", "boundary=[BOUNDARY]");   safePayload = safePayload.replaceAll("(?i)Bearer [a-zA-Z0-9\\-_.]+", "Bearer [JWT]");
+        safePayload = safePayload.replaceAll("(?i)boundary=[a-zA-Z0-9\\-_]+", "boundary=[BOUNDARY]");
+        safePayload = safePayload.replaceAll("(?i)Bearer [a-zA-Z0-9\\-_.]+", "Bearer [JWT]");
         safePayload = safePayload.replaceAll("(?i)(access_token|refresh_token|id_token|jwt)=[^;\\n\\r]+", "$1=[JWT]");
         safePayload = safePayload.replaceAll("Postman-Token: [a-zA-Z0-9\\-]+", "Postman-Token: [TOKEN]");
 
@@ -312,7 +326,9 @@ public class WAFFilter extends ApiBase implements Filter {
             boolean isMalicious = mlAnalyzer.isMalicious(safePayload);
 
             if (isMalicious) {
-                logger.warn("AI WAF engine detected a malicious payload: \n{}", safePayload);
+                String incidentId = "WAF_AI_INCIDENT_" + UUID.randomUUID();
+                logger.warn("AI WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId, safePayload);
+                savePayload(safePayload, incidentId);
                 throw new RequestRejectedException("Request rejected: AI WAF Engine detected a malicious payload.");
             }
         } catch (RequestRejectedException rre) {
@@ -320,6 +336,107 @@ public class WAFFilter extends ApiBase implements Filter {
         } catch (Exception e) {
             logger.error("Error during AI WAF inspection: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * Log and Save AI request Payload
+     *
+     * @param safePayload String    Safe Payload
+     * @param incidentId String     IncidentId
+     */
+    private void savePayload(String safePayload, String incidentId) {
+        try {
+            if (incidentPath != null && !incidentPath.isEmpty()) {
+                Path auditDir = Paths.get(incidentPath);
+                if (!Files.exists(auditDir)) {
+                    Files.createDirectories(auditDir);
+                }
+                if (Files.exists(auditDir)) {
+                    Path auditFile = auditDir.resolve(incidentId + ".txt");
+                    Files.writeString(auditFile, safePayload);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Could not write WAF audit file for incident {}", incidentId, e);
+        }
+    }
+
+    /**
+     * Dump absolument tout le contenu d'une HttpServletRequest pour analyse forensic.
+     */
+    private String dumpFullRequestDetails(HttpServletRequest request) {
+        StringBuilder dump = new StringBuilder();
+        dump.append("\n================ FULL REQUEST DUMP ================\n");
+
+        // 1. Informations de base et Réseau
+        dump.append("--- 1. METADATA ---\n");
+        dump.append("Method: ").append(request.getMethod()).append("\n");
+        dump.append("Request URI: ").append(request.getRequestURI()).append("\n");
+        dump.append("Query String: ").append(request.getQueryString()).append("\n");
+        dump.append("Protocol: ").append(request.getProtocol()).append("\n");
+        dump.append("Remote Addr: ").append(request.getRemoteAddr()).append("\n");
+        dump.append("Remote Host: ").append(request.getRemoteHost()).append("\n");
+        dump.append("Content Type: ").append(request.getContentType()).append("\n");
+        dump.append("Content Length: ").append(request.getContentLength()).append("\n");
+        dump.append("Character Encoding: ").append(request.getCharacterEncoding()).append("\n");
+
+        // 2. En-têtes (Headers)
+        dump.append("\n--- 2. HEADERS ---\n");
+        Enumeration<String> headerNames = request.getHeaderNames();
+        if (headerNames != null) {
+            while (headerNames.hasMoreElements()) {
+                String headerName = headerNames.nextElement();
+                Enumeration<String> headers = request.getHeaders(headerName);
+                while (headers.hasMoreElements()) {
+                    dump.append(headerName).append(": [").append(headers.nextElement()).append("]\n");
+                }
+            }
+        }
+
+        // 3. Paramètres (URL Query + Form URL-Encoded)
+        dump.append("\n--- 3. PARAMETERS ---\n");
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        if (parameterMap != null && !parameterMap.isEmpty()) {
+            for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+                dump.append(entry.getKey()).append(" = [");
+                dump.append(String.join(", ", entry.getValue()));
+                dump.append("]\n");
+            }
+        } else {
+            dump.append("No parameters.\n");
+        }
+
+        // 4. Cookies
+        dump.append("\n--- 4. COOKIES ---\n");
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null && cookies.length > 0) {
+            for (Cookie cookie : cookies) {
+                dump.append(cookie.getName()).append(" = [").append(cookie.getValue()).append("]\n");
+            }
+        } else {
+            dump.append("No cookies.\n");
+        }
+
+        // 5. Body (Lu en toute sécurité grâce à ton WAFRequestWrapper)
+        dump.append("\n--- 5. BODY ---\n");
+        try {
+            if (request instanceof WAFRequestWrapper) {
+                // Lecture du cache sans épuiser le flux pour les contrôleurs
+                String body = IOUtils.toString(request.getReader());
+                if (body != null && !body.trim().isEmpty()) {
+                    dump.append(body).append("\n");
+                } else {
+                    dump.append("Empty Body.\n");
+                }
+            } else {
+                dump.append("[BODY READING SKIPPED - NOT A WRAPPED REQUEST TO AVOID STREAM EXHAUSTION]\n");
+            }
+        } catch (Exception e) {
+            dump.append("[ERROR READING BODY: ").append(e.getMessage()).append("]\n");
+        }
+
+        dump.append("===================================================\n");
+        return dump.toString();
     }
 
     /**
@@ -339,7 +456,7 @@ public class WAFFilter extends ApiBase implements Filter {
         if (underlyingRequest instanceof MultipartRequest originalMultipartRequest) {
             MultiValueMap<String, MultipartFile> newMultipartFiles = new LinkedMultiValueMap<>();
 
-            // Track total bytes to prevent aggregate memory exhaustion (DOS)
+            // Track total bytes to prevent aggregate memory exhaustion (DOS protection)
             long totalBytesProcessed = 0;
             // You should define this limit globally alongside maxInMemoryFileSize
             long maxTotalMemorySize = maxInMemoryFileSize * 5;
@@ -351,21 +468,22 @@ public class WAFFilter extends ApiBase implements Filter {
                     // Clean Original Filename, safe to use in exception messages/logs
                     String safeOriginalFilename = getFilenameString(file);
 
-                    // ANTI-DOS: Single file size limit
+                    // ANTI-DOS: Single file size limit validation
                     if (file.getSize() > maxInMemoryFileSize) {
                         throw new RequestRejectedException("Request rejected: File size exceeds WAF inspection limit for file '" + safeOriginalFilename + "'.");
                     }
-                    // ANTI-DOS: Aggregate file size limit
+
+                    // ANTI-DOS: Aggregate file size limit validation
                     totalBytesProcessed += file.getSize();
                     if (totalBytesProcessed > maxTotalMemorySize) {
                         throw new RequestRejectedException("Request rejected: Total upload size exceeds aggregate WAF memory limit.");
                     }
 
-                    // Load file safely into memory
+                    // Load file safely into memory for WAF inspection
                     byte[] fileContent = file.getBytes();
                     String declaredContentType = file.getContentType();
 
-                    // Magic Number Validation
+                    // Magic Number Validation (Mime-Type spoofing prevention)
                     int headerLength = Math.min(fileContent.length, 8);
                     String hexHeader = bytesToHex(Arrays.copyOfRange(fileContent, 0, headerLength));
                     String magicMimeType = magicNumbers.entrySet().stream()
@@ -373,7 +491,7 @@ public class WAFFilter extends ApiBase implements Filter {
                             .map(Map.Entry::getValue)
                             .findFirst().orElse(null);
 
-                    // ZIP check
+                    // ZIP validation checks
                     boolean isZipBasedFormat = "application/zip".equals(magicMimeType) &&
                             declaredContentType != null &&
                             (declaredContentType.contains("officedocument") ||
@@ -384,20 +502,22 @@ public class WAFFilter extends ApiBase implements Filter {
                         throw new RequestRejectedException("Request rejected: Mime-type spoofing detected for file '" + safeOriginalFilename + "'.");
                     }
 
-                    // XML/SVG Injection Validation
+                    // XML/SVG Deep Injection Validation
                     if (declaredContentType != null && xmlMimeTypes.contains(declaredContentType.toLowerCase())) {
                         String content = new String(fileContent, StandardCharsets.UTF_8);
-                        // Check XXE in file content
-                        if (!wafPredicate.xxePredicate.test(content)) {
+
+                        // Check XXE payloads in file content
+                        if (test(wafPredicate.xxePredicate, content)) {
                             throw new RequestRejectedException("Request rejected: XXE (External Entity) payload detected in XML file '" + safeOriginalFilename + "'.");
                         }
-                        // Check XSS Active Scripting only in file content
-                        if (!wafPredicate.fileXssPredicate.test(content)) {
+
+                        // Check active XSS scripts in file content
+                        if (test(wafPredicate.fileXssPredicate, content)) {
                             throw new RequestRejectedException("Request rejected: Active XSS payload detected in XML/SVG file '" + safeOriginalFilename + "'.");
                         }
                     }
 
-                    // Store with the sanitized filename
+                    // Store safely sanitized file into the wrapper map
                     newMultipartFiles.add(entry.getKey(), new WAFTempMultipartFile(file.getName(), safeOriginalFilename, declaredContentType, fileContent));
                 }
             }
@@ -406,10 +526,18 @@ public class WAFFilter extends ApiBase implements Filter {
         return request;
     }
 
+    private boolean test(Predicate<String> pattern, String content) {
+        if (content == null) return false;
+        if (content.length() > maxRegexLength) {
+            throw new RequestRejectedException("Content exceeds Regex inspection limit (" + maxRegexLength + ").");
+        }
+        return !pattern.test(content);
+    }
+
     /**
-     * Get Filename as safe String
-     * @param file MultipartFile file
-     * @return String
+     * Secures and sanitizes the extracted filename.
+     * * @param file The MultipartFile
+     * @return A sanitized string free of path traversal sequences
      */
     private String getFilenameString(MultipartFile file) {
         String rawFilename = file.getOriginalFilename();
@@ -419,42 +547,45 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Handles STRICT mode. Rejects requests on pattern match.
+     * Handles STRICT mode. Immediately rejects requests matching malicious Regex patterns.
      *
      * @param request The processed HttpServletRequest.
      */
-    private void handleStrict(HttpServletRequest request) throws IOException {
-        // Validate http headers (Critical for Log4Shell/SpEL/Deserialization)
+    private void handleStrict(HttpServletRequest request) throws IOException, IllegalArgumentException {
+        // Validate HTTP headers (Critical against Log4Shell, SpEL, or Deserialization attacks)
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames != null && headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            if (!wafPredicate.getWAFHeaderNames().test(headerName)) {
+            if (test(wafPredicate.getWAFHeaderNames(),headerName)) {
                 throw new RequestRejectedException("Request rejected: Disallowed pattern in Header name.");
+            }
+            String headerValue = request.getHeader(headerName);
+            if (test(wafPredicate.getWAFHeaderValues(),headerValue)) {
+                throw new RequestRejectedException("Request rejected: Disallowed pattern in Header value.");
             }
         }
 
-        // Validate url / form parameters (XSS, SQLi in Query String)
+        // Validate URL / Form parameters (Catches XSS & SQLi in Query Strings)
         for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
-            if (!wafPredicate.getWAFParameterNames().test(entry.getKey())) {
+            if (test(wafPredicate.getWAFParameterNames(), entry.getKey())) {
                 throw new RequestRejectedException("Request rejected: Disallowed pattern in Parameter name.");
             }
             for (String value : entry.getValue()) {
-                if (!wafPredicate.getWAFParameterValues().test(value)) {
+                if (test(wafPredicate.getWAFParameterValues(),value)) {
                     throw new RequestRejectedException("Request rejected: Disallowed pattern in Parameter value.");
                 }
             }
         }
 
-        // Validate cookies
+        // Validate cookies via deep scanning if enabled
         if (isDeepScanCookie) {
             validateCookies(request);
         }
 
-        // Validate json/rest body
+        // Validate JSON/REST body using Regex
         String body = IOUtils.toString(request.getReader());
         if (!StringUtils.isBlank(body)) {
-            // Note: Assume you added getWAFRestApiBody() in WAFPredicate as suggested, otherwise use getWAFParameterValues()
-            if (!wafPredicate.getWAFRestApiBody().test(body)) {
+            if (test(wafPredicate.getWAFRestApiBody(),body)) {
                 throw new RequestRejectedException("Request rejected: Disallowed WAF pattern found in Request Body.");
             }
         }
@@ -471,7 +602,7 @@ public class WAFFilter extends ApiBase implements Filter {
         Map<String, String[]> cleanedParameters = cleanParameterMap(request.getParameterMap());
         ((WAFRequestWrapper) request).setParameterMap(cleanedParameters);
 
-        // Clean XSS patterns from the request body.
+        // Strip XSS patterns seamlessly from the request body.
         String body = IOUtils.toString(request.getReader());
         if (!StringUtils.isBlank(body)) {
             String cleanedBody = stripWAFPatterns(body, wafPredicate.getXSSPatterns());
@@ -490,10 +621,10 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Host and User-Agent include AI.
+     * Validates the request Hostname and verifies if the User-Agent is flagged as an AI or malicious scanner.
      */
     private void validateHostAndUserAgent(HttpServletRequest request) {
-        if (!wafPredicate.getWAFHostnames().test(request.getServerName())) {
+        if (test(wafPredicate.getWAFHostnames(), request.getServerName())) {
             throw new RequestRejectedException("Request rejected: Disallowed Hostname.");
         }
 
@@ -509,24 +640,29 @@ public class WAFFilter extends ApiBase implements Filter {
     private void validateCookies(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
+            // Anti-DoS limit on header volume
             if (cookies.length > 100) throw new RequestRejectedException("Request rejected: Exceeded cookie limit.");
             for (Cookie cookie : cookies) {
-                if (!wafPredicate.getWAFParameterNames().test(cookie.getName())) {
+                if (test(wafPredicate.getWAFParameterNames(), cookie.getName())) {
                     throw new RequestRejectedException("Request rejected: Disallowed pattern in cookie name.");
                 }
-                if (!wafPredicate.getWAFParameterValues().test(cookie.getValue())) {
+                if (test(wafPredicate.getWAFParameterValues(), cookie.getValue())) {
                     throw new RequestRejectedException("Request rejected: Disallowed pattern in cookie value.");
                 }
             }
         }
     }
 
+    /**
+     * Handles exceptions and formats standard JSON error responses for dropped requests.
+     */
     private void handleRequestRejected(RequestRejectedException ex, HttpServletRequest req, HttpServletResponse resp) throws IOException {
         logger.warn("WAF Blocked Request: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
-                LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // No truncated in debug mode!
+                LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // Prevents message truncation in debug mode
                 req.getRemoteAddr(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
 
-        resp.setStatus(HttpStatus.FORBIDDEN.value()); // FORBIDDEN (403) is standard for WAF drops, BAD_REQUEST (400) is okay too.
+        // HTTP 403 FORBIDDEN is the industry standard for WAF blocks.
+        resp.setStatus(HttpStatus.FORBIDDEN.value());
         resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
@@ -538,14 +674,13 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Cleans malicious patterns from all values in a parameter map.
-     * @return A new map with cleaned parameter values.
+     * Sanitizes malicious patterns from all parameters.
+     * * @return A new map containing cleaned parameter values.
      */
     private Map<String, String[]> cleanParameterMap(Map<String, String[]> originalParameters) {
         Map<String, String[]> cleanedParameters = new TreeMap<>();
         for (Map.Entry<String, String[]> entry : originalParameters.entrySet()) {
             String key = entry.getKey();
-            //if (!wafPredicate.getWAFParameterNames().test(key)) continue; // skip this key and these values!
             String[] values = entry.getValue();
             String[] cleanedValues = new String[values.length];
             for (int i = 0; i < values.length; i++)
@@ -556,12 +691,14 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Removes all occurrences of the given patterns from a string.
+     * Recursively strips all occurrences of provided Regex patterns from a string.
      */
     private String stripWAFPatterns(String value, List<Pattern> patterns) {
         if (value == null) return null;
-        // Prevent Regular Expression Denial of Service (ReDoS) attacks.
-        if (value.length() > 100000) throw new RequestRejectedException("Input value is too long for passive sanitization.");
+
+        // Prevent Regular Expression Denial of Service (ReDoS) attacks on gigantic inputs.
+        if (value.length() > 30000) throw new RequestRejectedException("Input value is too long for passive sanitization.");
+
         String strippedValue = value;
         for (Pattern pattern : patterns) {
             strippedValue = pattern.matcher(strippedValue).replaceAll("");
@@ -576,7 +713,7 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Class encapsulate a multipart request
+     * Wrapper class encapsulating an internal multipart request to support cached modifications.
      */
     @SuppressWarnings("unused")
     private static class WAFMultipartRequestWrapper extends WAFRequestWrapper {
@@ -615,20 +752,20 @@ public class WAFFilter extends ApiBase implements Filter {
 
         @Override
         public Map<String, String[]> getParameterMap() {
-            // Return cached map if we've already built it
+            // Return cached map if previously constructed
             if (this.cachedParameterMap != null) {
                 return this.cachedParameterMap;
             }
 
-            // Create a mutable copy of the original parameter map
+            // Generate a mutable copy of the underlying parameter map
             Map<String, String[]> mutableMap = new LinkedHashMap<>(super.getParameterMap());
 
-            // Add your multipart file keys
+            // Bind the sanitized multipart keys back into the parameter map
             for (Map.Entry<String, List<MultipartFile>> entry : multipartFiles.entrySet()) {
                 mutableMap.putIfAbsent(entry.getKey(), new String[0]);
             }
 
-            // Lock the new map to respect the Servlet specification and cache it
+            // Lock the map to enforce Servlet specifications immutability
             this.cachedParameterMap = Collections.unmodifiableMap(mutableMap);
 
             return this.cachedParameterMap;
@@ -656,7 +793,7 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Class MultipartFile in memory
+     * In-Memory Representation of a safe MultipartFile.
      */
      private static class WAFTempMultipartFile implements MultipartFile {
         private final String name;
@@ -708,7 +845,7 @@ public class WAFFilter extends ApiBase implements Filter {
 
         @Override
         public void transferTo(@NonNull java.io.File dest) throws IOException, IllegalStateException {
-            throw new UnsupportedOperationException("This is an in-memory MultipartFile, cannot be transferred to a file.");
+            throw new UnsupportedOperationException("This is an in-memory MultipartFile, cannot be transferred to a physical file.");
         }
     }
 }

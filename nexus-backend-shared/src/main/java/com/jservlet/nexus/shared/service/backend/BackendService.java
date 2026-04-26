@@ -18,11 +18,13 @@
 
 package com.jservlet.nexus.shared.service.backend;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jservlet.nexus.shared.exceptions.*;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.web.client.RestOperations;
 
 /**
  * Rest BackendService
@@ -38,8 +40,9 @@ public interface BackendService {
      * @return The parsed response as an instance of type specified using the responseType parameter
      * @throws NexusGetException                   When the backend returns a 500
      * @throws NexusResourceNotFoundException      When the backend returns a 404
+     * @throws NexusServiceUnavailableException    When the BackServer is unavailable
      */
-    <T> T get(String url, ResponseType<T> responseType) throws NexusGetException, NexusResourceNotFoundException;
+    <T> T get(String url, ResponseType<T> responseType) throws NexusGetException, NexusResourceNotFoundException, NexusServiceUnavailableException;
 
     /**
      * Execute a get request and returns the response as File
@@ -49,8 +52,9 @@ public interface BackendService {
      * @return                 The File downloaded from the backend as a Resource
      * @throws NexusGetException                   When the backend returns a 500
      * @throws NexusResourceNotFoundException      When the backend returns a 404
+     * @throws NexusServiceUnavailableException    When the BackServer is unavailable
      */
-    Resource getFile(String url) throws NexusGetException, NexusResourceNotFoundException;
+    Resource getFile(String url) throws NexusGetException, NexusResourceNotFoundException, NexusServiceUnavailableException;
 
     /**
      * Execute a post request and returns the response as String
@@ -63,8 +67,9 @@ public interface BackendService {
      * @return The parsed response as an instance of type specified using the responseType parameter
      * @throws NexusCreationException              When the backend returns a 500
      * @throws NexusResourceExistsException        When the backend returns a 404
+     * @throws NexusServiceUnavailableException    When the BackServer is unavailable
      */
-    <T> T post(String url, Object data, ResponseType<T> responseType) throws NexusCreationException, NexusResourceExistsException;
+    <T> T post(String url, Object data, ResponseType<T> responseType) throws NexusCreationException, NexusResourceExistsException, NexusServiceUnavailableException;
 
     /**
      * Execute a post with a File as multipart/form-data and returns the response.
@@ -76,8 +81,9 @@ public interface BackendService {
      * @return The parsed response as an instance of type specified using the responseType parameter
      * @throws NexusCreationException               When the backend returns a 500
      * @throws NexusResourceExistsException         When the backend returns a 404
+     * @throws NexusServiceUnavailableException     When the BackServer is unavailable
      */
-    <T> T postFile(String url, Resource resource, ResponseType<T> responseType) throws NexusCreationException, NexusResourceExistsException;
+    <T> T postFile(String url, Resource resource, ResponseType<T> responseType) throws NexusCreationException, NexusResourceExistsException, NexusServiceUnavailableException;
 
     /**
      * Execute a put request and returns the response as String
@@ -91,8 +97,10 @@ public interface BackendService {
      * @throws NexusModificationException            When the backend returns a 500
      * @throws NexusResourceExistsException          When the backend returns a 409
      * @throws NexusResourceNotFoundException        When the backend returns a 404
+     * @throws NexusServiceUnavailableException      When the BackServer is unavailable
      */
-    <T> T put(String url, Object data, ResponseType<T> responseType) throws NexusModificationException, NexusResourceExistsException, NexusResourceNotFoundException;
+    <T> T put(String url, Object data, ResponseType<T> responseType)
+            throws NexusModificationException, NexusResourceExistsException, NexusResourceNotFoundException, NexusServiceUnavailableException;
 
     /**
      * Execute a putFile request and returns the response as Resource
@@ -106,8 +114,10 @@ public interface BackendService {
      * @throws NexusModificationException            When the backend returns a 500
      * @throws NexusResourceExistsException          When the backend returns a 409
      * @throws NexusResourceNotFoundException        When the backend returns a 404
+     * @throws NexusServiceUnavailableException      When the BackServer is unavailable
      */
-    <T> T putFile(String url, Resource resource, ResponseType<T> responseType) throws NexusModificationException, NexusResourceNotFoundException, NexusResourceExistsException;
+    <T> T putFile(String url, Resource resource, ResponseType<T> responseType)
+            throws NexusModificationException, NexusResourceNotFoundException, NexusResourceExistsException, NexusServiceUnavailableException;
 
     /**
      * Execute a delete request, its a void
@@ -116,8 +126,9 @@ public interface BackendService {
      * @param url              The url to the backend to be executed
      * @throws NexusDeleteException                  When the backend returns a 500
      * @throws NexusResourceNotFoundException        When the backend returns a 404
+     * @throws NexusServiceUnavailableException      When the BackServer is unavailable
      */
-    void delete(String url) throws NexusDeleteException, NexusResourceNotFoundException;
+    void delete(String url) throws NexusDeleteException, NexusResourceNotFoundException, NexusServiceUnavailableException;
 
     /**
      * Execute a patch request and returns the response as String
@@ -131,8 +142,10 @@ public interface BackendService {
      * @throws NexusModificationException            When the backend returns a 500
      * @throws NexusResourceExistsException          When the backend returns a 500
      * @throws NexusResourceNotFoundException        When the backend returns a 404
+     * @throws NexusServiceUnavailableException      When the BackServer is unavailable
      */
-    <T> T patch(String url, Object data, ResponseType<T> responseType) throws NexusModificationException, NexusResourceExistsException, NexusResourceNotFoundException;
+    <T> T patch(String url, Object data, ResponseType<T> responseType)
+            throws NexusModificationException, NexusResourceExistsException, NexusResourceNotFoundException, NexusServiceUnavailableException;
 
     /**
      * Execute a patchFile request and returns the response as Resource
@@ -146,8 +159,10 @@ public interface BackendService {
      * @throws NexusModificationException            When the backend returns a 500
      * @throws NexusResourceExistsException          When the backend returns a 409
      * @throws NexusResourceNotFoundException        When the backend returns a 404
+     * @throws NexusServiceUnavailableException      When the BackServer is unavailable
      */
-    <T> T patchFile(String url, Resource resource, ResponseType<T> responseType) throws NexusModificationException, NexusResourceNotFoundException, NexusResourceExistsException;
+    <T> T patchFile(String url, Resource resource, ResponseType<T> responseType)
+            throws NexusModificationException, NexusResourceNotFoundException, NexusResourceExistsException, NexusServiceUnavailableException;
 
 
     /**
@@ -163,10 +178,11 @@ public interface BackendService {
      * @throws NexusResourceNotFoundException      When the backend returns a 404
      * @throws NexusHttpException                  When a http request to th backend fails.
      * @throws NexusIllegalUrlException            When an illegal url will be requested.
+     * @throws NexusServiceUnavailableException    When the BackServer is unavailable
      */
 
     <T> T doRequest(String url, HttpMethod method, ResponseType<T> responseType, Object body, HttpHeaders headers)
-            throws NexusResourceNotFoundException, NexusHttpException, NexusIllegalUrlException;
+            throws NexusResourceNotFoundException, NexusHttpException, NexusIllegalUrlException, NexusServiceUnavailableException;
 
     <T> ResponseType<T> createResponseType(Class<T> responseType);
 
@@ -177,7 +193,13 @@ public interface BackendService {
         ParameterizedTypeReference<T> getResponseParameterizedTypeReference();
     }
 
+    void setBackendURL(String backendURL);
     String getBackendURL();
+
+    void setRestOperations(RestOperations restOperations);
+    void setObjectMapper(ObjectMapper objectMapper);
+
+    void setConfig(BackendConfigProperties backendConfigProperties);
     boolean isRemovedHeaders();
 
 }

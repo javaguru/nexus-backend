@@ -20,14 +20,39 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 
 **All HttpRequests methods supported:** Get, Post, Post Multipart File, Put, Put Multipart File, Patch, Patch Multipart File, Delete.
 
-* Full support **Request JSON Entity Object**: application/json, application/x-www-form-urlencoded
-* Full support **MultipartRequest Resources and Map parameters**, and embedded form **Json Entity Object**: multipart/form-data
-* Full support **Response in JSON Entity Object**: application/json
-* Full support **Response in ByteArray Resource file**: application/octet-stream
-* Full support **Streaming Http Response JSON Entity Object**: application/octet-stream, accept header Range bytes
-* Full support **Cookie manage** during a redirection Http status 3xx  
+* Full support **Request JSON Entity Object**: application/json, application/x-www-form-urlencoded.
+* Full support **MultipartRequest Resources and Map parameters**, and embedded form **Json Entity Object**: multipart/form-data.
+* Full support **Response in JSON Entity Object**: application/json.
+* Full support **Response in ByteArray Resource file**: application/octet-stream.
+* Full support **Streaming Http Response JSON Entity Object**: application/octet-stream, accept header Range bytes.
+* Full support **Cookie managed** during a redirection Http status 3xx.  
 
-**Tomcat Servlet Containers under Servlet version 6.x**
+**🐱 Tomcat Servlet Containers under Servlet Specification version 6.x**
+
+### 🛸 Nexus-Backend Services functionalities implemented
+
+* Implements a **BackendService** Ability to request typed response Object class or ParameterizedTypeReference, requested a Rest-Api Backend Server.
+  * Features an **EntityBackend** JSON Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 from the Backend Server.
+* Implements a **WEB HttpFirewall** Filter protection against evasion, rejected any suspicious Requests Encoding and log IP address at fault
+* Implements a **WAF Filter** Predicate Patterns protection against evasion on the Http JSON BodyRequest, Headers, Keys, Parameters and log IP address at fault.
+* Implements a **Nano AI DistilBERT ONNX** Nexus AI WAF Engine detect malicious Http requests and log IP address at fault.
+  * Features a **AnalyzerRequest** Analyze content text with a pure Sequential Sliding Window.
+  * Features a **Native Memory Tracking Monitoring** NMT: System calls, Tracks the actual RAM footprint, allowing jcmd to generate reports.
+* **Rate Limiting:** Implements a per-IP rate limit interceptor using **Bucket4j** and **JCache**, allowing a maximum of 1,000 requests per minute to protect against abuse and DDoS attacks. Returns `429 Too Many Requests` when the quota is exceeded.
+* **Circuit Breaker & Retry:** Implements **Resilience4j** to protect downstream backend communications.
+  * Features a **Retry** mechanism (3 attempts max) for transient network glitches.
+  * Features a **Circuit Breaker** that fails fast and blocks requests if the backend error rate exceeds 30%, preventing cascading failures.
+  * Provides a graceful fallback returning a formatted `503 Service Unavailable` JSON response.
+* **Observability:** Both the Circuit Breaker and the Rate Limiter states are exposed in real-time via **Spring Boot Actuator** (`/actuator/health`, `/actuator/circuitbreakers`).
+* Implements a **Fingerprint** Each Http header Request generate a unique trackable Token APP-REQUEST-ID in the access logs.
+* Implements a **HttpMethodOverride** Filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override.
+* Implements a **CORS Security Request** Filter, authorize request based on Origin Domains and Methods.
+* Implements a **Content Security Policy** Filter define your own policy rules CSP.
+* Implements a **ForwardedHeader** filter, set removeOnly at true by default, remove "Forwarded" and "X-Forwarded-*" headers.
+* Implements a **FormContent** filter, parses form data for Http PUT, PATCH, and DELETE requests and exposes it as Servlet request parameters.
+* Implements a **Compressing** filter Gzip compression for the Http Responses.
+* Implements a **CharacterEncoding** filter, UTF-8 default encoding for requests.
+
 
 **Examples forwarded requests and responses through the Nexus-Backend Service:**
 
@@ -40,25 +65,88 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 ***An Ajax Single Page Application communicate through the Rest Controller ApiBackend and its BackendService to a RestApi Backend Server.***
 
 
-### ⚙️ Ability to Secure all RestApi Request to a Backend Server
+## 🛠️ Build Nexus-Backend
 
- * Implements a **BackendService**, ability to request typed response Object class or ParameterizedTypeReference, requested on all HTTP methods to a RestApi Backend Server.
- * Implements an **EntityBackend** JSON Object or Resource, transfer back headers, manage error HttpStatus 400, 401, 405 or 500 coming from the Backend Server.
- * Implements a **HttpFirewall** filter protection against evasion, rejected any suspicious Requests Encoding, and log IP address at fault
- * Implements a **WAF Filter Patterns** protection against evasion on the Http JSON BodyRequest, Headers, Keys, Parameters, and log IP address at fault.
- * Implements a **AI WAF Engine DistilBERT ONNX** detect miscellaneous Http requests, and log IP address at fault.
- * Implements a **AnalyzerRequest** with Matrix Batching and Dynamic Context-Preserving Chunking.
- * Implements a **Native Memory Tracking** Monitoring System calls, Tracks the actual RAM footprint, allowing jcmd to generate reports.
- * Implements a **CORS Security Request** filter, authorize request based on Origin Domains and Methods.
- * Implements a **Content Security Policy** filter, define your own policy rules CSP.
- * Implements a **RateLimit** interceptor, allows 1000 requests per minutes and per-IP-address.
- * Implements a **Fingerprint** for each Http header Request, generate a unique trackable Token APP-REQUEST-ID in the access logs.
- * Implements a **HttpMethod Override** filter, PUT or PATCH request can be switched in POST or DELETE switched in GET with header X-HTTP-Method-Override.
- * Implements a **Forwarded Header** filter, set removeOnly at true by default, remove "Forwarded" and "X-Forwarded-*" headers.
- * Implements a **FormContent** filter, parses form data for Http PUT, PATCH, and DELETE requests and exposes it as Servlet request parameters.
- * Implements a **Compressing** filter Gzip compression for the Http Responses.
- * Implements a **CharacterEncoding** filter, UTF-8 default encoding for requests.
+### ✅ Build requirements
 
+* **Java >= 21 (Virtual Threads)** [Java](https://jdk.java.net/archive/)
+* **SpringBoot 3.3.0** [SpringBoot](https://projects.spring.io/spring-boot/)
+* **Apache Tomcat 10.0.54 & Servlet 6.0.0 (Jakarta)** [Tomcat](https://tomcat.apache.org/download-10.cgi)
+* **Apache Maven >= 3.9.3** [Maven](https://maven.apache.org/download.cgi)
+
+
+### 🏭 Build WAR Tomcat 10.xx (Embedded or External Tomcat)
+
+Maven clean, compile, package or install:
+
+* `mvn clean compile`
+* `mvn clean package `
+* `mvn clean install`
+
+and look for the war at `target/nexus-backend-{version}.war`
+
+
+### 📋 Get the Javadoc
+
+`mvn javadoc:javadoc`
+
+
+### 🔥 Run SpringBoot App
+
+The prerequisite is to define the JAVA_HOME environment variable points to the directory containing the JRE (Java Runtime Environment) of JDK 21:
+Set the path folder of your JDK folder:
+
+"set JAVA_HOME={Path_folder_JDK}\jdk-21.0.1"
+
+Maven clean and package nexus-backend (also-make multi-module and skip Tests):
+
+`mvn clean package -pl nexus-backend -am -DskipTests`
+
+Maven clean and install nexus-backend:
+
+`mvn clean install`
+
+- With Java, Embedded Tomcat and custom embedded Tomcat Container (Profile withTomcat) and NativeMemoryTracking:
+
+`java -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+
+- With Java, Development environment, Embedded Tomcat and  custom embedded Tomcat Container, and NativeMemoryTracking:
+
+`java -Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+
+💡 Note: The Tomcat profile enables a custom Embedded Tomcat Container with Security Constraints (equivalent to a web.xml file)
+and loads a predefined embedded tomcat-user.xml file. I recommend externalizing your own tomcat-user.xml file, see next part the configuration.
+
+- With Java and a Java KeyStore SSL TrustStore, Development environment, Embedded Tomcat and  custom embedded Tomcat Container, and NativeMemoryTracking:
+
+If you are using the Tomcat HTTPS connector, the JKS file must be filled with the certificate of the SSL domain postman-echo.com or others to communicate via the HTTP TLS/SSL protocol.
+
+`java -Djavax.net.ssl.trustStore=/root/.keystore -Djavax.net.ssl.trustStorePassword=changeit -Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+
+💡 Note: Enable the Tomcat connector HTTPS and configure the SSL port 8443 in the config 
+
+- With Maven, we need change dir to /nexus-backend (prerequisite compile the project):
+
+`cd nexus-backend`
+
+And run Spring-boot (-XX:NativeMemoryTracking=summary for monitored Native Memory Tracking for ONNX Neural Network):
+
+`mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Denvironment=development -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary"`
+
+
+### 🚀 The Nexus-Backend Configuration
+
+By default, it uses `8082` port and the Servlet Context is `/nexus-backend`.
+
+The default SpringBoot config is in `/src/main/resources/application.properties` file.
+
+The default NexusBackend config in `/src/main/resources/settings.properties` file.
+
+The Config keys and values can be modified and override by external path files, here:
+
+* file `{user.home}/conf-global/config.properties`
+* file `{user.home}/conf/config.properties`
+* file `{user.home}/cfg/{appName}/config.properties`
 
 ### 💡 Specials config Http Headers
 
@@ -87,7 +175,7 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 | nexus.backend.tomcat.connector.https.enable      | false             | Activated a Connector TLS/SSL in a Embedded Tomcat | 
 | nexus.backend.tomcat.accesslog.valve.enable      | false             | Activated an Accesslog in a Embedded Tomcat        | 
 
-#### Noted the Spring config location can be overridden
+#### 💡 Noted the Spring config location can be overridden
 
 * -Dspring.config.location=/your/config/dir/
 * -Dspring.config.name=spring.properties
@@ -106,6 +194,7 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 | **WAF**                                         |                          |                                 |                                                      |
 | nexus.api.backend.filter.waf.reactive.mode      | STRICT_ONNX_AI           | ONNX_AI                         | Default Strict HttpFirewall <br/>+ AI Neural Network |
 | nexus.api.backend.filter.waf.deepscan.cookie    | false                    | true                            | Activated Deep Scan Cookie                           |
+| nexus.api.backend.filter.waf.incidents.path     |                          | /var/log/nexus/waf_audits/      | The Path folder audits incidents with the payload    |
 | **Headers**                                     |                          |                                 |                                                      |
 | nexus.backend.header.remove                     | **true**                 | true                            | Remove all Headers                                   |
 | nexus.backend.header.host.remove                | false                    | false                           | Remove just host Header                              |
@@ -131,7 +220,138 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 * **${user.home}**/cfg/**${servletContextPath}**/config.properties
 
 
-###  ⚙️️ The ApiBackend Configuration JSON Entity Object or a ByteArray Resource
+### 🛡️ The Nexus-Backend Firewall and the WAF Filter Configuration
+
+The **Nexus-Backend** implements a **Web Application Firewall**. The **WAF Filter** protection against evasion and rejected
+any suspicious Http Request on the Headers, Cookies, Parameters, the Keys or Values and **Json Http RequestBody**.
+
+**Un-normalized** Http requests are automatically rejected by the **WebHttpFirewall**,
+and path parameters and duplicate slashes are removed for matching purposes.
+
+**💡 Noted** the valid characters are defined in **RFC 7230** and **RFC 3986** are checked
+by the **Apache Coyote http11 processor** (see coyote Error parsing HTTP request header)
+
+All the Http request with **Cookies, Headers, Parameters and RequestBody** will be filtered and the suspicious
+**IP address** in fault will be logged.
+
+**Settings keys settings.properties:**
+
+| **Keys**                                                   | **Default value**                           | **Descriptions**                      |
+|------------------------------------------------------------|:--------------------------------------------|:--------------------------------------|
+| nexus.backend.security.allowedHttpMethods                  | GET,POST,PUT,OPTIONS,<br/>HEAD,DELETE,PATCH | Allowed Http Methods                  |
+| nexus.backend.security.allowSemicolon                      | false                                       | Allowed Semi Colon                    |                                
+| nexus.backend.security.allowUrlEncodedSlash                | false                                       | Allow url encoded Slash               |                              
+| nexus.backend.security.allowUrlEncodedDoubleSlash          | false                                       | Allow url encoded double Slash        |                             
+| nexus.backend.security.allowUrlEncodedPeriod               | false                                       | Allow url encoded Period              |                            
+| nexus.backend.security.allowBackSlash                      | false                                       | Allow BackSlash                       |                            
+| nexus.backend.security.allowNull                           | false                                       | Allow Null                            |                           
+| nexus.backend.security.allowUrlEncodedPercent              | false                                       | Allow url encoded Percent             |                          
+| nexus.backend.security.allowUrlEncodedCarriageReturn       | false                                       | Allow url encoded Carriage Return     |                         
+| nexus.backend.security.allowUrlEncodedLineFeed             | false                                       | Allow url encoded Line Feed           |                        
+| nexus.backend.security.allowUrlEncodedParagraphSeparator   | false                                       | Allow url encoded Paragraph Separator |                       
+| nexus.backend.security.allowUrlEncodedLineSeparator        | false                                       | Allow url encoded Line Separator      |                           
+
+**🎯 The WAF Utilities Predicates checked for potential evasion:**
+
+* XSS script injection
+* SQL injection
+* Google injection
+* Command injection
+* File injection
+* Link injection
+
+**📃 Implements a WAF Predicate for potential evasion by Headers or Parameters:**
+
+* Header Names / Header Values
+* Parameter Names / Parameter Values
+* Hostnames
+* UserAgent
+* AI UserAgent
+
+**⚙️ And check for Buffer Overflow evasion by the Length:**
+
+* Parameter Names 255 characters max. / Values 1000000 characters max.
+* Header Names 255 characters max. / Values 25000 characters max.
+* Hostnames 255 characters max.
+
+**🛡️ The WAF Reactive mode configuration:**
+
+* **STRICT_ONNX_AI**:  STRICT HttpFirewall + Artificial Intelligence Scan by ONNX Neural Network
+* **ONNX_AI**:  Artificial Intelligence Scan by ONNX Neural Network
+* **STRICT**:  Strict HttpFirewall + JSON RequestBody
+* **PASSIVE**: Strict HttpFirewall + Clean JSON RequestBody and Parameters Map
+* **UNSAFE**:  Strict HttpFirewall + No check JSON RequestBody!
+
+**🛸 The AI Model ONNX**
+
+The AnalyzerRequestService analyze content text with a pure Sequential Sliding Window(Performance <50 ms).
+Use **DistilBERT Model ONNX Environment** an **Open Neural Network Exchange** with **HuggingFace Tokenizer**.
+
+**Recommendations:**
+- 4-6 Cpu max recommended
+- Strict limits to prevent DoS via massive payloads **~6500 Tokens maximum for 15 Chunks**
+- Calibrated threshold:
+  - 0.50 = Very strict WAF (blocks at the slightest doubt)
+  - 0.65 = Balanced WAF (tolerates noise, blocks real attacks)
+  - 0.85 = Permissive WAF (only blocks absolutely obvious threats)
+
+**Settings keys settings.properties:** Define file model and tokenizer
+
+| **Keys**                                       | **Default value**            | **Descriptions**   |
+|------------------------------------------------|:-----------------------------|:-------------------|
+| nexus.api.backend.analyzer.onnx.maxLength      | 512                          | Length max Token   |   
+| nexus.api.backend.analyzer.onnx.truncation     | false                        | Truncation         |   
+| nexus.api.backend.analyzer.onnx.path.model     | model/nexus_v10_14_int8.onnx | AI Model ONNX INT8 |   
+| nexus.api.backend.analyzer.onnx.path.tokenizer | model/tokenizer.json         | File Tokenizer     |   
+| nexus.api.backend.analyzer.onnx.cpu            | 4                            | Number of CPU      |   
+
+**⚔️ Web HttpFirewall**
+
+**Settings keys settings.properties:** Define a max length for Keys/Values Headers or Parameters
+
+| **Keys**                                                 | **Default value** | **Descriptions**                |
+|----------------------------------------------------------|:------------------|:--------------------------------|
+| nexus.backend.security.predicate.parameterNamesLength    | 255               | Parameter names length max      |   
+| nexus.backend.security.predicate.parameterValuesLength   | 1000000           | Parameter values length max     |   
+| nexus.backend.security.predicate.headerNamesLength       | 255               | Header names length max         |   
+| nexus.backend.security.predicate.headerNamesValuesLength | 25000             | Header values length max        |   
+| nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max           |   
+| nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter         |   
+| nexus.backend.security.predicate.userAgent.blocked       | false             | Active Scanner UserAgent filter |   
+| nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
+
+### ⚙️ The CircuitBreaker Resilient4j Configuration
+
+**Settings keys settings.properties:**
+
+The default CircuitBreaker Configuration:
+
+| **CircuitBreaker Configuration**                      | **Default value** | **Example value** | **Descriptions** |
+|-------------------------------------------------------|:------------------|:------------------|:-----------------|
+| nexus.backend.interceptor.ratelimit.refillToken       | 1000              | 100               | Filled tokens    |  
+| nexus.backend.interceptor.ratelimit.refillMinutes     | 1                 | 1                 | Duration minutes |  
+| nexus.backend.interceptor.ratelimit.bandwidthCapacity | 1000              | 100               | Bucket capacity  |  
+
+
+
+### ⚙️ The RateLimit Configuration
+
+**Rate limit** 1000 per minutes and per-IP-address.
+
+**SpringBoot key** *nexus.api.backend.interceptor.ratelimit.enabled* at **true** for activated the RateLimit.
+
+**Settings keys settings.properties:**
+
+The default Cors Configuration:
+
+| **Cors Configuration**                                 | **Default value** | **Example value** | **Descriptions** |
+|--------------------------------------------------------|:------------------|:------------------|:-----------------|
+| nexus.backend.interceptor.ratelimit.refillToken        | 1000              | 100               | Filled tokens    |  
+| nexus.backend.interceptor.ratelimit.refillMinutes      | 1                 | 1                 | Duration minutes |  
+| nexus.backend.interceptor.ratelimit.bandwidthCapacity  | 1000              | 100               | Bucket capacity  |  
+
+
+### ⚙️️ The ApiBackend Configuration JSON Entity Object or a ByteArray Resource
 
 **ApiBackend ResponseType** can be now a **ByteArray Resource.** 
 
@@ -153,19 +373,20 @@ and on specific Methods **GET, POST, PUT, PATCH** and Ant Path pattern:
 | nexus.backend.api-backend-resource.matchers.{name}[X].method  | Methods                |                          |  
 | nexus.backend.api-backend-resource.matchers.{name}[X].pattern | Patterns               |                          | 
 
-**Http Responses** are considerate as **Resources**, the Http header **"Accept-Ranges: bytes"** is injected and allow you to use
-the Http header **'Range: bytes=1-100'** in the request and grabbed only range of Bytes desired. <br>
+**Http Responses** are considerate as **Resources**, the Http header **"Accept-Ranges: bytes"** is injected and allow you
+to use the Http header **'Range: bytes=1-100'** in the request and grabbed only range of Bytes desired. 
+
 And the Http Responses didn't come back with a HttpHeader **"Transfer-Encoding: chunked"** cause the header **Content-Length**.
 
 
-**Noted:** For configure **all the Responses** in **Resource** put an empty Method and use the path pattern=/api/**
+**💡 Noted:** For configure **all the Responses** in **Resource** put an empty Method and use the path pattern=/api/**
 
 | **Keys Methods** and **Keys Path pattern**                    | **Default value** |
 |---------------------------------------------------------------|:------------------|
 | nexus.backend.api-backend-resource.matchers.matchers1.method  |                   |
 | nexus.backend.api-backend-resource.matchers.matchers1.pattern | /api/**           |
 
-**Noted bis:** For remove the Http header **"Transfer-Encoding: chunked"** the header Content-Length need to be calculated.
+**💡 Noted bis:** For remove the Http header **"Transfer-Encoding: chunked"** the header Content-Length need to be calculated.
 
 Enable the **ShallowEtagHeader Filter** in the configuration for force to calculate the header **Content-Length**
 for all the **Response JSON Entity Object**, no more HttpHeader **"Transfer-Encoding: chunked"**.
@@ -214,25 +435,7 @@ The default Cors Configuration:
 | nexus.backend.security.cors.exposedHeaders        |                                                                            | Link,X-Custom-Header                               | List Exposed Headers   |  
 | nexus.backend.security.cors.maxAge                | 3600                                                                       | 1800                                               | Max Age cached         |  
 
-**Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
-
-Exposed headers
-
-### ⚙️ The RateLimit Configuration
-
-**Rate limit** 1000 per minutes and per-IP-address.
-
-**SpringBoot key** *nexus.api.backend.interceptor.ratelimit.enabled* at **true** for activated the RateLimit.
-
-**Settings keys settings.properties:**
-
-The default Cors Configuration:
-
-| **Cors Configuration**                                 | **Default value** | **Example value** | **Descriptions** |
-|--------------------------------------------------------|:------------------|:------------------|:-----------------|
-| nexus.backend.interceptor.ratelimit.refillToken        | 1000              | 100               | Filled tokens    |  
-| nexus.backend.interceptor.ratelimit.refillMinutes      | 1                 | 1                 | Duration minutes |  
-| nexus.backend.interceptor.ratelimit.bandwidthCapacity  | 1000              | 100               | Bucket capacity  |  
+**💡 Noted:** allowedOrigins cannot be a wildcard '*' if credentials is at true, a list of domains need to be provided. 
 
 
 ### ⚙️ The Nexus-Backend provides a full support MultipartRequest and Map parameters inside a form-data HttpRequest
@@ -248,7 +451,7 @@ The default Cors Configuration:
 | spring.servlet.multipart.max-file-size       | 15MB              | 150MB             | Max file size       |   
 | spring.servlet.multipart.max-request-size    | 15MB              | 150MB             | Max request size    |   
 
-**Noted** All the HttpRequests with a **Content-Type multipart/form-data** will be managed by a temporary **BackendResource**.
+**💡 Noted** All the HttpRequests with a **Content-Type multipart/form-data** will be managed by a temporary **BackendResource**.
 
 ~~This BackendResource can convert a **MultipartFile** to a temporary **Resource**, ready to be sent to the **Backend Server**.~~
 
@@ -292,109 +495,37 @@ Since the version **1.0.24** no more BackendResource and temporary file. **All i
 | nexus.backend.client.ssl.https.cipherSuites | TLS_AES_256_GCM_SHA384 | The Cipher Suites         |  
 
 
-### 🛡️ The Nexus-Backend Firewall and the WAF Filter Configuration 
-
-The **Nexus-Backend** implements a **HttpFirewall** protection against evasion and rejected any suspicious Http Request 
-on the Headers and Cookies, the Parameters, the keys and Values.
-
-The **WAF Filter** implements a secure WAF protection against evasion on a **Json Http RequestBody**.
-
-**Un-normalized** Http requests are automatically rejected by the **StrictHttpFirewall**, 
-and path parameters and duplicate slashes are removed for matching purposes.
-
-**Noted** the valid characters are defined in **RFC 7230** and **RFC 3986** are checked
-by the **Apache Coyote http11 processor** (see coyote Error parsing HTTP request header)
-
-All the Http request with **Cookies, Headers, Parameters and RequestBody** will be filtered and the suspicious **IP address** in fault will be logged.
-
- **Settings keys settings.properties:**
- 
-| **Keys**                                                   | **Default value**                           | **Descriptions**                      |
-|------------------------------------------------------------|:--------------------------------------------|:--------------------------------------|
-| nexus.backend.security.allowedHttpMethods                  | GET,POST,PUT,OPTIONS,<br/>HEAD,DELETE,PATCH | Allowed Http Methods                  |
-| nexus.backend.security.allowSemicolon                      | false                                       | Allowed Semi Colon                    |                                
-| nexus.backend.security.allowUrlEncodedSlash                | false                                       | Allow url encoded Slash               |                              
-| nexus.backend.security.allowUrlEncodedDoubleSlash          | false                                       | Allow url encoded double Slash        |                             
-| nexus.backend.security.allowUrlEncodedPeriod               | false                                       | Allow url encoded Period              |                            
-| nexus.backend.security.allowBackSlash                      | false                                       | Allow BackSlash                       |                            
-| nexus.backend.security.allowNull                           | false                                       | Allow Null                            |                           
-| nexus.backend.security.allowUrlEncodedPercent              | false                                       | Allow url encoded Percent             |                          
-| nexus.backend.security.allowUrlEncodedCarriageReturn       | false                                       | Allow url encoded Carriage Return     |                         
-| nexus.backend.security.allowUrlEncodedLineFeed             | false                                       | Allow url encoded Line Feed           |                        
-| nexus.backend.security.allowUrlEncodedParagraphSeparator   | false                                       | Allow url encoded Paragraph Separator |                       
-| nexus.backend.security.allowUrlEncodedLineSeparator        | false                                       | Allow url encoded Line Separator      |                           
-
-**☠️ The WAF Utilities Predicates checked for potential evasion:**
-
-* XSS script injection
-* SQL injection
-* Google injection
-* Command injection
-* File injection
-* Link injection
- 
-**📃 Implements a WAF Predicate for potential evasion by Headers or Parameters:**
-
- * Header Names / Header Values
- * Parameter Names / Parameter Values
- * Hostnames
- * UserAgent
- * AI UserAgent
-
-**⚙️ And check for Buffer Overflow evasion by the Length:**
-
- * Parameter Names 255 characters max. / Values 1000000 characters max.
- * Header Names 255 characters max. / Values 25000 characters max.
- * Hostnames 255 characters max.
-
-**☣️ The WAF Reactive mode configuration:**
-
- * **STRICT_ONNX_AI**:  STRICT mode + Artificial Intelligence Scan by ONNX Neural Network
- * **ONNX_AI**:  Artificial Intelligence Scan by ONNX Neural Network
- * **STRICT**:  Strict HttpFirewall + JSON RequestBody
- * **PASSIVE**: Strict HttpFirewall + Clean JSON RequestBody and Parameters Map
- * **UNSAFE**:  Strict HttpFirewall + No check JSON RequestBody!
-
-**🛸 AI Model ONNX model/model.onnx**
-
-**Settings keys settings.properties:** Define file model and tokenizer
-
-| **Keys**                                       | **Default value**            | **Descriptions** |
-|------------------------------------------------|:-----------------------------|:-----------------|
-| nexus.api.backend.analyzer.onnx.maxLength      | 512                          | Length max Token |   
-| nexus.api.backend.analyzer.onnx.truncation     | false                        | Truncation       |   
-| nexus.api.backend.analyzer.onnx.path.model     | model/nexus_v10_14_int8.onnx | AI Model ONNX    |   
-| nexus.api.backend.analyzer.onnx.path.tokenizer | model/tokenizer.json         | File Tokenizer   |   
-| nexus.api.backend.analyzer.onnx.cpu            | 4                            | Number CPU       |   
-
-**🛸 Web HttpFirewall
-
-**Settings keys settings.properties:** Define a max length for Keys/Values Headers or Parameters 
-
-| **Keys**                                                 | **Default value** | **Descriptions**                |
-|----------------------------------------------------------|:------------------|:--------------------------------|
-| nexus.backend.security.predicate.parameterNamesLength    | 255               | Parameter names length max      |   
-| nexus.backend.security.predicate.parameterValuesLength   | 1000000           | Parameter values length max     |   
-| nexus.backend.security.predicate.headerNamesLength       | 255               | Header names length max         |   
-| nexus.backend.security.predicate.headerNamesValuesLength | 25000             | Header values length max        |   
-| nexus.backend.security.predicate.hostNamesLength         | 255               | Host names length max           |   
-| nexus.backend.security.predicate.hostName.pattern        |                   | Hostname pattern filter         |   
-| nexus.backend.security.predicate.userAgent.blocked       | false             | Active Scanner UserAgent filter |   
-| nexus.backend.security.predicate.aiUserAgent.blocked     | true              | Active AI UserAgent filter      |   
-
-
 ### ⚙️ Tomcat 10.xx Embedded with external configuration
 
-**Settings keys settings.properties:** *nexus.backend.client.ssl.mtls.enable* at **true** for activated the mTLS connection
+**Settings keys settings.properties:** 
 
-| **Keys**                                       | **Default value**                     | **Descriptions**                          |
-|------------------------------------------------|:--------------------------------------|:------------------------------------------|
-| nexus.backend.tomcat.security.admin.acl.enable | **true**                              | Enable ACL                                |   
-| nexus.backend.tomcat.security.role             | **admin-gui**                         | Role Admin GUI                            |   
-| nexus.backend.tomcat.security.patterns         | /health/*,/actuator/*,/mnt/admin/**   | Pattern match paths                       |   
-| nexus.backend.tomcat.embedded.webxml.path      |                                       | /apps/apache-tomcat/conf/web.xml          |   
-| nexus.backend.tomcat.security.users.file       |                                       | /apps/apache-tomcat/conf/tomcat-users.xml |   
+| **Keys**                                          | **Default value**         | **Descriptions**                              |
+|---------------------------------------------------|:--------------------------|:----------------------------------------------|
+| nexus.backend.tomcat.security.gui.roles           | **admin-gui**             | Roles Admin GUI                               |   
+| nexus.backend.tomcat.security.patterns            | /actuator/*,/mnt/admin/** | Pattern match paths actuator                  |   
+| nexus.backend.tomcat.security.health.roles        | **admin-health**          | Roles Health status                           |   
+| nexus.backend.tomcat.security.health.patterns     | /health/*                 | Pattern match paths                           |   
+| nexus.backend.tomcat.security.users.file          |                           | /apps/apache-tomcat/conf/tomcat-users.xml     |   
 
+
+### ⚙️ Tomcat Executor
+
+**Settings keys settings.properties:**
+
+| **Keys**                                          | **Default value**         | **Descriptions**                              |
+|---------------------------------------------------|:--------------------------|:----------------------------------------------|
+| nexus.backend.tomcat.executor.maxThreads          | 300                       | Max Thread Excecution                         |   
+| nexus.backend.tomcat.executor.minSpareThreads     | 4                         | Min Thread Excecution                         |   
+
+
+### ⚙️ Tomcat Realm lock config
+
+**Settings keys settings.properties:**
+
+| **Keys**                                          | **Default value**         | **Descriptions**                              |
+|---------------------------------------------------|:--------------------------|:----------------------------------------------|
+| nexus.backend.tomcat.acl.realm.lock.failureCount  | 5                         | Number failure count maximum                  |   
+| nexus.backend.tomcat.acl.realm.lock.lockOutTime   | 300                       | Lock out time in second (300s lock 5 minutes) |   
 
 
 ### ⚙️ Activated Tomcat Catalina Connector TLS/SSL on a wildcard domain Certificate
@@ -433,75 +564,77 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 | nexus.backend.tomcat.accesslog.throwOnFailure | true                                                                                                                                               | Throw on failure       |   
 | nexus.backend.tomcat.accesslog.maxDay         | -1                                                                                                                                                 | Max day file retention |   
 
-**Noted** the Full access logs are available with the **CommonsRequestLoggingFilter**, included the **RequestBody**.
+**💡 Noted** the Full access logs are available with the **CommonsRequestLoggingFilter**, included the **RequestBody**.
 
 Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
 
-## 🛠️ Build Nexus-Backend
+### 🐱 The Default Tomcat 10.xx Configuration
 
-### ✅ Build requirements 
+**Default Custom Tomcat Container**
 
-* **Java >= 21 (Virtual Threads)** [Java](https://jdk.java.net/archive/)
-* **SpringBoot 3.3.0** [SpringBoot](https://projects.spring.io/spring-boot/)
-* **Apache Tomcat 10.0.54 & Servlet 6.0.0 (Jakarta)** [Tomcat](https://tomcat.apache.org/download-10.cgi)
-* **Apache Maven >= 3.9.3** [Maven](https://maven.apache.org/download.cgi)
+**💡 Noted: I recommend to override the config for Embedded Tomcat 10.xx**
 
-### 🏭 Build WAR Tomcat 10.xx (Embedded or External Tomcat)
+- External Files config **tomcat-users.xml**:
 
-Maven clean, compile, package or install:
+```
+# External config tomcat-users
+nexus.backend.tomcat.security.users.file=/apps/apache-tomcat-10.1.54/conf/tomcat-users.xml
+```
 
-* `mvn clean compile`
-* `mvn clean package `
-* `mvn clean install`
+**Load Tomcat Users from Catalina Base Config or Catalina Home Config**
 
-and look for the war at `target/nexus-backend-{version}.war`
+- catalina.base + "conf/tomcat-users.xml"
+- catalina.home + "conf/tomcat-users.xml"
 
-### 📋 Get the Javadoc
+**Default Tomcat Security Constraints and Realm Users**
 
-`mvn javadoc:javadoc`
+- Memory Realm Encapsulate in a LockOutRealm (**Protection Brute Force**)
+  - FailureCount: 5 failed max
+  - Realm LockOutTime: block 300s
 
-### 🔥  Run SpringBoot App
+- Default ACL (**Access Restrict List**):
+  - Authorization Method: "BASIC"
+  - Realm Name: "Nexus Backend Realm"
 
-Prerequisites set the Jdk 21 as JAVA_HOME: set JAVA_HOME={Path_JDK}\jdk-21.0.1`
+- Default Users Name:
+  - **admin-gui**
+  - **admin-health**
 
-Maven clean and package nexus-backend (skip Tests):
+- Default Name Access Constraint, Allowed Authority and Security Path:
 
-`mvn clean package -pl nexus-backend -am -DskipTests`
+```
+Create Security Constraint : Nexus Admin Access Constraint
+- Path Security : /actuator/*
+- Path Security : /nmt/*
+- Role Authority : admin-gui
+Create Security Constraint : Nexus Health Access Constraint
+- Path Security : /health/*
+- Role Authority : admin-health
+- Role Authority : admin-gui
+```
 
-Maven clean and install nexus-backend:
+- Default HTTP Connector:
+  - acceptCount=100, 
+  - connectionTimeout=20000, 
+  - maxPostSize=10485760, 
+  - disableUploadTimeout=true,
+  - compression=on,  
+  - compressableMimeType=text/html,text/xml,text/plain,text/javascript,text/css,application/json, 
+  - uriEncoding=UTF-8,
+  - maxHttpHeaderSize=10240, 
+  - rejectIllegalHeader=true, 
+  - serverHeader=git di nexus a
 
-`mvn clean install`
+**Default Catalina ErrorReport Valve**
 
-with Java:
+- showReport at false 
+- ShowServerInfo at false
 
-`java -Dspring.profiles.active=withTomcat -Denvironment=development -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
+**Default Catalina HealthCheck Valve**
 
-with Java and Development environment:
+- Path: /health
 
-`java -Dspring.profiles.active=withTomcat -XX:NativeMemoryTracking=summary -jar nexus-backend\target\nexus-backend.war`
-
-with Maven change dir to /nexus-backend:
-
-`cd nexus-backend`
-
-And run Spring-boot (-XX:NativeMemoryTracking=summary for monitored Native Memory Tracking for ONNX Neural Network):
-
-`mvn spring-boot:run -P withTomcat -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=withTomcat -Denvironment=development -XX:NativeMemoryTracking=summary"`
-
-### 📡 The Configuration
-
-By default, it uses `8082` port and the Servlet Context `/nexus-backend`.
-
-The default SpringBoot config is in `/src/main/resources/application.properties` file.
-
-The default NexusBackend config in `/src/main/resources/settings.properties` file.  
-
-The Config keys and values can be modified or override by external path files, here:
-
- * file `{user.home}/conf-global/config.properties`
- * file `{user.home}/conf/config.properties`
- * file `{user.home}/cfg/nexus-backend/config.properties`
 
 ### 💹 Swagger Tests environment
 
@@ -510,12 +643,12 @@ See RestControllerTest is in interaction with the MockController, run the tests 
 The Swagger Mock-Api is only available in Dev mode, added in JVM Options: -Denvironment=development
 
 
-### 📊 Monitor MNT - Native Memory Tracking
+### 🛰️ Monitor MNT - Native Memory Tracking
 
 See NmtMonitorService is in interaction with the NmtController to reports the Native Memory Tracking:  
 
-- Native: System calls (malloc/mmap) in C++, ONNX model.<br>
-- Memory: Tracks the actual RAM footprint.<br>
+- Native: System calls (malloc/mmap) in C++, ONNX model.
+- Memory: Tracks the actual RAM footprint.
 - Tracking: The -XX:NativeMemoryTracking=summary option enables internal instrumentation, allowing jcmd to generate reports.
 
 Lists the instrumented Java Virtual Machines (JVMs) on the target system, see [Doc Oracle JPS](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jps.html).
@@ -552,7 +685,7 @@ String Deduplication      | 0,00         MB | 0,00         MB
 ===============================================================
 ```
 
-## 💡 The BackendService API Implementation
+## 🚀 The BackendService API Implementation
 
 This API implementation is used for the communication to a backend server.
 It provides methods for all supported http protocols on the backend side. 
@@ -571,18 +704,21 @@ Normally, it communicates to an API interface Backend.
  
 ### 📃 Samples BackendService API
 
-#### 📂 Prerequisites:
+#### ☣️ Prerequisites:
 
-* **RestOperations** should be configured with an Apache-HttpClient and a Pooling connection should be properly configured.
+* **RestOperations** should be configured with an Apache-HttpClient5 and a Pooling connection should be properly configured.
 * **HttpMessageConverter** are also mandatory, StringHttp, FormHttp, ByteArrayHttp, ResourceHttp and MappingJackson2Http are the minimal.
 * **Typed Response** parameter Class Object or a ParameterizedTypeReference are mandatory
 * **Object.class** cannot be converted in a Resource or ByteArray directly without a minimal support Typed Response.
 
-#### Initialize the RestApi BackendService
+####  Initialize the RestApi BackendService
+
+New instance BackendService:
 
 ```
 BackendService backendService = new BackendServiceImpl();
-backendService.setBackendURL("https://internal.domain.com:9094");
+backendService.setConfig(new BackendConfigProperties());
+backendService.setBackendURL("https://postman-echo.com");
 backendService.setRestOperations(new RestTemplate());
 backendService.setObjectMapper(new ObjectMapper());
 ```
@@ -632,11 +768,17 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 
 ## 🗒️ Last News
-* Last version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService, Build WAR, Run SpringBoot App, Upgrade Tomcat 10.1.54, README.md
-* Version **2.0.0**, released at 18/04/2026 Migration Spring 6 - SpringBoot 3.3.0, Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX  
-* Version **1.0.26**, released at 18/04/2026 Fix external Tomcat Initializer
-* Version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent  
-* Version **1.0.24**, released at 01/09/2025  Forwarded headers Client and Transfer headers Backend Server, Cors headers exposed 
+
+* Last version **2.0.2**, released at 26/04/2026 Stabilization migration Spring 6, New Resilience4j Circuit Breaker, Fix AnalyzerRequestService Sequential Sliding Window and ONNX Tensor Padding.
+* Version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService ResourceLoader, Build WAR external/internal.
+* Version **2.0.0**, released at 18/04/2026  **Jdk 21, Spring 6, Spring Boot 3.3.0, Tomcat 10.xx Servlet Specification 6.0**:
+ Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX.
+
+**Version < 1.0.27 under Jdk 13, Spring 5, Spring Boot 2.7.18, Tomcat 9.xx Servlet Specification 4.0.1**
+ 
+* Version **1.0.26**, Last release in Spring 5 - SpringBoot 2.7.5. Released at 18/04/2026, Fix external Tomcat Initializer.
+* Version **1.0.25**, released at 22/03/2026 Modern WAF Defense, XSS, SQL, Google, Command, File, Java RCE, XXE, AI User-Agent.
+* Version **1.0.24**, released at 01/09/2025  Forwarded headers Client and Transfer headers Backend Server, Cors headers exposed
 * Version **1.0.23**, released at 22/08/2025 Reorganize WAFFilter Multipart, CorsConfiguration, Cookie client stateful
 * Version **1.0.22**, released at 31/07/2025 Fix Security RateLimit, Content Security Policy and Referrer-Policy
 * Version **1.0.21**, released at 29/07/2025 Fix Predicate for Hostnames, Shared CookieRedirectInterceptor, Postman-Echo performance
@@ -647,10 +789,10 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 * Version **1.0.16**, released at 03/11/2024 Fix CORS Security configuration Spring 5/6
 * Version **1.0.15**, released at 23/10/2024 Fix missing method addCorsMappings
 * Version **1.0.14**, released at 14/10/2024 Support Backend Headers and Support ContentNegotiation Header Strategy for Resources
-* Version **1.0.13**, released at 06/10/2024 Full support Response in ByteArray Resource and Streaming Http Response Range Bytes 
+* Version **1.0.13**, released at 06/10/2024 Full support Response in ByteArray Resource and Streaming Http Response Range Bytes
 * Version **1.0.12**, released at 02/10/2024 Fix ApiBase error Message super.getResponseEntity
-* Version **1.0.11**, released at 30/09/2024 Does not encode the URI template! 
-* Version **1.0.10**, released at 29/09/2024 Add full support MultipartRequest content type multipart/form-data 
+* Version **1.0.11**, released at 30/09/2024 Does not encode the URI template!
+* Version **1.0.10**, released at 29/09/2024 Add full support MultipartRequest content type multipart/form-data
 * Version **1.0.9**, released at 24/09/2024 Fix replicate requests ApiBackend.requestEntity
 * Version **1.0.8**, released at 13/08/2024 Re-encoding HttpUrl, Special Characters are re-interpreted
 * Version **1.0.7**, released at 03/08/2024 All is Bytes.
@@ -671,7 +813,7 @@ To help **Nexus-Backend / ApiBackend / BackendService** development you are enco
 * pull requests for new features
 * Star :star2: the project
 
-## 📖 License
+## 📃 License
 
 This project is an Open Source Software released under the [GPL-3.0 license](https://github.com/javaguru/nexus-backend/blob/master/LICENSE.txt).
 

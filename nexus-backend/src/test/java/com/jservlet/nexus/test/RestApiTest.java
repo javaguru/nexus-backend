@@ -49,7 +49,7 @@ public class RestApiTest  {
      * Test ListEntity
      */
     @Test
-    public void testListEntity() {
+    public void testListEntity() throws NexusServiceUnavailableException {
         try {
             List<Data> list = getListData();
             logger.info(list.toString());
@@ -64,7 +64,7 @@ public class RestApiTest  {
      * @return List<Data>
      * @throws NexusGetException  An Exception occurred during the get Request
      */
-    private List<Data> getListData() throws NexusGetException {
+    private List<Data> getListData() throws NexusGetException, NexusServiceUnavailableException {
         String url = "/mock/v1/dataList"; // dataListx Resource not found
         try {
             // get List Data Object
@@ -86,7 +86,7 @@ public class RestApiTest  {
      * Test ListEntity
      */
     @Test
-    public void testPutPostListEntity() {
+    public void testPutPostListEntity() throws NexusServiceUnavailableException {
         try {
             List<Data> list = getListData();
             logger.info("Put or Post List Entity: {}", putPostListData(list));
@@ -121,6 +121,9 @@ public class RestApiTest  {
         } catch (NexusModificationException e) {
             // Error occurred while updating existing dataList
             logger.warn("Error occurred while updating existing dataList: {}", dataList, e);
+        } catch (NexusServiceUnavailableException e) {
+            // Error unavailable
+            logger.warn("Backend service is temporarily unavailable. Please try again later: {}", dataList, e);
         }
         return false;
     }
@@ -128,7 +131,7 @@ public class RestApiTest  {
     /* WARN Tests doRequest */
 
     @Test
-    public void testGetEntity() {
+    public void testGetEntity() throws NexusServiceUnavailableException {
          try {
             // get List Data Object
             ResponseType<List<Data>> typeReference = backendService.createResponseType(new ParameterizedTypeReference<>(){});
@@ -142,7 +145,7 @@ public class RestApiTest  {
     }
 
     @Test
-    public void testGetEntityError() {
+    public void testGetEntityError() throws NexusServiceUnavailableException  {
         try {
             // get Error Entity
             Object objError = backendService.doRequest("/mock/v1/dataXss?param1=<script>alert('info1')</script>",
@@ -157,7 +160,7 @@ public class RestApiTest  {
 
 
     @Test
-    public void testGetString() {
+    public void testGetString() throws NexusServiceUnavailableException  {
         try {
             // get String
             String obj = backendService.doRequest("/mock/v1/dataList", HttpMethod.GET,
@@ -171,7 +174,7 @@ public class RestApiTest  {
     }
 
     @Test
-    public void testGetArrayList() {
+    public void testGetArrayList() throws NexusServiceUnavailableException {
         try {
             // get ArrayList
             Object obj = backendService.doRequest("/mock/v1/dataList", HttpMethod.GET,
@@ -188,7 +191,7 @@ public class RestApiTest  {
 
 
     @Test
-    public void testGetResource() {
+    public void testGetResource() throws NexusServiceUnavailableException {
         try {
             // get Resource file in ByteArray!
             HttpHeaders headers = new HttpHeaders();
@@ -207,7 +210,7 @@ public class RestApiTest  {
 
 
     @Test
-    public void testGetByteArray() {
+    public void testGetByteArray() throws NexusServiceUnavailableException {
         try {
             // get data in ByteArray!
             byte[] obj = backendService.doRequest("/mock/v1/dataBytes", HttpMethod.GET,
@@ -221,7 +224,7 @@ public class RestApiTest  {
     }
 
     @Test
-    public void testEchoProxy() {
+    public void testEchoProxy() throws NexusServiceUnavailableException {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", MediaType.APPLICATION_FORM_URLENCODED_VALUE);
@@ -237,7 +240,7 @@ public class RestApiTest  {
     }
 
     @Test
-    public void testGetEchoEntityProxy() {
+    public void testGetEchoEntityProxy() throws NexusServiceUnavailableException  {
         try {
             // get Echo data in ByteArray through the proxy!
             byte[] obj = backendService.doRequest("/mock/v1/echo?echo=Hello+Proxy!", HttpMethod.GET,
@@ -251,7 +254,7 @@ public class RestApiTest  {
     }
 
     @Test
-    public void testPostEchoEntityProxy() {
+    public void testPostEchoEntityProxy() throws NexusServiceUnavailableException  {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", MediaType.APPLICATION_JSON_VALUE); // WARN mandatory! or APPLICATION_FORM_URLENCODED_VALUE
@@ -267,7 +270,7 @@ public class RestApiTest  {
     }
 
     @Test
-    public void testNotFoundGetEntity() {
+    public void testNotFoundGetEntity() throws NexusServiceUnavailableException {
         try {
             // get Object Entity
             Object obj = backendService.doRequest("/mock/v1/dataNotFound", HttpMethod.GET,
@@ -281,7 +284,7 @@ public class RestApiTest  {
     }
 
     @Test
-    public void testXErrorBackend500() {
+    public void testXErrorBackend500() throws NexusServiceUnavailableException {
         try {
             // get Object Entity
             Object obj = backendService.doRequest("/mock/v1/dataError500", HttpMethod.GET,
@@ -295,7 +298,7 @@ public class RestApiTest  {
     }
 
     @Test
-    public void testXErrorBackend401() {
+    public void testXErrorBackend401() throws NexusServiceUnavailableException {
         try {
             // get Object Entity
             Object obj = backendService.doRequest("/mock/v1/dataError401", HttpMethod.GET,
@@ -309,11 +312,11 @@ public class RestApiTest  {
     }
 
     @Test
-    public void testXErrorBackend400() throws NexusGetException {
+    public void testXErrorBackend400() throws NexusGetException, NexusServiceUnavailableException  {
         try {
             // get Object Entity
-            Object obj = backendService.doRequest("/v1/dataError400", HttpMethod.GET,
-                    backendService.createResponseType(Data.class), null, null);
+            Object obj = backendService.doRequest("/mock/v1/dataError400", HttpMethod.GET,
+                    backendService.createResponseType(Object.class), null, null);
             System.out.println(obj);
         } catch (NexusHttpException | NexusIllegalUrlException | HttpStatusCodeException e) {
             System.out.println("Failed to GET Data entity/entities on backend: " + e.getMessage());

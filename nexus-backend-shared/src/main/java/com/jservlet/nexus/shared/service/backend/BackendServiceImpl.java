@@ -61,117 +61,88 @@ public final class BackendServiceImpl implements BackendService {
 
     private static final ResponseType<Void> EMPTY_RESPONSE = new ResponseTypeImpl<>();
 
-    private String backendURL;
-
     private RestOperations restOperations;
 
     private ObjectMapper objectMapper;
 
-    @Value("${nexus.backend.error.message.class:com.jservlet.nexus.shared.service.backend.api.ErrorMessage}")
-    private String errorMessageClassName;
+    private BackendConfigProperties config;
 
     private Class<? extends IBackendErrorMessage> errorClass;
 
-    @PostConstruct
-    @SuppressWarnings("unchecked")
-    public void initErrorClass() {
-        try {
-            errorClass = (Class<? extends IBackendErrorMessage>) Class.forName(errorMessageClassName);
-        } catch (ClassNotFoundException e) {
-            logger.error("Configured error message class not found: {}. Falling back to default.", errorMessageClassName, e);
-            errorClass = ErrorMessage.class;
-        }
-    }
+    private String backendURL;
+
 
     /**
      * Return by the default a Json Entity Object or Resource, else if true a Generics Object.
      */
-    private boolean isHandleBackendEntity = false;
+    private final boolean isHandleBackendEntity;
 
     public BackendServiceImpl() {
+        this.isHandleBackendEntity = false;
+        this.errorClass = ErrorMessage.class;
     }
 
     public BackendServiceImpl(boolean isHandleBackendEntity) {
         this.isHandleBackendEntity = isHandleBackendEntity;
+        this.errorClass = ErrorMessage.class;
     }
 
-    public BackendServiceImpl(String backendURL, RestOperations restOperations, ObjectMapper objectMapper) {
-        Assert.hasText(backendURL, "Backend URL must not be empty.");
+    public BackendServiceImpl(BackendConfigProperties config, RestOperations restOperations, ObjectMapper objectMapper, boolean isHandleBackendEntity) {
+        Assert.notNull(config, "Config must not be null.");
+        Assert.hasText(config.getBackendUrl(), "Backend URL must not be empty.");
         Assert.notNull(restOperations, "RestOperations must not be null.");
         Assert.notNull(objectMapper, "ObjectMapper must not be null.");
-        this.backendURL = backendURL;
-        this.restOperations = restOperations;
-        this.objectMapper = objectMapper;
-        initErrorClass();
-    }
 
-    /**
-     * Constructor complete
-     *
-     * @param backendURL        The targeted backend URL
-     * @param restOperations    The RestOperations
-     * @param objectMapper      The ObjectMapper
-     * @param isHandleBackendEntity  True a Generics Object, false a Json Entity Object or a Resource
-     */
-    public BackendServiceImpl(String backendURL, RestOperations restOperations, ObjectMapper objectMapper, boolean isHandleBackendEntity) {
-        Assert.hasText(backendURL, "Backend URL must not be empty.");
-        Assert.notNull(restOperations, "RestOperations must not be null.");
-        Assert.notNull(objectMapper, "ObjectMapper must not be null.");
-        this.backendURL = backendURL;
+        this.config = config;
+        this.backendURL = this.config.getBackendUrl();
+        this.config.getForwardedClientHeaders().addAll(STATIC_FORWARDED_HEADERS);
+
         this.restOperations = restOperations;
         this.objectMapper = objectMapper;
         this.isHandleBackendEntity = isHandleBackendEntity;
+
         initErrorClass();
     }
 
-    public void setBackendURL(String backendURL) {
-        this.backendURL = backendURL;
+
+    @Override
+    public void setConfig(BackendConfigProperties config) {
+        this.config = config;
+        this.backendURL = this.config.getBackendUrl();
+        this.config.getForwardedClientHeaders().addAll(STATIC_FORWARDED_HEADERS);
     }
 
+    @Override
+    public void setBackendURL(String backendURL) {
+        this.backendURL = backendURL;
+        if (this.config != null) {
+            this.config.setBackendUrl(backendURL);
+        }
+    }
+
+    @Override
     public void setRestOperations(RestOperations restOperations) {
         this.restOperations = restOperations;
     }
 
+    @Override
     public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
 
-    @Value("${nexus.backend.header.authorization.username:}")
-    private String username;
-
-    @Value("${nexus.backend.header.authorization.password:}")
-    private String password;
-
-    @Value("${nexus.backend.header.cookie:}")
-    private String cookie;
-
-    @Value("${nexus.backend.header.bearer:}")
-    private String bearer;
-
-    @Value("${nexus.backend.header.remove:true}")
-    private boolean removeHeaders;
-    @Value("${nexus.backend.forwarded.headers:true}")
-    private boolean forwardedHeaders;
-    @Value("#{'${nexus.backend.forwarded.client.headers:}'.split(',')}")
-    private List<String> forwardedClientHeaders;
-
-    @Value("${nexus.backend.header.host.remove:false}")
-    private boolean removeHostHeader;
-    @Value("${nexus.backend.header.origin.remove:false}")
-    private boolean removeOriginHeader;
-
-    @Value("${nexus.backend.http.response.truncated:false}")
-    private boolean truncated;
-    @Value("${nexus.backend.http.response.truncated.maxLength:1000}")
-    private int maxLengthTruncated;
-
-    @Value("${nexus.backend.header.user-agent:JavaNexus}")
-    private String userAgent = "JavaNexus";
-
-    @PostConstruct
-    public void init() {
-        forwardedClientHeaders.addAll(STATIC_FORWARDED_HEADERS);
+    @SuppressWarnings("unchecked")
+    private void initErrorClass() {
+        String className = config.getErrorMessageClassName();
+        try {
+            if (className == null || className.isBlank()) {
+                throw new ClassNotFoundException("Class name is null or empty");
+            }
+            errorClass = (Class<? extends IBackendErrorMessage>) Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            logger.error("Configured error message class not found: {}. Falling back to default.", className, e);
+            errorClass = ErrorMessage.class;
+        }
     }
 
 
@@ -225,7 +196,7 @@ public final class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.add(HttpHeaders.USER_AGENT, userAgent);
+            headers.add(HttpHeaders.USER_AGENT, this.config.getUserAgent());
             return doRequest(url, HttpMethod.POST, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -260,7 +231,7 @@ public final class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.add(HttpHeaders.USER_AGENT, userAgent);
+            headers.add(HttpHeaders.USER_AGENT, this.config.getUserAgent());
             return doRequest(url, HttpMethod.PUT, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -311,7 +282,7 @@ public final class BackendServiceImpl implements BackendService {
             map.add("file", resource);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.add(HttpHeaders.USER_AGENT, userAgent);
+            headers.add(HttpHeaders.USER_AGENT, this.config.getUserAgent());
             return doRequest(url, HttpMethod.PATCH, responseType, map, headers);
         } catch (NexusResourceExistsException e) {
             throw e;
@@ -381,7 +352,7 @@ public final class BackendServiceImpl implements BackendService {
         T responseBody = exchange.getBody();
         HttpStatusCode httpStatus = exchange.getStatusCode();
         HttpHeaders httpHeaders = exchange.getHeaders();
-        if (logger.isDebugEnabled()) logger(httpHeaders, responseBody, httpStatus, maxLengthTruncated, truncated);
+        if (logger.isDebugEnabled()) logger(httpHeaders, responseBody, httpStatus, this.config.getMaxLengthTruncated(), this.config.isTruncated());
         if (isHandleBackendEntity || isHandleHttpStatus(httpStatus)) return (T) new EntityBackend<>(responseBody, httpHeaders, httpStatus);
         if (responseBody == null) return (T) httpStatus;
         return responseBody;
@@ -472,16 +443,16 @@ public final class BackendServiceImpl implements BackendService {
      */
     public HttpEntity<Object> createRequestEntity(Object body, HttpHeaders incomingHeaders) {
         HttpHeaders headers;
-        if (removeHeaders) {
+        if (this.config.isRemoveHeaders()) {
             headers = new HttpHeaders();
-            headers.add(HttpHeaders.USER_AGENT, userAgent);  // mandatory forced, some RestApi filter the User-Agent!
+            headers.add(HttpHeaders.USER_AGENT, this.config.getUserAgent());  // mandatory forced, some RestApi filter the User-Agent!
         } else {
             headers = (incomingHeaders != null) ? new HttpHeaders(incomingHeaders) : new HttpHeaders();
         }
 
         // Transfer X-Forwarded headers and configured client headers
-        if (forwardedHeaders && incomingHeaders != null) {
-            for (String headerName : forwardedClientHeaders) {
+        if (this.config.isForwardedHeaders() && incomingHeaders != null) {
+            for (String headerName : this.config.getForwardedClientHeaders()) {
                 if (incomingHeaders.containsKey(headerName)) {
                     List<String> headerNames = incomingHeaders.get(headerName);
                     if (headerNames != null) {
@@ -496,17 +467,17 @@ public final class BackendServiceImpl implements BackendService {
         }
 
         // Some RestApi can filter the Host header! (localhost)
-        if (removeHostHeader) headers.remove(HttpHeaders.HOST);
-        if (removeOriginHeader) headers.remove(HttpHeaders.ORIGIN);
+        if (this.config.isRemoveHostHeader()) headers.remove(HttpHeaders.HOST);
+        if (this.config.isRemoveOriginHeader()) headers.remove(HttpHeaders.ORIGIN);
 
         // Basic Authentication, Bearer Authentication and Cookies
         // WARN BasicAuth Not UTF-8! see https://datatracker.ietf.org/doc/html/rfc7617#page-14
-        if (!ObjectUtils.isEmpty(username) && !ObjectUtils.isEmpty(password))
-            headers.setBasicAuth(HttpHeaders.encodeBasicAuth(username, password, StandardCharsets.ISO_8859_1));
-        if (!ObjectUtils.isEmpty(bearer))
-            headers.setBearerAuth(bearer);
-        if (!ObjectUtils.isEmpty(cookie))
-            headers.add(HttpHeaders.COOKIE, cookie);
+        if (!ObjectUtils.isEmpty(this.config.getUsername()) && !ObjectUtils.isEmpty(this.config.getPassword()))
+            headers.setBasicAuth(HttpHeaders.encodeBasicAuth(this.config.getUsername(), this.config.getPassword(), StandardCharsets.ISO_8859_1));
+        if (!ObjectUtils.isEmpty(this.config.getBearer()))
+            headers.setBearerAuth(this.config.getBearer());
+        if (!ObjectUtils.isEmpty(this.config.getCookie()))
+            headers.add(HttpHeaders.COOKIE, this.config.getCookie());
 
         logger.debug("Requested Headers: {}", headers);
         if (body != null) return new HttpEntity<>(body, headers);
@@ -532,7 +503,7 @@ public final class BackendServiceImpl implements BackendService {
 
     @Override
     public boolean isRemovedHeaders() {
-        return this.removeHeaders || this.removeHostHeader || this.removeOriginHeader;
+        return this.config.isRemoveHeaders() || this.config.isRemoveHostHeader() || this.config.isRemoveOriginHeader();
     }
 
     private static class ResponseTypeImpl<T> implements ResponseType<T> {

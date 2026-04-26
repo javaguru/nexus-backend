@@ -66,6 +66,7 @@ public class StatusController {
     private String buildTime;
     private String revision;
     private String branch;
+    @Value("${spring.profiles.active:#{null}}")
     private String profile;
     private String javaVmVersion;
     private String javaIoTmpdir;
@@ -100,11 +101,11 @@ public class StatusController {
         properties.load(resource.getInputStream());
         application = properties.getProperty("application.name");
         version = properties.getProperty("version");
-        build = properties.getProperty("build.number");
-        buildTime = properties.getProperty("build.time");
-        revision = properties.getProperty("build.revision");
-        branch = properties.getProperty("build.branch");
-        profile = properties.getProperty("build.profile");
+        build = properties.getProperty("build.number", "-");
+        buildTime = properties.getProperty("build.time", "-");
+        revision = properties.getProperty("build.revision", "-");
+        branch = properties.getProperty("build.branch","-");
+        //profile = properties.getProperty("build.profile");
         // only for Dev env.!
         javaVmVersion = System.getProperty("java.vm.version");
         javaIoTmpdir = System.getProperty("java.io.tmpdir");

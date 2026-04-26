@@ -36,6 +36,8 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.servlet.ModelAndView;
+
 import java.util.Map;
 
 /*
@@ -64,6 +66,12 @@ public class DefaultErrorController extends ApiBase implements ErrorController {
         final HttpStatus status = getStatus(request);
         return super.getResponseEntity(String.valueOf(status.value()), "ERROR",
                 String.valueOf(body.get("message")), status);
+    }
+
+    @RequestMapping(value = {"/error"})
+    public ModelAndView errorPage(HttpServletRequest request) {
+        final HttpStatus status = getStatus(request);
+        return new ModelAndView("error/error" + status.value(), "error", String.valueOf(status.value()));
     }
 
     private boolean getTraceParameter(HttpServletRequest request) {

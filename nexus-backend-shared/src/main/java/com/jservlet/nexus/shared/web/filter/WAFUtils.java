@@ -192,21 +192,36 @@ public class WAFUtils {
         // Advanced Test Payloads to verify improvements
         String[] tests = {
                 // Basic Html
-                "<a>",
+                "<a>","</a>",
                 "<a href=\"ok\">",
+                "<b>","</b>",
+                "<span>","</span>",
+                "<table>","</table>",
+                "<tr>","</tr>",
+                "<td>","</td>",
+                "<span click=\"chrome://settings/\">",
+                "this.1ssss@gmail.com",
+                "abort=\"prompt",
+
+                // Bad Html
                 "<a onclick=\"bad\">",
+                "<span onclick=\"\\\\:#chrome\">",
+                "<link src=\"http://url.to.file.which/not.exist\">",
+                "<style>","</style>",
+                "<script>","</script>",
                 "<a href=\"javascript:alert(1)\">",
-                "<script>",
-                "</script>",
+                "<b onmouseover=alert('Wufff!')>click me!</b>",
+                "<IMG SRC=j&#X41vascript:alert('test2')>",
+                "<img src=\"http://url.to.file.which/not.exist\"/>",
+                "<img onerror=alert(document.cookie);>",
+                "<META HTTP-EQUIV=\"refresh\"\n" + "CONTENT=\"0;url=data:text/html;base64,PHNjcmlwdD5hbGVydCgndGVzdDMnKTwvc2NyaXB0Pg\">",
 
                 // XSS & Template Injection
                 "<svg onload=alert(1)>",
                 "<video change=\"alert(this.ssss)\">",
                 "alert(this.qss)",
                 "<body change=\"this.fssf\">",
-                "this.1ssss@gmail.com",
-                "abort=\"prompt",
-                "abort=\"prompt(document.location.href",
+                 "abort=\"prompt(document.location.href",
 
                 "{{ 7 * 7 }}", // SSTI / Vue
                 "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==", // Data URI

@@ -8,7 +8,7 @@
         <groupId>com.jservlet.nexus.backend</groupId>
         <artifactId>nexus-backend-parent</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>2.0.1</version>
+        <version>2.0.2</version>
     </parent>
 
     <artifactId>nexus-backend</artifactId>
@@ -271,6 +271,18 @@
             <artifactId>httpclient5</artifactId>
         </dependency>
 
+        <!-- Resilience4j CircuitBreaker -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-circuitbreaker</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+
         <!-- Utils Apache -->
         <dependency>
             <groupId>commons-io</groupId>
@@ -326,11 +338,9 @@
                     <include>logback.xml</include>
                     <include>mime/*.properties</include>
 
-                    <!-- Swagger ui open-api security and initializer -->
+                    <!-- Swagger ui open-api security -->
                     <include>api-ui/api-docs.yaml</include>
-                    <include>static/swagger-ui/swagger-initializer.jss</include>
-
-                    <!-- Default embedded Tomcat users -->
+                    <!-- WARN: Default Embedded Tomcat users, none for an External Tomcat (Override it!)-->
                     <include>tomcat-users.xml</include>
 
                     <!-- Servlet Container Initializer Tomcat -->
@@ -355,6 +365,7 @@
                 <includes>
                     <include>**/*</include>
                 </includes>
+                <!-- WARN: Not used for External or Embedded Tomcat -->
                 <excludes>
                     <exclude>WEB-INF/web.xml</exclude>
                 </excludes>

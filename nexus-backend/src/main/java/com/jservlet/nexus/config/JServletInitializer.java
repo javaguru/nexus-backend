@@ -23,16 +23,12 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.Profile;
 
 /**
- * SpringBoot Tomcat Container ServletInitializer
- * Only a Spring profile 'withoutTomcat' (or 'withTomcat' with a Tomcat Embedded by SpringBoot!)
+ * SpringBoot Tomcat Container ServletInitializer for external Tomcat (Not Embedded)
  */
-@Profile("withoutTomcat")
 public class JServletInitializer extends SpringBootServletInitializer {
 
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
-        // Fix ClassNotFoundException: org.slf4j.impl.StaticLoggerBinder
-        System.setProperty("org.springframework.boot.logging.LoggingSystem", "none");
         // Swagger is only available in dev!
         String env = System.getProperty("environment", "development");
         if ("development".equals(env))  System.setProperty("springdoc.swagger-ui.enabled", "true");
