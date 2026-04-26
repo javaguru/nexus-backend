@@ -15,7 +15,7 @@ import com.jservlet.nexus.shared.exceptions.*;
 /**
  * Wrapper BackendService Resilient4j
  */
-public class ResilientBackendServiceWrapper implements BackendService {
+public class BackendServiceResilientWrapper implements BackendService {
 
     private static final String UNAVAILABLE = "Backend service is temporarily unavailable. Please try again later.";
     private static final String UNAVAILABLE_FILE = "Backend service is temporarily unavailable. Unable to retrieve the file. Please try again later.";
@@ -26,7 +26,7 @@ public class ResilientBackendServiceWrapper implements BackendService {
 
     private final Retry retry;
 
-    public ResilientBackendServiceWrapper(BackendService backendService,
+    public BackendServiceResilientWrapper(BackendService backendService,
                                           CircuitBreaker myCircuitBreaker,
                                           Retry myRetry) {
         this.backendService = backendService;

@@ -3,6 +3,7 @@ package com.jservlet.nexus.test.config;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jservlet.nexus.shared.service.backend.BackendConfigProperties;
 import com.jservlet.nexus.shared.service.backend.BackendService;
 import com.jservlet.nexus.shared.service.backend.BackendServiceImpl;
 import com.jservlet.nexus.shared.web.interceptor.CookieRedirectInterceptor;
@@ -53,14 +54,19 @@ public class ApplicationTestConfig {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationTestConfig.class);
 
     @Bean
-    public BackendService backendService(@Value("${nexus.backend.url}") String backendUrl,
+    public BackendService backendService(BackendConfigProperties backendConfig,
                                          RestOperations restOperations,
                                          ObjectMapper objectMapper) {
         final BackendServiceImpl backendService = new BackendServiceImpl();
-        backendService.setBackendURL(backendUrl);
+        backendService.setConfig(backendConfig);
         backendService.setRestOperations(restOperations);
         backendService.setObjectMapper(objectMapper);
         return backendService;
+    }
+
+    @Bean
+    public BackendConfigProperties backendConfig() {
+        return new BackendConfigProperties();
     }
 
     @Bean

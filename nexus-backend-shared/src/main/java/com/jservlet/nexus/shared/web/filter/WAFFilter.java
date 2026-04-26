@@ -362,6 +362,84 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
+     * Dump absolument tout le contenu d'une HttpServletRequest pour analyse forensic.
+     */
+    private String dumpFullRequestDetails(HttpServletRequest request) {
+        StringBuilder dump = new StringBuilder();
+        dump.append("\n================ FULL REQUEST DUMP ================\n");
+
+        // 1. Informations de base et Réseau
+        dump.append("--- 1. METADATA ---\n");
+        dump.append("Method: ").append(request.getMethod()).append("\n");
+        dump.append("Request URI: ").append(request.getRequestURI()).append("\n");
+        dump.append("Query String: ").append(request.getQueryString()).append("\n");
+        dump.append("Protocol: ").append(request.getProtocol()).append("\n");
+        dump.append("Remote Addr: ").append(request.getRemoteAddr()).append("\n");
+        dump.append("Remote Host: ").append(request.getRemoteHost()).append("\n");
+        dump.append("Content Type: ").append(request.getContentType()).append("\n");
+        dump.append("Content Length: ").append(request.getContentLength()).append("\n");
+        dump.append("Character Encoding: ").append(request.getCharacterEncoding()).append("\n");
+
+        // 2. En-têtes (Headers)
+        dump.append("\n--- 2. HEADERS ---\n");
+        Enumeration<String> headerNames = request.getHeaderNames();
+        if (headerNames != null) {
+            while (headerNames.hasMoreElements()) {
+                String headerName = headerNames.nextElement();
+                Enumeration<String> headers = request.getHeaders(headerName);
+                while (headers.hasMoreElements()) {
+                    dump.append(headerName).append(": [").append(headers.nextElement()).append("]\n");
+                }
+            }
+        }
+
+        // 3. Paramètres (URL Query + Form URL-Encoded)
+        dump.append("\n--- 3. PARAMETERS ---\n");
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        if (parameterMap != null && !parameterMap.isEmpty()) {
+            for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+                dump.append(entry.getKey()).append(" = [");
+                dump.append(String.join(", ", entry.getValue()));
+                dump.append("]\n");
+            }
+        } else {
+            dump.append("No parameters.\n");
+        }
+
+        // 4. Cookies
+        dump.append("\n--- 4. COOKIES ---\n");
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null && cookies.length > 0) {
+            for (Cookie cookie : cookies) {
+                dump.append(cookie.getName()).append(" = [").append(cookie.getValue()).append("]\n");
+            }
+        } else {
+            dump.append("No cookies.\n");
+        }
+
+        // 5. Body (Lu en toute sécurité grâce à ton WAFRequestWrapper)
+        dump.append("\n--- 5. BODY ---\n");
+        try {
+            if (request instanceof WAFRequestWrapper) {
+                // Lecture du cache sans épuiser le flux pour les contrôleurs
+                String body = IOUtils.toString(request.getReader());
+                if (body != null && !body.trim().isEmpty()) {
+                    dump.append(body).append("\n");
+                } else {
+                    dump.append("Empty Body.\n");
+                }
+            } else {
+                dump.append("[BODY READING SKIPPED - NOT A WRAPPED REQUEST TO AVOID STREAM EXHAUSTION]\n");
+            }
+        } catch (Exception e) {
+            dump.append("[ERROR READING BODY: ").append(e.getMessage()).append("]\n");
+        }
+
+        dump.append("===================================================\n");
+        return dump.toString();
+    }
+
+    /**
      * Scans and wraps multipart files. Reads the file content into memory to
      * avoid FileNotFoundException in subsequent filters or controllers.
      *

@@ -484,16 +484,35 @@ Since the version **1.0.24** no more BackendResource and temporary file. **All i
 
 ### ⚙️ Tomcat 10.xx Embedded with external configuration
 
-**Settings keys settings.properties:** *nexus.backend.client.ssl.mtls.enable* at **true** for activated the mTLS connection
+**Settings keys settings.properties:** 
 
-| **Keys**                                      | **Default value**         | **Descriptions**                          |
-|-----------------------------------------------|:--------------------------|:------------------------------------------|
-|                                               | **true**                  | Default ACLs Embedded (no web.xml found)  |   
-| nexus.backend.tomcat.security.gui.roles       | **admin-gui**             | Roles Admin GUI                           |   
-| nexus.backend.tomcat.security.patterns        | /actuator/*,/mnt/admin/** | Pattern match paths actuator              |   
-| nexus.backend.tomcat.security.health.roles    | **admin-health**          | Roles Health status                       |   
-| nexus.backend.tomcat.security.health.patterns | /health/*                 | Pattern match paths                       |   
-| nexus.backend.tomcat.security.users.file      |                           | /apps/apache-tomcat/conf/tomcat-users.xml |   
+| **Keys**                                          | **Default value**         | **Descriptions**                              |
+|---------------------------------------------------|:--------------------------|:----------------------------------------------|
+| nexus.backend.tomcat.security.gui.roles           | **admin-gui**             | Roles Admin GUI                               |   
+| nexus.backend.tomcat.security.patterns            | /actuator/*,/mnt/admin/** | Pattern match paths actuator                  |   
+| nexus.backend.tomcat.security.health.roles        | **admin-health**          | Roles Health status                           |   
+| nexus.backend.tomcat.security.health.patterns     | /health/*                 | Pattern match paths                           |   
+| nexus.backend.tomcat.security.users.file          |                           | /apps/apache-tomcat/conf/tomcat-users.xml     |   
+
+
+### ⚙️ Tomcat Executor
+
+**Settings keys settings.properties:**
+
+| **Keys**                                          | **Default value**         | **Descriptions**                              |
+|---------------------------------------------------|:--------------------------|:----------------------------------------------|
+| nexus.backend.tomcat.executor.maxThreads          | 300                       | Max Thread Excecution                         |   
+| nexus.backend.tomcat.executor.minSpareThreads     | 4                         | Min Thread Excecution                         |   
+
+
+### ⚙️ Tomcat Realm lock config
+
+**Settings keys settings.properties:**
+
+| **Keys**                                          | **Default value**         | **Descriptions**                              |
+|---------------------------------------------------|:--------------------------|:----------------------------------------------|
+| nexus.backend.tomcat.acl.realm.lock.failureCount  | 5                         | Number failure count maximum                  |   
+| nexus.backend.tomcat.acl.realm.lock.lockOutTime   | 300                       | Lock out time in second (300s lock 5 minutes) |   
 
 
 ### ⚙️ Activated Tomcat Catalina Connector TLS/SSL on a wildcard domain Certificate
@@ -543,22 +562,17 @@ Already initialized, activated by setting the logback.xml at **level="DEBUG"**.
 
 **💡 Noted: I recommend to override the config for Embedded Tomcat 10.xx**
 
-- External Files config **web.xml** and **tomcat-users.xml**:
+- External Files config **tomcat-users.xml**:
 
 ```
-# External config web.xml and tomcat-users
+# External config tomcat-users
 nexus.backend.tomcat.security.users.file=/apps/apache-tomcat-10.1.54/conf/tomcat-users.xml
-nexus.backend.tomcat.embedded.webxml.path=/apps/apache-tomcat-10.1.54/conf/web.xml
 ```
 
 **Load Tomcat Users from Catalina Base Config or Catalina Home Config**
 
 - catalina.base + "conf/tomcat-users.xml"
 - catalina.home + "conf/tomcat-users.xml"
-
-**Load Embedded Tomcat Users from classpath**
-
-- Default Fallback Class PathResource: tomcat-users.xml
 
 **Default Tomcat Security Constraints and Realm Users**
 
@@ -739,7 +753,7 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 ## 🗒️ Last News
 
-* Last version **2.0.2**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService ResourceLoader, Build WAR external/internal.
+* Last version **2.0.2**, released at 26/04/2026 Stabilization migration Spring 6, New Resilience4j Circuit Breaker, Fix AnalyzerRequestService Sequential Sliding Window and ONNX Tensor Padding.
 * Version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService ResourceLoader, Build WAR external/internal.
 * Version **2.0.0**, released at 18/04/2026  **Jdk 21, Spring 6, Spring Boot 3.3.0, Tomcat 10.xx Servlet Specification 6.0**:
  Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX.

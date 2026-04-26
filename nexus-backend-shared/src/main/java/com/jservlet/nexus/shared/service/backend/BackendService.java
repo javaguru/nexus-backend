@@ -19,7 +19,6 @@
 package com.jservlet.nexus.shared.service.backend;
 
 import com.jservlet.nexus.shared.exceptions.*;
-import com.jservlet.nexus.shared.service.backend.api.ResilientBackendServiceWrapper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;

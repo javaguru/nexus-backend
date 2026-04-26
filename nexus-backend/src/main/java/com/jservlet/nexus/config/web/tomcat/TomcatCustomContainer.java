@@ -135,6 +135,11 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     @Value("${nexus.backend.tomcat.executor.minSpareThreads:4}")
     private int minSpareThreads;
 
+    @Value("${nexus.backend.tomcat.acl.realm.lock.failureCount:5}")  // Max 5 attempts
+    private int failureCount;
+    @Value("${nexus.backend.tomcat.acl.realm.lock.lockOutTime:300}") // 5 minutes lockout
+    private int lockOutTime;
+
 
     @Override
     public void customize(TomcatServletWebServerFactory factory) {
@@ -254,17 +259,17 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
                 // Wrap in LockOutRealm to prevent brute force attacks
                 LockOutRealm lockOutRealm = new LockOutRealm();
                 lockOutRealm.addRealm(memoryRealm);
-                lockOutRealm.setFailureCount(5);   // Max 5 attempts
-                lockOutRealm.setLockOutTime(300);  // 5 minutes lockout
+                lockOutRealm.setFailureCount(failureCount);
+                lockOutRealm.setLockOutTime(lockOutTime);
 
                 // Assign the realm to the context
                 context.setRealm(lockOutRealm);
 
-                // PROGRAMMATIC CONSTRAINTS & AUTHENTICATOR (ALWAYS APPLIED)
+                // Programmatic constraints & authenticator (always applied)
                 // Spring Boot Embedded completely ignores web.xml. We MUST define ACLs programmatically.
                 logger.info("Applying programmatic security constraints and authenticator");
 
-                // 1. Admin Area Constraints (/actuator, /nmt)
+                // Admin Area Constraints (/actuator, /nmt)
                 SecurityConstraint adminConstraint = new SecurityConstraint();
                 adminConstraint.setUserConstraint("NONE");
                 adminConstraint.setDisplayName("Nexus Admin Access Constraint");

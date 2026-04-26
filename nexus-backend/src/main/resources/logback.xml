@@ -46,7 +46,6 @@
 
     <!-- set DEBUG to debug Http RestOperations HttpClient5 -->
     <logger name="org.apache.hc.client5.http" level="INFO"/>
-    <logger name="org.apache.hc.client5.http.wire" level="INFO"/>
 
     <!-- Neutralized hibernate, ziplet -->
     <logger name="org.hibernate" level="OFF"/>
@@ -54,6 +53,8 @@
 
     <!-- Neutralized INFO ai.djl -->
     <logger name="ai.djl" level="WARN" />
+    <!-- Neutralized swagger ModelConverterContextImpl -->
+    <logger name="io.swagger.v3.core.converter.ModelConverterContextImpl" level="OFF"/>
 
 
     <!-- Neutralized HTTPMethodOverrideFilter -->
