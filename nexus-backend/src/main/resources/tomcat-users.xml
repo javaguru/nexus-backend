@@ -25,14 +25,14 @@
     <role rolename="manager-jmx"/>
     <role rolename="manager-status"/>
 
-    <role rolename="admin-gui"/>
     <role rolename="admin-script"/>
 
+    <role rolename="admin-gui"/>
     <role rolename="admin-health"/>
 
     <!--<user username="manager" password="" roles="manager-gui,manager-status"/>-->
 
     <user username="admin" password="admin" roles="manager-gui,admin-gui"/>
-    <user username="healthstatus" password="123456" roles="admin-health,admin-gui"/>
+    <user username="healthstatus" password="123456" roles="admin-health"/>
 
 </tomcat-users>

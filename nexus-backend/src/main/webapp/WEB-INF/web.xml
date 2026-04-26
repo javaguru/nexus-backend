@@ -41,6 +41,7 @@
         </web-resource-collection>
         <auth-constraint>
             <role-name>admin-health</role-name>
+            <role-name>admin-gui</role-name>
         </auth-constraint>
         <user-data-constraint>
             <transport-guarantee>NONE</transport-guarantee>
