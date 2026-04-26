@@ -34,7 +34,7 @@ import java.nio.LongBuffer;
 import java.util.Map;
 
 /**
- * AnalyzerRequestService analyze content text with a pure Sequential Sliding Window(Performance <50 ms).<br>
+ * AnalyzerRequestService analyze content text with a pure Sequential Sliding Window(Performance &lt;50 ms).<br>
  * <p>
  * Use DistilBERT Model ONNX Environment (Open Neural Network Exchange) with HuggingFace Tokenizer.<br>
  * <br>
