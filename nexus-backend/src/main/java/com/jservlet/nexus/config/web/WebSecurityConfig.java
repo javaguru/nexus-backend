@@ -34,6 +34,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.firewall.HttpFirewall;
@@ -65,14 +66,25 @@ public class WebSecurityConfig {
 
     private final ServletContext servletContext;
 
-    @Value("${nexus.spring.web.security.debug:false}")
-    private boolean webSecurityDebug;
-
     public WebSecurityConfig(ServletContext servletContext) {
         this.servletContext = servletContext;
     }
 
     // WARN no UserDetailsServiceAutoConfiguration
+
+    @Value("${nexus.spring.web.security.debug:false}")
+    private boolean webSecurityDebug;
+
+    @Value("${nexus.spring.web.security.csp.policy:default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; object-src 'none';}")
+    private String cspPolicyDirectives;
+
+    @Value("${nexus.spring.web.security.hsts.maxAgeInSeconds:31536000}")
+    private long maxAgeInSeconds;
+    @Value("${nexus.spring.web.security.hsts.includeSubDomains:false}")
+    private boolean includeSubDomains;
+
+    @Value("${nexus.spring.web.security.referrer.policy:NO_REFERRER}")
+    private String referrerPolicy;
 
 
     /**
@@ -85,20 +97,17 @@ public class WebSecurityConfig {
      */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer(HttpFirewall webHttpFirewall) {
-        return (web) -> web.debug(webSecurityDebug).httpFirewall(webHttpFirewall)
-                .setServletContext(servletContext);
+        return (web) -> {
+            web.debug(webSecurityDebug).httpFirewall(webHttpFirewall);
+            web.setServletContext(servletContext);
+            web.ignoring().requestMatchers(
+                    "/actuator/**",             // Internal Actuator
+                    "/nmt/**",                  // Internal Health Mmt Monitor page
+                    "/health/**",               // Internal Tomcat Health valve
+                    "/nexus-backend/health/**"  // Internal Health status page
+            );
+        };
     }
-
-    @Value("${nexus.spring.web.security.csp.policy:default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; object-src 'none';}")
-    private String cspPolicyDirectives;
-
-    @Value("${nexus.spring.web.security.hsts.maxAgeInSeconds:31536000}")
-    private long maxAgeInSeconds;
-    @Value("${nexus.spring.web.security.hsts.includeSubDomains:false}")
-    private boolean includeSubDomains;
-
-    @Value("${nexus.spring.web.security.referrer.policy:NO_REFERRER}")
-    private String referrerPolicy;
 
     /**
      * SecurityFilterChain
@@ -124,17 +133,16 @@ public class WebSecurityConfig {
                 .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR).permitAll()
                 .requestMatchers(
                         "/",                // Internal index page
-                        "/health/status",   // Internal Health status page
-                        "/nmt/admin/monitor/nmt",   // Internal Health Mmt Monitor page
                         "/mock/**",         // Internal Dev Mock page
-                        "/static/**",       // static image svg
-                        "/actuator/**",     // Actuator
-                        "/api/**",          // Rest Api Backend
-                        "/error",           // Error page
+                        "/static/**",       // Internal Dev static image svg
+
+                        "/api/**",          // Rest Api Backend Gateway
+
                         "/swagger-ui/**",   // Swagger UI v3
                         "/v3/api-docs/**"   // Swagger Docs v3
+
                 ).permitAll()
-                .anyRequest().authenticated() // Bonne pratique : sécuriser tout le reste par défaut
+                .anyRequest().authenticated() // Secure all by default!
                 //.anyRequest().permitAll() // Temporarily permit all requests for debugging
         );
 
@@ -144,8 +152,8 @@ public class WebSecurityConfig {
             headers.contentTypeOptions(Customizer.withDefaults());
             headers.cacheControl(Customizer.withDefaults());
 
-            // Configuration des frames
-            headers.frameOptions(frame -> frame.sameOrigin());
+            // Headers Configurer  frames same-origin
+            headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin);
 
             // XSS Protection (Nécessite la déclaration explicite de la valeur dans la nouvelle API)
             headers.xssProtection(xss ->
