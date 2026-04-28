@@ -18,13 +18,17 @@
 
 package com.jservlet.nexus.shared.web.filter;
 
+import org.apache.commons.text.StringEscapeUtils;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Pattern;
 
 /**
  * Modern WAF defense Utilities. Check for potential evasion inside a query or parameters, headers, cookies and JSON Body!
  * <p>
- * - XSS script injection evasion (various encoding, obfuscation, template injections)<br>
+ * - XSS / SSRF / LFI script injection evasion (various encoding, obfuscation, template injections)<br>
  * - SQL injection (commands, functions, params and NoSQL)<br>
  * - Google injection (GCP/Google Cloud Platform - GCP Metadata server)<br>
  * - Command injection &amp; RCE (Remote code execution)<br>
@@ -33,8 +37,8 @@ import java.util.regex.Pattern;
  * - XXE injection (XML External Entity)<br>
  * - Suspicious characters injection (excessive special char, unusual length/structure)<br>
  * - Link injection (mailto or ftp)<br>
- * - User-Agent Automates scanner/analyser<br>
- * - AI User-Agent (Bots Agent, LLM training)<br>
+ * - User-Agent Automates scanner/analyzer<br>
+ * - AI User-Agent (Bots Agent, LLM training, Probes)<br>
  * </p>
  */
 public class WAFUtils {
@@ -63,7 +67,7 @@ public class WAFUtils {
                     "\\bcreate(?:Attribute|Element|TextNode)\\b\\s*\\(|" +
                     "\\.(?:write(?:ln)?|innerHTML|outerHTML|textContent|setAttribute)\\b\\s*[=(]|" +
                     "@import\\b|\\bbackground\\s*=\\s*['\"]|\\bAllowScriptAccess\\b\\s*=|" +
-                    "\\bdata:(?:text/html|image/svg\\+xml|application/javascript)\\b|\\{\\{.*\\}\\}")
+                    "\\bdata:(?:text/html|image/svg\\+xml|application/javascript)\\b|\\{\\{.*?\\}\\\\b}|\\{\\{[^}]+\\}\\}")
     );
 
     /**
@@ -177,12 +181,23 @@ public class WAFUtils {
             Pattern.compile("(?si)(?:GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|anthropic-ai|Google-Extended|Meta-ExternalAgent|FacebookBot|CCBot|Bytespider|Amazonbot|Cohere-ai|Omgilibot|PerplexityBot|Diffbot|ImagesiftBot|YouBot)")
     );
 
+
     private static boolean isWAFPattern(String value, List<Pattern> patterns) {
         if (value == null) return false;
-        // matcher pattern find ?
-        for (Pattern pattern : patterns) {
-            if (pattern.matcher(value).find())
-                return true;
+        try {
+            // Java.net URL Decoder
+            String decodedInput = URLDecoder.decode(value, StandardCharsets.UTF_8);
+            // Apache commons text unescape Html
+            decodedInput = StringEscapeUtils.unescapeHtml4(decodedInput);
+            // Normalization: pre-clean null bytes and parasitic characteristics
+            value = decodedInput.replace("\0", "").replaceAll("&#x?[0-9a-fA-F]+;?", "");
+            // matcher pattern find ?
+            for (Pattern pattern : patterns) {
+                if (pattern.matcher(value).find())
+                    return true;
+            }
+        } catch (Exception e) {
+            return false;
         }
         return false;
     }
@@ -194,13 +209,14 @@ public class WAFUtils {
                 // Basic Html
                 "<a>","</a>",
                 "<a href=\"ok\">",
+                "<ul><li><a href=\"/wiki/Philosophical_analysis\" title=\"Philosophical analysis\">Analysis </a> </li>",
                 "<b>","</b>",
                 "<span>","</span>",
                 "<table>","</table>",
                 "<tr>","</tr>",
                 "<td>","</td>",
-                "<span click=\"chrome://settings/\">",
-                "this.1ssss@gmail.com",
+                "this.1ssss@example.com",
+                "this.alert@example.com",
                 "abort=\"prompt",
 
                 // Bad Html
@@ -214,7 +230,67 @@ public class WAFUtils {
                 "<IMG SRC=j&#X41vascript:alert('test2')>",
                 "<img src=\"http://url.to.file.which/not.exist\"/>",
                 "<img onerror=alert(document.cookie);>",
+                "document.cookie",
+
+                // find function
+                "[1].find(alert)", // OK Nexus LM
+                "document['body'].innerHTML=",
+                "document.getElementById('x').innerHTML=",
+
+                // URL Fragment Exploitation
+                "#<img src=x onerror=alert(1)>",
+                "?search=<img src=x onerror=alert(1)>",
+
+                // DOM Manipulation
+                "document.write('... USER_INPUT ...') ",
+                "element.innerHTML = '... USER_INPUT ...' ",
+                "$(\"#element\").html('... USER_INPUT ...')",
+
+                // Case Variation
+                "<ScRiPt>alert(1)</ScRiPt>",
+                "<IMG SRC=x onerror=alert(1)>",
+                // Tag Obfuscation
+                "<scr<script>ipt>alert(1)</scr</script>ipt>",
+                "<img src=x onerror=alert&#x28;1&#x29>",
+
+                // Test URL fragments
+                "site.com/page#<img src=x onerror=alert(1)>",
+                "site.com/page#javascript:alert(1)",
+                // Test localStorage/sessionStorage
+                "localStorage.setItem('test', '<img src=x onerror=alert(1)>');",
+                "sessionStorage.setItem('test', '<img src=x onerror=alert(1)>');",
+                // Test document.write sources
+                "site.com/page?name=<div onmouseover='alert(1)'>",
+                "site.com/page?name=</script><script>alert(1)</script>",
+
+                // Character Filter Bypass
+                "<script>alert(String.fromCharCode(88,83,83))</script>",
+
+                // Content Length Bypass
+                "<svg/onload=alert(1)>",
+                "<img src=x onerror=alert(1)>",
+                "<q/oncut=alert(1)>",
+
+                // Character Filter Bypass
+                "<div data-react-props=\"{'dangerouslySetInnerHTML':{'__html':'<img src=x onerror=alert(1)>'}}\">",
+
+                // Context Escape Bypass
+                "\\';alert(1)//",
+                "';alert(1)//",
+                "'-alert(1)-'",
+                "\" onmouseover=\"alert(1)",
+
+                // Modern Browser Bypass
+                "<script type=\"importmap\">{\"imports\": {\"x\": \"data:text/javascript,alert(1)\"}}</script>",
+                "<div id=x></div><script>x.attachShadow({mode:'open'}).innerHTML='<img src=x onerror=alert(1)>'</script>",
+                "<script>navigator.serviceWorker.register('data:text/javascript,alert(1)')</script>",
+
+                // Protocol Handler Exploitation
                 "<META HTTP-EQUIV=\"refresh\"\n" + "CONTENT=\"0;url=data:text/html;base64,PHNjcmlwdD5hbGVydCgndGVzdDMnKTwvc2NyaXB0Pg\">",
+                "<a href=\"data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==\">Click</a>",
+                "<a href=\"javascript&colon;alert(1)\">Click</a>",
+                "<a href=\"javascript&#58;alert(1)\">Click</a>",
+                "<a href=\"javascript&#0058;alert(1)\">Click</a>",
 
                 // XSS & Template Injection
                 "<svg onload=alert(1)>",

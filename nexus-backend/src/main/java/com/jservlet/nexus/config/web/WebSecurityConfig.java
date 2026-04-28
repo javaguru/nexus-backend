@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -100,17 +101,36 @@ public class WebSecurityConfig {
         return (web) -> {
             web.debug(webSecurityDebug).httpFirewall(webHttpFirewall);
             web.setServletContext(servletContext);
-            web.ignoring().requestMatchers(
-                    "/actuator/**",             // Internal Actuator
-                    "/nmt/**",                  // Internal Health Mmt Monitor page
-                    "/health/**",               // Internal Tomcat Health valve
-                    "/nexus-backend/health/**"  // Internal Health status page
-            );
         };
     }
 
     /**
-     * SecurityFilterChain
+     * SecurityFilterChain dedicated to Tomcat Endpoints protected by an ACL
+     *
+     * @param http      HttpSecurity
+     * @return  SecurityFilterChain Tomcat Endpoints FilterChain
+     * @throws Exception  Exception during config sessionManagement or headers
+     */
+    @Bean
+    @Order(1)
+    public SecurityFilterChain tomcatEndpointsFilterChain(HttpSecurity http) throws Exception {
+       http
+                // permit All but ACL managed by Tomcat
+                .securityMatcher(
+                        "/actuator/**",             // Internal Actuator
+                        "/nmt/**",                  // Internal Health Mmt Monitor page
+                        "/health/**",               // Internal Tomcat Health valve
+                        "/nexus-backend/health/**"  // Internal Health status page
+                ).authorizeHttpRequests(auth ->
+                        auth.anyRequest().permitAll());
+
+        // security headers
+        return setSecurityFilterChain(http);
+    }
+
+
+    /**
+     * Security FilterChain manage Rest Api Backend Gateway, Internal pages and Swagger Endpoints
      *
      * @param http The HttpSecurity
      * @param corsConfigurationSource  The Cors config
@@ -118,15 +138,10 @@ public class WebSecurityConfig {
      * @return SecurityFilterChain A WebSecurity customizer!
      */
     @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http, @Qualifier("corsConfigurationSource") CorsConfigurationSource corsConfigurationSource) throws Exception {
-        // cors config, csrf disable
-        //http.cors(Customizer.withDefaults())
-        http.cors(c -> c.configurationSource(corsConfigurationSource))
-                .csrf(AbstractHttpConfigurer::disable);
-
-        // session STATELESS
-        http.sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        // Cors config
+        http.cors(c -> c.configurationSource(corsConfigurationSource));
 
         // authorize HttpRequests
         http.authorizeHttpRequests(auth -> auth
@@ -135,18 +150,25 @@ public class WebSecurityConfig {
                         "/",                // Internal index page
                         "/mock/**",         // Internal Dev Mock page
                         "/static/**",       // Internal Dev static image svg
-
                         "/api/**",          // Rest Api Backend Gateway
-
                         "/swagger-ui/**",   // Swagger UI v3
                         "/v3/api-docs/**"   // Swagger Docs v3
-
                 ).permitAll()
                 .anyRequest().authenticated() // Secure all by default!
-                //.anyRequest().permitAll() // Temporarily permit all requests for debugging
         );
 
         // security headers
+        return setSecurityFilterChain(http);
+    }
+
+    private SecurityFilterChain setSecurityFilterChain(HttpSecurity http) throws Exception {
+        // session STATELESS
+        http.sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // csrf disable
+                .csrf(AbstractHttpConfigurer::disable);
+
         http.headers(headers -> {
             // Les options par défaut utilisent maintenant Customizer.withDefaults()
             headers.contentTypeOptions(Customizer.withDefaults());
@@ -326,7 +348,7 @@ public class WebSecurityConfig {
         firewall.setAllowUrlEncodedParagraphSeparator(isAllowUrlEncodedParagraphSeparator);
         firewall.setAllowUrlEncodedLineSeparator(isAllowUrlEncodedLineSeparator);
 
-        // WARN We are not applying any predicate rules here, let the WAFFilter do that for us!
+        // WARN We are not applying any predicate rules here, let the WAFFilter do it for us!
 
         return firewall;
     }
@@ -350,7 +372,7 @@ public class WebSecurityConfig {
     }
 
     /**
-     * A simple implementation of {@link RequestRejectedHandler} that sends an error  with configurable status code
+     * A simple implementation of {@link RequestRejectedHandler} that sends an error with configurable status code
      * @return RequestRejectedHandler
      */
     @Bean
