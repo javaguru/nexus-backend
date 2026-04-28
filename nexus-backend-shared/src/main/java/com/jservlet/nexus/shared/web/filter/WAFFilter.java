@@ -283,7 +283,7 @@ public class WAFFilter extends ApiBase implements Filter {
             }
         }
 
-        // Extract JSON/XML Body
+        // Extract the JSON/XML Body
         String contentType = request.getContentType();
 
         // AI NLP cannot process raw binary files. We substitute it with a semantic tag.
@@ -301,7 +301,7 @@ public class WAFFilter extends ApiBase implements Filter {
 
         String finalBody = bodyBuilder.toString().trim();
 
-        // Injection of the BODY tag (CRUCIAL for chunking)
+        // Inject the BODY tag (CRUCIAL for chunking)
         if (!finalBody.isEmpty()) {
             aiPayload.append("\nBODY:\n").append(finalBody);
         }
@@ -327,7 +327,8 @@ public class WAFFilter extends ApiBase implements Filter {
 
             if (isMalicious) {
                 String incidentId = "WAF_AI_INCIDENT_" + UUID.randomUUID();
-                logger.warn("AI WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId, dumpFullRequestDetails(request));
+                logger.warn("AI WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId,
+                        LogFormatUtils.formatValue(safePayload, 5000,  false));
                 savePayload(dumpFullRequestDetails(request), incidentId);
                 throw new RequestRejectedException("Request rejected: AI WAF Engine detected a malicious payload.");
             }
@@ -339,7 +340,7 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Log and Save AI request Payload
+     * Save Payload detect in the Request in the folder incidents
      *
      * @param safePayload String    Safe Payload
      * @param incidentId String     IncidentId
@@ -362,13 +363,13 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Dump absolument tout le contenu d'une HttpServletRequest pour analyse forensic.
+     * Dump absolutely all the contents of an HttpServletRequest for forensic analysis.
      */
-    private String dumpFullRequestDetails(HttpServletRequest request) {
+    private static String dumpFullRequestDetails(HttpServletRequest request) {
         StringBuilder dump = new StringBuilder();
         dump.append("\n================ FULL REQUEST DUMP ================\n");
 
-        // 1. Informations de base et Réseau
+        // Basic Information and Network
         dump.append("--- 1. METADATA ---\n");
         dump.append("Method: ").append(request.getMethod()).append("\n");
         dump.append("Request URI: ").append(request.getRequestURI()).append("\n");
@@ -380,7 +381,7 @@ public class WAFFilter extends ApiBase implements Filter {
         dump.append("Content Length: ").append(request.getContentLength()).append("\n");
         dump.append("Character Encoding: ").append(request.getCharacterEncoding()).append("\n");
 
-        // 2. En-têtes (Headers)
+        // Headers
         dump.append("\n--- 2. HEADERS ---\n");
         Enumeration<String> headerNames = request.getHeaderNames();
         if (headerNames != null) {
@@ -393,7 +394,7 @@ public class WAFFilter extends ApiBase implements Filter {
             }
         }
 
-        // 3. Paramètres (URL Query + Form URL-Encoded)
+        // Parameters (URL Query + Form URL-Encoded)
         dump.append("\n--- 3. PARAMETERS ---\n");
         Map<String, String[]> parameterMap = request.getParameterMap();
         if (parameterMap != null && !parameterMap.isEmpty()) {
@@ -406,7 +407,7 @@ public class WAFFilter extends ApiBase implements Filter {
             dump.append("No parameters.\n");
         }
 
-        // 4. Cookies
+        // Cookies
         dump.append("\n--- 4. COOKIES ---\n");
         Cookie[] cookies = request.getCookies();
         if (cookies != null && cookies.length > 0) {
@@ -417,11 +418,11 @@ public class WAFFilter extends ApiBase implements Filter {
             dump.append("No cookies.\n");
         }
 
-        // 5. Body (Lu en toute sécurité grâce à ton WAFRequestWrapper)
+        // Body (Read safely with the WAFRequestWrapper)
         dump.append("\n--- 5. BODY ---\n");
         try {
             if (request instanceof WAFRequestWrapper) {
-                // Lecture du cache sans épuiser le flux pour les contrôleurs
+                // Reading the cache without exhausting the stream for controllers
                 String body = IOUtils.toString(request.getReader());
                 if (body != null && !body.trim().isEmpty()) {
                     dump.append(body).append("\n");
