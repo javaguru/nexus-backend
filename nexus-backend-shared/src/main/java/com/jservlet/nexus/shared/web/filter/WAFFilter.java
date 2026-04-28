@@ -327,8 +327,8 @@ public class WAFFilter extends ApiBase implements Filter {
 
             if (isMalicious) {
                 String incidentId = "WAF_AI_INCIDENT_" + UUID.randomUUID();
-                logger.warn("AI WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId, safePayload);
-                savePayload(safePayload, incidentId);
+                logger.warn("AI WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId, dumpFullRequestDetails(request));
+                savePayload(dumpFullRequestDetails(request), incidentId);
                 throw new RequestRejectedException("Request rejected: AI WAF Engine detected a malicious payload.");
             }
         } catch (RequestRejectedException rre) {
