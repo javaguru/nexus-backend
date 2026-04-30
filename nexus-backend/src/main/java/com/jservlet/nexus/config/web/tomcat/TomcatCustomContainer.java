@@ -65,7 +65,7 @@ public class TomcatCustomContainer implements WebServerFactoryCustomizer<TomcatS
     @Value("${nexus.backend.tomcat.healthcheck.enable:true}")
     private boolean healthCheckEnabled;
 
-    @Value("${nexus.backend.tomcat.healthcheck.path:/health}")
+    @Value("${nexus.backend.tomcat.healthcheck.path:/${spring.application.name}/health}")
     private String healthCheckPath;
 
     // Accesslog properties

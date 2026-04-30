@@ -155,6 +155,8 @@ public class WAFFilter extends ApiBase implements Filter {
          HttpServletRequest req = (HttpServletRequest) request;
         final HttpServletResponse resp = (HttpServletResponse) response;
 
+        HttpServletRequest processedRequest = req;
+
         try {
             if (reactiveMode == Reactive.UNSAFE) { // WARN UNSAFE mode bypasses all checks.
                 chain.doFilter(req, resp);
@@ -172,7 +174,7 @@ public class WAFFilter extends ApiBase implements Filter {
             validateHostAndUserAgent(wrappedRequest);
 
             // Wrap & Scan Multipart Files safely
-            HttpServletRequest processedRequest = scanAndWrapMultipartFiles(wrappedRequest);
+            processedRequest = scanAndWrapMultipartFiles(wrappedRequest);
 
             // Bypass AI and WAF for root path, static files, and Swagger documentation
             String uri = processedRequest.getRequestURI().toLowerCase();
@@ -195,13 +197,6 @@ public class WAFFilter extends ApiBase implements Filter {
                 handlePassive(processedRequest);
             }
 
-            // Bypass AI internal call controllers
-            /*String remoteIp = request.getRemoteAddr();
-            if ("127.0.0.1".equals(remoteIp) || "0:0:0:0:0:0:0:1".equals(remoteIp)) {
-                chain.doFilter(request, response);
-                return;
-            }*/
-
             // Apply AI Scan ONLY if mode is ONNX_AI and STRICT checks passed
             if (reactiveMode == Reactive.ONNX_AI || reactiveMode == Reactive.STRICT_ONNX_AI) {
                 handleAiScan(processedRequest);
@@ -211,7 +206,7 @@ public class WAFFilter extends ApiBase implements Filter {
             chain.doFilter(processedRequest, response);
 
         } catch (RequestRejectedException ex) {
-            handleRequestRejected(ex, req, resp);
+            handleRequestRejected(ex, processedRequest, resp);
         }
     }
 
@@ -283,7 +278,7 @@ public class WAFFilter extends ApiBase implements Filter {
             }
         }
 
-        // Extract JSON/XML Body
+        // Extract the JSON/XML Body
         String contentType = request.getContentType();
 
         // AI NLP cannot process raw binary files. We substitute it with a semantic tag.
@@ -301,7 +296,7 @@ public class WAFFilter extends ApiBase implements Filter {
 
         String finalBody = bodyBuilder.toString().trim();
 
-        // Injection of the BODY tag (CRUCIAL for chunking)
+        // Inject the BODY tag (CRUCIAL for chunking)
         if (!finalBody.isEmpty()) {
             aiPayload.append("\nBODY:\n").append(finalBody);
         }
@@ -326,9 +321,6 @@ public class WAFFilter extends ApiBase implements Filter {
             boolean isMalicious = mlAnalyzer.isMalicious(safePayload);
 
             if (isMalicious) {
-                String incidentId = "WAF_AI_INCIDENT_" + UUID.randomUUID();
-                logger.warn("AI WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId, safePayload);
-                savePayload(safePayload, incidentId);
                 throw new RequestRejectedException("Request rejected: AI WAF Engine detected a malicious payload.");
             }
         } catch (RequestRejectedException rre) {
@@ -339,7 +331,7 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Log and Save AI request Payload
+     * Save Payload detect in the Request in the folder incidents
      *
      * @param safePayload String    Safe Payload
      * @param incidentId String     IncidentId
@@ -362,13 +354,13 @@ public class WAFFilter extends ApiBase implements Filter {
     }
 
     /**
-     * Dump absolument tout le contenu d'une HttpServletRequest pour analyse forensic.
+     * Dump absolutely all the contents of an HttpServletRequest for forensic analysis.
      */
-    private String dumpFullRequestDetails(HttpServletRequest request) {
+    private static String dumpFullRequestDetails(HttpServletRequest request) {
         StringBuilder dump = new StringBuilder();
         dump.append("\n================ FULL REQUEST DUMP ================\n");
 
-        // 1. Informations de base et Réseau
+        // Basic Information and Network
         dump.append("--- 1. METADATA ---\n");
         dump.append("Method: ").append(request.getMethod()).append("\n");
         dump.append("Request URI: ").append(request.getRequestURI()).append("\n");
@@ -380,7 +372,7 @@ public class WAFFilter extends ApiBase implements Filter {
         dump.append("Content Length: ").append(request.getContentLength()).append("\n");
         dump.append("Character Encoding: ").append(request.getCharacterEncoding()).append("\n");
 
-        // 2. En-têtes (Headers)
+        // Headers
         dump.append("\n--- 2. HEADERS ---\n");
         Enumeration<String> headerNames = request.getHeaderNames();
         if (headerNames != null) {
@@ -393,7 +385,7 @@ public class WAFFilter extends ApiBase implements Filter {
             }
         }
 
-        // 3. Paramètres (URL Query + Form URL-Encoded)
+        // Parameters (URL Query + Form URL-Encoded)
         dump.append("\n--- 3. PARAMETERS ---\n");
         Map<String, String[]> parameterMap = request.getParameterMap();
         if (parameterMap != null && !parameterMap.isEmpty()) {
@@ -406,7 +398,7 @@ public class WAFFilter extends ApiBase implements Filter {
             dump.append("No parameters.\n");
         }
 
-        // 4. Cookies
+        // Cookies
         dump.append("\n--- 4. COOKIES ---\n");
         Cookie[] cookies = request.getCookies();
         if (cookies != null && cookies.length > 0) {
@@ -417,11 +409,11 @@ public class WAFFilter extends ApiBase implements Filter {
             dump.append("No cookies.\n");
         }
 
-        // 5. Body (Lu en toute sécurité grâce à ton WAFRequestWrapper)
+        // Body (Read safely with the WAFRequestWrapper)
         dump.append("\n--- 5. BODY ---\n");
         try {
             if (request instanceof WAFRequestWrapper) {
-                // Lecture du cache sans épuiser le flux pour les contrôleurs
+                // Reading the cache without exhausting the stream for controllers
                 String body = IOUtils.toString(request.getReader());
                 if (body != null && !body.trim().isEmpty()) {
                     dump.append(body).append("\n");
@@ -660,6 +652,11 @@ public class WAFFilter extends ApiBase implements Filter {
         logger.warn("WAF Blocked Request: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
                 LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // Prevents message truncation in debug mode
                 req.getRemoteAddr(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
+
+        String incidentId = "WAF_INCIDENT_" + UUID.randomUUID();
+        logger.warn("WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId,
+                LogFormatUtils.formatValue(dumpFullRequestDetails(req), 5000,  true));
+        savePayload(dumpFullRequestDetails(req), incidentId);
 
         // HTTP 403 FORBIDDEN is the industry standard for WAF blocks.
         resp.setStatus(HttpStatus.FORBIDDEN.value());

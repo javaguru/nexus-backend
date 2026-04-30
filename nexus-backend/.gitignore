@@ -8,7 +8,7 @@ catalina.base_IS_UNDEFINED/
 .idea/workspace.xml
 overlays/
 .idea/
-*.onnx
+#*.onnx
 ~$*
 
 # These are some examples of commonly ignored file patterns.

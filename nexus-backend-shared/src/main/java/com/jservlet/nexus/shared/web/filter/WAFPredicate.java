@@ -18,10 +18,13 @@
 
 package com.jservlet.nexus.shared.web.filter;
 
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.web.firewall.RequestRejectedException;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -101,6 +104,7 @@ public class WAFPredicate {
         @Override
         public boolean test(String value) {
             if (value == null) return true;
+
             /*// Protect against ReDos
             if (value.length() > 1_000_000)
                 throw new RequestRejectedException("WAF Predicate cannot have more than 1_000_000 characters.");*/
@@ -120,19 +124,35 @@ public class WAFPredicate {
         }
     }
 
-
+    /**
+     * Is in WAF Pattern ?
+     *
+     * @param value         String to test
+     * @param patterns      List patterns
+     * @return boolean      matcher pattern find
+     */
     private static boolean isWAFPattern(String value, List<Pattern> patterns) {
         if (value == null) return false;
-        // matcher pattern find ?
-        for (Pattern pattern : patterns) {
-            if (pattern.matcher(value).find())
-                return true;
+        try {
+            // Java.net URL Decoder
+            String decodedInput = URLDecoder.decode(value, StandardCharsets.UTF_8);
+            // Apache commons text unescape Html
+            decodedInput = StringEscapeUtils.unescapeHtml4(decodedInput);
+            // Normalization: pre-clean null bytes and parasitic characteristics
+            value = decodedInput.replace("\0", "").replaceAll("&#x?[0-9a-fA-F]+;?", "");
+            // matcher pattern find ?
+            for (Pattern pattern : patterns) {
+                if (pattern.matcher(value).find())
+                    return true;
+            }
+        } catch (Exception e) {
+            return false;
         }
         return false;
     }
 
 
-     private static final Pattern SAFE_PARAM_NAME = Pattern.compile("^[a-zA-Z0-9_.\\-\\[\\]]+$");
+    private static final Pattern SAFE_PARAM_NAME = Pattern.compile("^[a-zA-Z0-9_.\\-\\[\\]]+$");
 
     /**
      * Predicate for validating HTTP parameter names.

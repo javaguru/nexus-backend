@@ -8,7 +8,7 @@
         <groupId>com.jservlet.nexus.backend</groupId>
         <artifactId>nexus-backend-parent</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>2.0.2</version>
+        <version>2.0.3</version>
     </parent>
 
     <artifactId>nexus-backend</artifactId>
@@ -350,7 +350,7 @@
 
                     <!-- The DistilBERT Model ONNX - HuggingFace Tokenizer Neural Network Env. -->
                     <include>model/tokenizer.json</include>
-                    <include>model/nexus_v10_14_int8.onnx</include>
+                    <include>model/nexus_v10_14_2_int8.onnx</include>
 
                 </includes>
                 <filtering>false</filtering>

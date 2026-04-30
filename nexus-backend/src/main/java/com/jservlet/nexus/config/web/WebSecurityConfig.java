@@ -28,12 +28,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.firewall.HttpFirewall;
@@ -65,29 +67,14 @@ public class WebSecurityConfig {
 
     private final ServletContext servletContext;
 
-    @Value("${nexus.spring.web.security.debug:false}")
-    private boolean webSecurityDebug;
-
     public WebSecurityConfig(ServletContext servletContext) {
         this.servletContext = servletContext;
     }
 
     // WARN no UserDetailsServiceAutoConfiguration
 
-
-    /**
-     * Performs some WebSecurity customizations:
-     * - debug
-     * - httpFirewall
-     * - servletContext
-     * @param webHttpFirewall The HttpFirewall
-     * @return A WebSecurity customizer!
-     */
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer(HttpFirewall webHttpFirewall) {
-        return (web) -> web.debug(webSecurityDebug).httpFirewall(webHttpFirewall)
-                .setServletContext(servletContext);
-    }
+    @Value("${nexus.spring.web.security.debug:false}")
+    private boolean webSecurityDebug;
 
     @Value("${nexus.spring.web.security.csp.policy:default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; object-src 'none';}")
     private String cspPolicyDirectives;
@@ -100,8 +87,50 @@ public class WebSecurityConfig {
     @Value("${nexus.spring.web.security.referrer.policy:NO_REFERRER}")
     private String referrerPolicy;
 
+
     /**
-     * SecurityFilterChain
+     * Performs some WebSecurity customizations:
+     * - debug
+     * - httpFirewall
+     * - servletContext
+     * @param webHttpFirewall The HttpFirewall
+     * @return A WebSecurity customizer!
+     */
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer(HttpFirewall webHttpFirewall) {
+        return (web) -> {
+            web.debug(webSecurityDebug).httpFirewall(webHttpFirewall);
+            web.setServletContext(servletContext);
+        };
+    }
+
+    /**
+     * SecurityFilterChain dedicated to Tomcat Endpoints protected by an ACL
+     *
+     * @param http      HttpSecurity
+     * @return  SecurityFilterChain Tomcat Endpoints FilterChain
+     * @throws Exception  Exception during config sessionManagement or headers
+     */
+    @Bean
+    @Order(1)
+    public SecurityFilterChain tomcatEndpointsFilterChain(HttpSecurity http) throws Exception {
+       http
+                // permit All but ACL managed by Tomcat
+                .securityMatcher(
+                        "/actuator/**",             // Internal Actuator
+                        "/nmt/**",                  // Internal Health Mmt Monitor page
+                        "/health/**",               // Internal Tomcat Health valve
+                        "/nexus-backend/health/**"  // Internal Health status page
+                ).authorizeHttpRequests(auth ->
+                        auth.anyRequest().permitAll());
+
+        // security headers
+        return setSecurityFilterChain(http);
+    }
+
+
+    /**
+     * Security FilterChain manage Rest Api Backend Gateway, Internal pages and Swagger Endpoints
      *
      * @param http The HttpSecurity
      * @param corsConfigurationSource  The Cors config
@@ -109,43 +138,44 @@ public class WebSecurityConfig {
      * @return SecurityFilterChain A WebSecurity customizer!
      */
     @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http, @Qualifier("corsConfigurationSource") CorsConfigurationSource corsConfigurationSource) throws Exception {
-        // cors config, csrf disable
-        //http.cors(Customizer.withDefaults())
-        http.cors(c -> c.configurationSource(corsConfigurationSource))
-                .csrf(AbstractHttpConfigurer::disable);
-
-        // session STATELESS
-        http.sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        // Cors config
+        http.cors(c -> c.configurationSource(corsConfigurationSource));
 
         // authorize HttpRequests
         http.authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR).permitAll()
                 .requestMatchers(
                         "/",                // Internal index page
-                        "/health/status",   // Internal Health status page
-                        "/nmt/admin/monitor/nmt",   // Internal Health Mmt Monitor page
                         "/mock/**",         // Internal Dev Mock page
-                        "/static/**",       // static image svg
-                        "/actuator/**",     // Actuator
-                        "/api/**",          // Rest Api Backend
-                        "/error",           // Error page
+                        "/static/**",       // Internal Dev static image svg
+                        "/api/**",          // Rest Api Backend Gateway
                         "/swagger-ui/**",   // Swagger UI v3
                         "/v3/api-docs/**"   // Swagger Docs v3
                 ).permitAll()
-                .anyRequest().authenticated() // Bonne pratique : sécuriser tout le reste par défaut
-                //.anyRequest().permitAll() // Temporarily permit all requests for debugging
+                .anyRequest().authenticated() // Secure all by default!
         );
 
         // security headers
+        return setSecurityFilterChain(http);
+    }
+
+    private SecurityFilterChain setSecurityFilterChain(HttpSecurity http) throws Exception {
+        // session STATELESS
+        http.sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // csrf disable
+                .csrf(AbstractHttpConfigurer::disable);
+
         http.headers(headers -> {
             // Les options par défaut utilisent maintenant Customizer.withDefaults()
             headers.contentTypeOptions(Customizer.withDefaults());
             headers.cacheControl(Customizer.withDefaults());
 
-            // Configuration des frames
-            headers.frameOptions(frame -> frame.sameOrigin());
+            // Headers Configurer  frames same-origin
+            headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin);
 
             // XSS Protection (Nécessite la déclaration explicite de la valeur dans la nouvelle API)
             headers.xssProtection(xss ->
@@ -318,7 +348,7 @@ public class WebSecurityConfig {
         firewall.setAllowUrlEncodedParagraphSeparator(isAllowUrlEncodedParagraphSeparator);
         firewall.setAllowUrlEncodedLineSeparator(isAllowUrlEncodedLineSeparator);
 
-        // WARN We are not applying any predicate rules here, let the WAFFilter do that for us!
+        // WARN We are not applying any predicate rules here, let the WAFFilter do it for us!
 
         return firewall;
     }
@@ -342,7 +372,7 @@ public class WebSecurityConfig {
     }
 
     /**
-     * A simple implementation of {@link RequestRejectedHandler} that sends an error  with configurable status code
+     * A simple implementation of {@link RequestRejectedHandler} that sends an error with configurable status code
      * @return RequestRejectedHandler
      */
     @Bean

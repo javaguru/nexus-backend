@@ -18,13 +18,17 @@
 
 package com.jservlet.nexus.shared.web.filter;
 
+import org.apache.commons.text.StringEscapeUtils;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Pattern;
 
 /**
  * Modern WAF defense Utilities. Check for potential evasion inside a query or parameters, headers, cookies and JSON Body!
  * <p>
- * - XSS script injection evasion (various encoding, obfuscation, template injections)<br>
+ * - XSS / SSRF / LFI script injection evasion (various encoding, obfuscation, template injections)<br>
  * - SQL injection (commands, functions, params and NoSQL)<br>
  * - Google injection (GCP/Google Cloud Platform - GCP Metadata server)<br>
  * - Command injection &amp; RCE (Remote code execution)<br>
@@ -33,8 +37,8 @@ import java.util.regex.Pattern;
  * - XXE injection (XML External Entity)<br>
  * - Suspicious characters injection (excessive special char, unusual length/structure)<br>
  * - Link injection (mailto or ftp)<br>
- * - User-Agent Automates scanner/analyser<br>
- * - AI User-Agent (Bots Agent, LLM training)<br>
+ * - User-Agent Automates scanner/analyzer<br>
+ * - AI User-Agent (Bots Agent, LLM training, Probes)<br>
  * </p>
  */
 public class WAFUtils {
@@ -57,13 +61,13 @@ public class WAFUtils {
             Pattern.compile("(?si)(?:<|&lt;?|%3C|&#x0*3c;|\\\\u003c)\\s*(?:/|%2[fF])?\\s*(?:script|body|html|xss|style|bgsound|portal|picture|fencedframe|template|track|canvas|video|source|audio|object|embed|applet|i?frame|form|input|option|blockquote|area|map|link|base|layer|div|img|meta|math|svg)(?=\\s|>|/>|$)|" +
             //Pattern.compile("(?si)(?:<|&lt;?|%3C|&#x0*3c;|\\\\u003c)\\s*(?:script|xss|style|bgsound|portal|fencedframe|template|object|embed|applet|i?frame|base|meta|link|math|svg)(?=\\s|>|/>|$)|" +
                     "\\bon(?:afterprint|beforeprint|beforeunload|hashchange|message|offline|line|pagehide|pageshow|popstate|storage|unload|contextmenu|input|invalid|search|mousewheel|wheel|drag|dragenter|dragleave|dragover|dragstart|drop|scroll|copy|cut|paste|abort|blur|change|click|dblclick|error|focus|keydown|keypress|keyup|load|mousedown|mousemove|mouseout|mouseover|mouseup|reset|resize|select|submit|pointerdown|pointerup)\\b\\s*=|" +
-                    "\\.cookie\\b|\\b(?:execScript|alert|confirm|prompt|msgbox|eval|expression)\\s*\\(|" +
-                    "\\b(?:java|vb)script\\s*[:\\s]|\\bvoid\\s*\\(0\\)|\\bhttp-equiv\\b|\\bfromCharCode\\b|" +
+                    "\\.cookie\\b|(?:execScript|alert|confirm|prompt|msgbox|eval|expression|\\.html|\\.find)\\s*\\(|" +
+                    "\\b(?:java|vb)script\\s*[:\\s]|\\bvoid\\s*\\(0\\)|\\bhttp-equiv\\b|\\bfromCharCode\\b|\\bquerySelector\\b|" +
                     "\\.\\s*href\\s*=|\\bgetElements?By(?:Tag)?(?:Name|Id)\\b\\s*\\(|" +
                     "\\bcreate(?:Attribute|Element|TextNode)\\b\\s*\\(|" +
                     "\\.(?:write(?:ln)?|innerHTML|outerHTML|textContent|setAttribute)\\b\\s*[=(]|" +
                     "@import\\b|\\bbackground\\s*=\\s*['\"]|\\bAllowScriptAccess\\b\\s*=|" +
-                    "\\bdata:(?:text/html|image/svg\\+xml|application/javascript)\\b|\\{\\{.*\\}\\}")
+                    "\\bdata:(?:text/html|image/svg\\+xml|application/javascript)\\b|\\{\\{.*?\\}\\\\b}|\\{\\{[^}]+\\}\\}")
     );
 
     /**
@@ -177,12 +181,23 @@ public class WAFUtils {
             Pattern.compile("(?si)(?:GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|anthropic-ai|Google-Extended|Meta-ExternalAgent|FacebookBot|CCBot|Bytespider|Amazonbot|Cohere-ai|Omgilibot|PerplexityBot|Diffbot|ImagesiftBot|YouBot)")
     );
 
+
     private static boolean isWAFPattern(String value, List<Pattern> patterns) {
         if (value == null) return false;
-        // matcher pattern find ?
-        for (Pattern pattern : patterns) {
-            if (pattern.matcher(value).find())
-                return true;
+        try {
+            // Java.net URL Decoder
+            String decodedInput = URLDecoder.decode(value, StandardCharsets.UTF_8);
+            // Apache commons text unescape Html
+            decodedInput = StringEscapeUtils.unescapeHtml4(decodedInput);
+            // Normalization: pre-clean null bytes and parasitic characteristics
+            value = decodedInput.replace("\0", "").replaceAll("&#x?[0-9a-fA-F]+;?", "");
+            // matcher pattern find ?
+            for (Pattern pattern : patterns) {
+                if (pattern.matcher(value).find())
+                    return true;
+            }
+        } catch (Exception e) {
+            return false;
         }
         return false;
     }
@@ -194,16 +209,65 @@ public class WAFUtils {
                 // Basic Html
                 "<a>","</a>",
                 "<a href=\"ok\">",
+                "<ul><li><a href=\"/wiki/Philosophical_analysis\" title=\"Philosophical analysis\">Analysis </a> </li>",
                 "<b>","</b>",
                 "<span>","</span>",
                 "<table>","</table>",
                 "<tr>","</tr>",
                 "<td>","</td>",
-                "<span click=\"chrome://settings/\">",
-                "this.1ssss@gmail.com",
+                "this.1ssss@example.com",
+                "this.alert@example.com",
                 "abort=\"prompt",
 
+                // HTML Encoding
+                "&lt;script&gt;alert(1)&lt;/script&gt;",
+                // Unicode Encoding
+                "\u003Cscript\u003Ealert(1)\u003C/script\u003E",
+                // Hex Encoding
+                "&#x3C;script&#x3E;alert(1)&#x3C;/script&#x3E;",
+
+                // URL Encoding
+                "%3Cscript%3Ealert(1)%3C%2Fscript%3E",  // OK Nexus LM
+
+                // New Bad JS
+                "document.querySelector(\".example\")",
+                "<object data=\"data:text/html,<script>alert(1)</script>\">",
+                "<embed src=\"data:text/html,<script>alert(1)</script>\">",
+                "<script>alert`1`</script>",
+                "<a href=\"jav&#x09;ascript:alert(1)\">Cliquez ici</a>",
+                "<script>let x = 'coo' + 'kie'; console.log(document[x]); window['al' + 'ert'](1);</script>",
+
+                // New Bad Html
+                "</span><link rel=\"mw-deduplicated-inline-style\" href=\"mw-data:TemplateStyles:r935243608\"/> </li>",
+
                 // Bad Html
+                "<html>","</html>",
+                "<area draggable=\"true\" ondragstart=\"alert(1)\">test</area>",
+                "<meter oncut=\"alert(1)\" contenteditable>test</meter>",
+                "<input onchange=alert(1) value=xss>",
+                 "<main onmousedown=\"alert(1)\">test</main>",
+                "<command oncontextmenu=\"alert(1)\">test</command>",
+                "<samp onmousemove=\"alert(1)\">test</samp>",
+                "<script onmousemove=\"alert(1)\">test</script>",
+                "<iframe onmouseenter=\"alert(1)\">test</iframe>",
+                "<keygen onmouseleave=\"alert(1)\">test</keygen>",
+                "<hr id=x tabindex=1 onactivate=alert(1)></hr>",
+                "<blockquote onbeforepaste=\"alert(1)\" contenteditable>test</blockquote>",
+                 "<video autoplay controls onseeking=alert(1)><source src=\"validvideo.mp4\" type=\"video/mp4\"></video>",
+                "<html onbeforecut=\"alert(1)\" contenteditable>test</html>",
+                "<select onchange=alert(1)><option>change me</option><option>XSS</option></select>",
+                "<img2 onpointermove=alert(1)>XSS</img2>",
+                "<span onclick=\"chrome://settings/\">",
+
+                "<tr onpointerup=alert(1)>XSS</tr>",
+                "<track onmouseleave=\"alert(1)\">test</track>",
+                "<style>@keyframes x{}</style><plaintext style=\"animation-name:x\" onanimationend=\"alert(1)\"></plainte",
+                "<style>@keyframes x{}</style><body style=\"animation-name:x\" onanimationstart=\"alert(1)\"></body>",
+                "<strike onpointerover=alert(1)>XSS</strike>",
+                "<style>:target {color:red;}</style><b id=x style=\"transition:color 1s\" ontransitionend=alert(1)></b>",
+                "<svg><spacer onload=alert(1)></spacer></svg>",
+                "<style>:target {transform: rotate(180deg);}</style><kbd id=x style=\"transition:transform 2s\" transform-origin: bottom left;\"",
+
                 "<a onclick=\"bad\">",
                 "<span onclick=\"\\\\:#chrome\">",
                 "<link src=\"http://url.to.file.which/not.exist\">",
@@ -214,7 +278,67 @@ public class WAFUtils {
                 "<IMG SRC=j&#X41vascript:alert('test2')>",
                 "<img src=\"http://url.to.file.which/not.exist\"/>",
                 "<img onerror=alert(document.cookie);>",
+                "document.cookie",
+
+                // find function
+                "[1].find(alert)", // OK Nexus LM
+                "document['body'].innerHTML=",
+                "document.getElementById('x').innerHTML=",
+
+                // URL Fragment Exploitation
+                "#<img src=x onerror=alert(1)>",
+                "?search=<img src=x onerror=alert(1)>",
+
+                // DOM Manipulation
+                "document.write('... USER_INPUT ...') ",
+                "element.innerHTML = '... USER_INPUT ...' ",
+                "$(\"#element\").html('... USER_INPUT ...')",
+
+                // Case Variation
+                "<ScRiPt>alert(1)</ScRiPt>",
+                "<IMG SRC=x onerror=alert(1)>",
+                // Tag Obfuscation
+                "<scr<script>ipt>alert(1)</scr</script>ipt>",
+                "<img src=x onerror=alert&#x28;1&#x29>",
+
+                // Test URL fragments
+                "site.com/page#<img src=x onerror=alert(1)>",
+                "site.com/page#javascript:alert(1)",
+                // Test localStorage/sessionStorage
+                "localStorage.setItem('test', '<img src=x onerror=alert(1)>');",
+                "sessionStorage.setItem('test', '<img src=x onerror=alert(1)>');",
+                // Test document.write sources
+                "site.com/page?name=<div onmouseover='alert(1)'>",
+                "site.com/page?name=</script><script>alert(1)</script>",
+
+                // Character Filter Bypass
+                "<script>alert(String.fromCharCode(88,83,83))</script>",
+
+                // Content Length Bypass
+                "<svg/onload=alert(1)>",
+                "<img src=x onerror=alert(1)>",
+                "<q/oncut=alert(1)>",
+
+                // Character Filter Bypass
+                "<div data-react-props=\"{'dangerouslySetInnerHTML':{'__html':'<img src=x onerror=alert(1)>'}}\">",
+
+                // Context Escape Bypass
+                "\\';alert(1)//",
+                "';alert(1)//",
+                "'-alert(1)-'",
+                "\" onmouseover=\"alert(1)",
+
+                // Modern Browser Bypass
+                "<script type=\"importmap\">{\"imports\": {\"x\": \"data:text/javascript,alert(1)\"}}</script>",
+                "<div id=x></div><script>x.attachShadow({mode:'open'}).innerHTML='<img src=x onerror=alert(1)>'</script>",
+                "<script>navigator.serviceWorker.register('data:text/javascript,alert(1)')</script>",
+
+                // Protocol Handler Exploitation
                 "<META HTTP-EQUIV=\"refresh\"\n" + "CONTENT=\"0;url=data:text/html;base64,PHNjcmlwdD5hbGVydCgndGVzdDMnKTwvc2NyaXB0Pg\">",
+                "<a href=\"data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==\">Click</a>",
+                "<a href=\"javascript&colon;alert(1)\">Click</a>",
+                "<a href=\"javascript&#58;alert(1)\">Click</a>",
+                "<a href=\"javascript&#0058;alert(1)\">Click</a>",
 
                 // XSS & Template Injection
                 "<svg onload=alert(1)>",
@@ -222,6 +346,11 @@ public class WAFUtils {
                 "alert(this.qss)",
                 "<body change=\"this.fssf\">",
                  "abort=\"prompt(document.location.href",
+
+                // XSS/LFI
+                "<iframe src=\"file:///etc/passwd\">test</iframe>",
+                // SSRF/LFI
+                "<pd4ml:attachment src=\"\"/etc/passwd\"\" description=\"\"almond\"\" icon=\"\"Paperclip\"\"/>",
 
                 "{{ 7 * 7 }}", // SSTI / Vue
                 "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==", // Data URI

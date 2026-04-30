@@ -213,6 +213,7 @@ The Config keys and values can be modified and override by external path files, 
 
 **Noted**: About the list HttpHeaders transfer back, the CORS can expose these Headers see key security.cors.exposedHeaders
 
+
 #### Noted the settings.properties can be overridden by a file Path config.properties
  
 * **${user.home}**/conf-global/config.properties
@@ -326,12 +327,17 @@ Use **DistilBERT Model ONNX Environment** an **Open Neural Network Exchange** wi
 
 The default CircuitBreaker Configuration:
 
-| **CircuitBreaker Configuration**                      | **Default value** | **Example value** | **Descriptions** |
-|-------------------------------------------------------|:------------------|:------------------|:-----------------|
-| nexus.backend.interceptor.ratelimit.refillToken       | 1000              | 100               | Filled tokens    |  
-| nexus.backend.interceptor.ratelimit.refillMinutes     | 1                 | 1                 | Duration minutes |  
-| nexus.backend.interceptor.ratelimit.bandwidthCapacity | 1000              | 100               | Bucket capacity  |  
-
+| **Resilience4j Configuration**                       | **Default value** | **Example value** | **Descriptions**       |
+|------------------------------------------------------|:------------------|:------------------|:-----------------------|
+| **CircuitBreaker Config**                            |                   |                   |                        |  
+| nexus.backend.circuitbreaker.failureRateThreshold    | 30                | 10                | % failure rate exceeds |  
+| nexus.backend.circuitbreaker.minimumNumberOfCalls    | 20                | 5                 |                        |  
+| nexus.backend.circuitbreaker.waitDurationInOpenState | 30000             | 5000              | Fail Fast 30s          |  
+| nexus.backend.circuitbreaker.slidingWindowSize       | 20                | 20                |                        |  
+| nexus.backend.circuitbreaker.permittedNumberOfCalls  | 3                 | 5                 |                        |  
+| **Retry Config**                                     |                   |                   |                        |  
+| nexus.backend.circuitbreaker.retry.maxAttempts       | 3                 | 5                 | 3 test requests        |  
+| nexus.backend.circuitbreaker.retry.waitDuration      | 1000              | 500               | Wait duration in ms    |  
 
 
 ### ⚙️ The RateLimit Configuration
@@ -342,13 +348,70 @@ The default CircuitBreaker Configuration:
 
 **Settings keys settings.properties:**
 
-The default Cors Configuration:
+The default RateLimit Configuration:
 
-| **Cors Configuration**                                 | **Default value** | **Example value** | **Descriptions** |
-|--------------------------------------------------------|:------------------|:------------------|:-----------------|
-| nexus.backend.interceptor.ratelimit.refillToken        | 1000              | 100               | Filled tokens    |  
-| nexus.backend.interceptor.ratelimit.refillMinutes      | 1                 | 1                 | Duration minutes |  
-| nexus.backend.interceptor.ratelimit.bandwidthCapacity  | 1000              | 100               | Bucket capacity  |  
+| **RateLimit Configuration**                           | **Default value** | **Example value** | **Descriptions** |
+|-------------------------------------------------------|:------------------|:------------------|:-----------------|
+| nexus.backend.interceptor.ratelimit.refillToken       | 1000              | 600               | Filled tokens    |  
+| nexus.backend.interceptor.ratelimit.refillMinutes     | 1                 | 1                 | Duration minutes |  
+| nexus.backend.interceptor.ratelimit.bandwidthCapacity | 1000              | 600               | Bucket capacity  |  
+
+
+### 🛡️ System Resilience & Traffic Control
+
+To ensure high availability and protect both our application and downstream services, this project implements advanced traffic control and fault tolerance mechanisms.
+
+#### 🚦 Rate Limiting (Bucket4j)
+
+API endpoints are protected by a custom `RateLimitInterceptor` using **Bucket4j** backed by a thread-safe **JCache**.
+* **Rule:** 1,000 requests / minute / IP Address.
+* **Behavior:** If a client exceeds the quota, the request is intercepted and immediately rejected with a `429 Too Many Requests` standard JSON response.
+
+#### 🔌 Circuit Breaker & Retry (Resilience4j)
+
+Outbound HTTP calls to the external backend are wrapped in a **Resilience4j** decorator chain.
+
+* **1. Retry Mechanism:** * Automatically retries failed requests up to **3 times** with a **1-second delay** between attempts.
+  * Skips retrying on definitive client errors (e.g., `404 Not Found`).
+* **2. Circuit Breaker (`nexusBackendService`):**
+  * **Threshold:** Opens if the failure rate exceeds **30%** over a sliding window of **20 calls**.
+  * **Open State:** Instantly blocks new requests (Fail Fast) for **30 seconds** to let the backend recover, returning a graceful `503 Service Unavailable` response.
+  * **Half-Open State:** Allows exactly **3 test requests** to pass through to determine if the backend has recovered before fully closing the circuit again.
+
+#### 📊 Observability & Metrics
+
+The state of our resilience components is fully integrated with **Spring Boot Actuator**:
+* `/actuator/health` or `/actuator/health/custom`: Provide global health status (rateLimit, circuitBreakers, diskSpace, ping, livenessState and readinessState).
+* `/actuator/health/custom/bucket4jRateLimiter`: Provides real-time status RateLimit Bucket4j (status OPEN, HALF-OPEN, CLOSE).
+* `/actuator/health`: Displays the global health, including custom indicators for the JCache storage and the Circuit Breaker status.
+* `/actuator/circuitbreakers`: Provides real-time metrics (failure rate, buffered calls, state transitions).
+
+**Automatic schema of request flows**
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant RateLimiter as RateLimit (Bucket4j)
+    participant Retry as Retry (3 attempts)
+    participant CB as Circuit Breaker (30% threshold)
+    participant Backend
+
+    Client->>RateLimiter: HTTP Request
+    alt Quota Exceeded
+        RateLimiter-->>Client: 429 Too Many Requests
+    else Quota OK
+        RateLimiter->>Retry: Forward Request
+        Retry->>CB: Execute Call
+        alt Circuit is OPEN
+            CB-->>Client: 503 Service Unavailable (Fallback)
+        else Circuit is CLOSED
+            CB->>Backend: HTTP GET/POST
+            Backend-->>CB: Response
+            CB-->>Retry: Success or Error
+            Retry-->>Client: Final Response
+        end
+    end
+```
 
 
 ### ⚙️️ The ApiBackend Configuration JSON Entity Object or a ByteArray Resource

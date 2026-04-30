@@ -34,7 +34,7 @@ import java.nio.LongBuffer;
 import java.util.Map;
 
 /**
- * AnalyzerRequestService analyze content text with a pure Sequential Sliding Window(Performance &lt;50 ms).<br>
+ * AnalyzerRequestService analyze content text with a Context-Aware Sliding Window (Performance &lt;50 ms).<br>
  * <p>
  * Use DistilBERT Model ONNX Environment (Open Neural Network Exchange) with HuggingFace Tokenizer.<br>
  * <br>
@@ -46,7 +46,7 @@ import java.util.Map;
  *   0.65 = Balanced WAF (tolerates noise, blocks real attacks)<br>
  *   0.85 = Permissive WAF (only blocks absolutely obvious threats)<br>
  * </p>
- * Model ONNX INT18 Nexus v10.14 - model/nexus_v10_14_int8.onnx
+ * Model ONNX INT8 Nexus v10.14_2
  *
  * @since version 2.0.0
  */
@@ -142,102 +142,134 @@ public class RequestAnalyzerService {
     }
 
     /**
-     * Analyze content text with a pure Sequential Sliding Window.
-     * Exact tensor sizing (No forced 512 padding) and sequential execution.
+     * Analyze content text with a pure Token Sliding Window while preserving Context.
+     * [CLS] HEADERS [SEP] BODY PIECE [SEP]
      */
     public boolean isMalicious(String requestPayload) throws Exception {
         long startTime = System.currentTimeMillis();
 
-        // Transform entire text to Tokens natively
+        // One single encoding
         Encoding encoding = tokenizer.encode(requestPayload);
         long[] allInputIds = encoding.getIds();
         long[] allAttentionMask = encoding.getAttentionMask();
 
         int totalTokens = allInputIds.length;
-        int MAX_TOKENS = Integer.parseInt(maxLength); // Mandatory 512!
-        int STRIDE = 450; // Stride size to create overlap (0-512, 450-962, 900-1412, etc...)
+        int MAX_TOKENS = Integer.parseInt(maxLength); // 512
 
-        int chunksProcessed = 0; // Counter Chunks!
-        int numChunks = (int) Math.ceil((double) totalTokens / STRIDE); // Count all Stride Chunks!
+        if (totalTokens <= MAX_TOKENS) {
+            return processSingleChunk(allInputIds, allAttentionMask, 0, startTime);
+        }
 
-        // Pure Chunking with Stride (Overlapping windows over raw tokens)
-        for (int start = 0; start < totalTokens; start += STRIDE) {
+        // Find context boundary
+        int headerCharLength = requestPayload.indexOf("\nBODY:\n");
+        if (headerCharLength == -1) headerCharLength = requestPayload.length() / 2;
 
-            if (chunksProcessed >= MAX_CHUNKS_TO_SCAN) {
-                logger.warn("WAF AI reached maximum chunks limit ({}). Scan aborted early.", MAX_CHUNKS_TO_SCAN);
-                break;
-            }
+        int contextTokenEnd = (int) ((double) headerCharLength / requestPayload.length() * totalTokens) + 3;
+        int MAX_CONTEXT_TOKENS = 150;
+        if (contextTokenEnd > MAX_CONTEXT_TOKENS) contextTokenEnd = MAX_CONTEXT_TOKENS;
+        if (contextTokenEnd < 10) contextTokenEnd = 10;
 
-            // Calculate the end of the current chunk (without exceeding total size)
-            int end = Math.min(start + MAX_TOKENS, totalTokens);
-            int currentChunkSize = end - start;
+        int bodyStartIdx = contextTokenEnd;
 
-            // We only create the space that is strictly necessary (no forced padding of 512!)
-            long[] chunkInputIds = new long[currentChunkSize];
-            long[] chunkAttentionMask = new long[currentChunkSize];
+        // We now need space for TWO [SEP] tokens (one in the middle, one at the end)
+        int availableSpaceForBody = MAX_TOKENS - contextTokenEnd - 2;
+        int STRIDE = (int) (availableSpaceForBody * 0.85);
 
-            // Extract subarrays for this chunk
-            System.arraycopy(allInputIds, start, chunkInputIds, 0, currentChunkSize);
-            System.arraycopy(allAttentionMask, start, chunkAttentionMask, 0, currentChunkSize);
+        int chunksProcessed = 0;
 
-            // Dynamic Shape: [1, 89] ou [1, 512], The CPU calculates the minimum!
-            long[] shape = new long[]{1, currentChunkSize};
+        // 102 is the standard [SEP] token ID for DistilBERT
+        long sepToken = 102L;
 
-            try (
-                    OnnxTensor inputIdsTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(chunkInputIds), shape);
-                    OnnxTensor attentionMaskTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(chunkAttentionMask), shape)
-            ) {
-                Map<String, OnnxTensor> inputs = Map.of(
-                        "input_ids", inputIdsTensor,
-                        "attention_mask", attentionMaskTensor
-                );
+        for (int start = bodyStartIdx; start < totalTokens - 1; start += STRIDE) {
+            if (chunksProcessed >= MAX_CHUNKS_TO_SCAN) break;
 
-                // Execute the model for this specific chunk
-                try (OrtSession.Result results = session.run(inputs)) {
+            int currentBodyTokens = Math.min(availableSpaceForBody, (totalTokens - 1) - start);
 
-                    float[][] output = (float[][]) results.get(0).getValue();
+            // Total size: Context + [SEP] + BodyChunk + [SEP]
+            int currentTotalChunkSize = contextTokenEnd + 1 + currentBodyTokens + 1;
 
-                    // Applying the SOFTMAX function (Conversion to Percentages)
-                    double expSafe = Math.exp(output[0][0]); // Raw Log Retrieval
-                    double expMalicious = Math.exp(output[0][1]);
-                    double attackProbability = expMalicious / (expSafe + expMalicious);
+            long[] chunkInputIds = new long[currentTotalChunkSize];
+            long[] chunkAttentionMask = new long[currentTotalChunkSize];
 
-                    // Optional: Log to track the analysis of each chunk
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("WAF AI Score (Chunk {}/{} - Tokens {}-{}) - Safe: {}%, Attack: {}%",
-                                chunksProcessed + 1, numChunks, start, end,
-                                String.format("%.2f", (1.0 - attackProbability) * 100),
-                                String.format("%.2f", attackProbability * 100));
-                    }
+            // Copy Context (Includes the starting [CLS])
+            System.arraycopy(allInputIds, 0, chunkInputIds, 0, contextTokenEnd);
+            System.arraycopy(allAttentionMask, 0, chunkAttentionMask, 0, contextTokenEnd);
 
-                    // Checking the calibrated threshold
-                    if (attackProbability > THRESHOLD) {
-                        if (logger.isWarnEnabled()) {
-                            logger.warn("Attack detected in chunk {} (Tokens {}-{})!", chunksProcessed + 1, start, end);
-                        }
-                        if (logger.isDebugEnabled()) {
-                            long endTime = System.currentTimeMillis();
-                            logger.debug("WAF Analysis Execution Time ({} chunks): {} ms", chunksProcessed, (endTime - startTime));
-                        }
-                        return true;
-                    }
+            // Inject the MIDDLE [SEP] token to act as logical glue
+            chunkInputIds[contextTokenEnd] = sepToken;
+            chunkAttentionMask[contextTokenEnd] = 1;
+
+            // Copy the current Body sliding window
+            System.arraycopy(allInputIds, start, chunkInputIds, contextTokenEnd + 1, currentBodyTokens);
+            System.arraycopy(allAttentionMask, start, chunkAttentionMask, contextTokenEnd + 1, currentBodyTokens);
+
+            // Append the FINAL [SEP] token
+            chunkInputIds[currentTotalChunkSize - 1] = sepToken;
+            chunkAttentionMask[currentTotalChunkSize - 1] = 1;
+
+            // Inference
+            boolean isAttack = processSingleChunk(chunkInputIds, chunkAttentionMask, chunksProcessed, startTime);
+            if (isAttack) {
+                if (logger.isWarnEnabled()) {
+                    logger.warn("Attack detected in chunk {} (Tokens {}-{})!", chunksProcessed + 1, start, start + currentBodyTokens);
                 }
+                return true;
             }
 
             chunksProcessed++;
-
-            // Optimization: if this chunk reached the absolute end of the payload,
-            // no need to compute further overlapping chunks that would just be subsets.
-            if (end == totalTokens) {
-                break;
-            }
+            if (start + currentBodyTokens >= totalTokens - 1) break;
         }
 
         if (logger.isDebugEnabled()) {
             long endTime = System.currentTimeMillis();
             logger.debug("WAF Analysis Execution Time ({} chunks): {} ms", chunksProcessed, (endTime - startTime));
         }
-        // If all chunks have been analyzed and none exceeded the threshold, the request is safe.
+        return false;
+    }
+
+    /**
+     * Isolated method to run a single Tensor through ONNX
+     */
+    private boolean processSingleChunk(long[] chunkInputIds, long[] chunkAttentionMask, int chunkIndex, long startTime) throws Exception {
+        int currentChunkSize = chunkInputIds.length;
+        long[] shape = new long[]{1, currentChunkSize};
+
+        try (
+                OnnxTensor inputIdsTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(chunkInputIds), shape);
+                OnnxTensor attentionMaskTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(chunkAttentionMask), shape)
+        ) {
+            Map<String, OnnxTensor> inputs = Map.of(
+                    "input_ids", inputIdsTensor,
+                    "attention_mask", attentionMaskTensor
+            );
+
+            try (OrtSession.Result results = session.run(inputs)) {
+                float[][] output = (float[][]) results.get(0).getValue();
+
+                double expSafe = Math.exp(output[0][0]);
+                double expMalicious = Math.exp(output[0][1]);
+                double attackProbability = expMalicious / (expSafe + expMalicious);
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("WAF AI Score (Chunk {}) - Safe: {}%, Attack: {}%",
+                            chunkIndex + 1,
+                            String.format("%.2f", (1.0 - attackProbability) * 100),
+                            String.format("%.2f", attackProbability * 100));
+                }
+
+                if (attackProbability > THRESHOLD) {
+                     if (logger.isDebugEnabled()) {
+                         long endTime = System.currentTimeMillis();
+                         logger.debug("WAF Attack Found! Total Execution Time: {} ms", (endTime - startTime));
+                     }
+                     return true;
+                }
+            }
+        }
+        if (logger.isDebugEnabled()) {
+            long endTime = System.currentTimeMillis();
+            logger.debug("WAF AI Safe Request! Total Execution Time: {} ms", (endTime - startTime));
+        }
         return false;
     }
 
