@@ -195,13 +195,6 @@ public class WAFFilter extends ApiBase implements Filter {
                 handlePassive(processedRequest);
             }
 
-            // Bypass AI internal call controllers
-            /*String remoteIp = request.getRemoteAddr();
-            if ("127.0.0.1".equals(remoteIp) || "0:0:0:0:0:0:0:1".equals(remoteIp)) {
-                chain.doFilter(request, response);
-                return;
-            }*/
-
             // Apply AI Scan ONLY if mode is ONNX_AI and STRICT checks passed
             if (reactiveMode == Reactive.ONNX_AI || reactiveMode == Reactive.STRICT_ONNX_AI) {
                 handleAiScan(processedRequest);
@@ -326,10 +319,6 @@ public class WAFFilter extends ApiBase implements Filter {
             boolean isMalicious = mlAnalyzer.isMalicious(safePayload);
 
             if (isMalicious) {
-                String incidentId = "WAF_AI_INCIDENT_" + UUID.randomUUID();
-                logger.warn("AI WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId,
-                        LogFormatUtils.formatValue(safePayload, 5000,  false));
-                savePayload(dumpFullRequestDetails(request), incidentId);
                 throw new RequestRejectedException("Request rejected: AI WAF Engine detected a malicious payload.");
             }
         } catch (RequestRejectedException rre) {
@@ -661,6 +650,13 @@ public class WAFFilter extends ApiBase implements Filter {
         logger.warn("WAF Blocked Request: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
                 LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // Prevents message truncation in debug mode
                 req.getRemoteAddr(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
+
+
+        String incidentId = "WAF_INCIDENT_" + UUID.randomUUID();
+        logger.warn("AI WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId,
+                LogFormatUtils.formatValue(dumpFullRequestDetails(req), 5000,  false));
+
+        savePayload(dumpFullRequestDetails(req), incidentId);
 
         // HTTP 403 FORBIDDEN is the industry standard for WAF blocks.
         resp.setStatus(HttpStatus.FORBIDDEN.value());
