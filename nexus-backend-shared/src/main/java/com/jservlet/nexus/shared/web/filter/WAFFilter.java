@@ -155,6 +155,8 @@ public class WAFFilter extends ApiBase implements Filter {
          HttpServletRequest req = (HttpServletRequest) request;
         final HttpServletResponse resp = (HttpServletResponse) response;
 
+        HttpServletRequest processedRequest = req;
+
         try {
             if (reactiveMode == Reactive.UNSAFE) { // WARN UNSAFE mode bypasses all checks.
                 chain.doFilter(req, resp);
@@ -172,7 +174,7 @@ public class WAFFilter extends ApiBase implements Filter {
             validateHostAndUserAgent(wrappedRequest);
 
             // Wrap & Scan Multipart Files safely
-            HttpServletRequest processedRequest = scanAndWrapMultipartFiles(wrappedRequest);
+            processedRequest = scanAndWrapMultipartFiles(wrappedRequest);
 
             // Bypass AI and WAF for root path, static files, and Swagger documentation
             String uri = processedRequest.getRequestURI().toLowerCase();
@@ -204,7 +206,7 @@ public class WAFFilter extends ApiBase implements Filter {
             chain.doFilter(processedRequest, response);
 
         } catch (RequestRejectedException ex) {
-            handleRequestRejected(ex, req, resp);
+            handleRequestRejected(ex, processedRequest, resp);
         }
     }
 
@@ -651,11 +653,9 @@ public class WAFFilter extends ApiBase implements Filter {
                 LogFormatUtils.formatValue(ex.getMessage(), !logger.isDebugEnabled()), // Prevents message truncation in debug mode
                 req.getRemoteAddr(), req.getMethod(), req.getServletPath(), req.getHeader("User-Agent"));
 
-
         String incidentId = "WAF_INCIDENT_" + UUID.randomUUID();
-        logger.warn("AI WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId,
-                LogFormatUtils.formatValue(dumpFullRequestDetails(req), 5000,  false));
-
+        logger.warn("WAF engine detected a malicious payload: IncidentId {} \n{}", incidentId,
+                LogFormatUtils.formatValue(dumpFullRequestDetails(req), 5000,  true));
         savePayload(dumpFullRequestDetails(req), incidentId);
 
         // HTTP 403 FORBIDDEN is the industry standard for WAF blocks.
