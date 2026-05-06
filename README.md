@@ -1,6 +1,8 @@
 Nexus-Backend Service
 =====================
 
+[![Build](https://github.com/javaguru/nexus-backend/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/build.yml) [![Build](https://github.com/javaguru/nexus-backend/actions/workflows/dynamic/github-code-scanning/codeql/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/dynamic/github-code-scanning/codeql) [![Build](https://github.com/javaguru/nexus-backend/actions/workflows/maven-publish.yml/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/maven-publish.yml)
+
 ## 🛡️ Advanced API Gateway with NLP-Driven Threat Detection
 
 **Nexus-Backend Service** acts as a highly secure reverse-proxy and intermediary gateway between REST clients and backend 
@@ -832,7 +834,9 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 ## 🗒️ Last News
 
-* Last version **2.0.2**, released at 26/04/2026 Stabilization migration Spring 6, New Resilience4j Circuit Breaker, Fix AnalyzerRequestService Sequential Sliding Window and ONNX Tensor Padding.
+* Last version **2.0.4**, released at 07/05/2026 Add Fine-tuned new Model nexus_v10_14_3_int8.onnx
+* Version **2.0.3**, released at 01/05/2026 Add Fine-tuned new Model nexus_v10_14_2_int8.onnx
+* Version **2.0.2**, released at 26/04/2026 Stabilization migration Spring 6, New Resilience4j Circuit Breaker, Fix AnalyzerRequestService Sequential Sliding Window and ONNX Tensor Padding.
 * Version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService ResourceLoader, Build WAR external/internal.
 * Version **2.0.0**, released at 18/04/2026  **Jdk 21, Spring 6, Spring Boot 3.3.0, Tomcat 10.xx Servlet Specification 6.0**:
  Modern WAF Filter Defense, Next-GEN AI WAF Engine, Fine-Tuning DistilBERT Model ONNX.

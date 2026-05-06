@@ -236,7 +236,19 @@ public class WAFFilter extends ApiBase implements Filter {
         // with the training dataset format used for the Python model.
         String queryString = request.getQueryString();
         if (queryString != null && !queryString.isEmpty()) {
-            agnosticUri += "?" + queryString;
+            try {
+                // URLDecoder query string
+                String decodedQuery = java.net.URLDecoder.decode(queryString, StandardCharsets.UTF_8);
+                // Tagged null octet!
+                decodedQuery = decodedQuery.replace("\0", "[NULL_BYTE]");
+                // Tagged obfuscation hexadecimal/HTML
+                decodedQuery = decodedQuery.replaceAll("&#x?[0-9a-fA-F]+;?", "[OBFUSCATED_ENTITY]");
+                agnosticUri += "?" + decodedQuery;
+            } catch (Exception e) {
+                // decoding error keep the original
+                agnosticUri += "?" + queryString;
+                logger.debug("Failed to decode query string: {}", e.getMessage());
+            }
         }
 
         // The exact tags expected by the Transformer semantic layout

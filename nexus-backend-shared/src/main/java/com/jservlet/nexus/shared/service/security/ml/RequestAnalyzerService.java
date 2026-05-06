@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.security.web.firewall.RequestRejectedException;
 
 import java.io.InputStream;
 import java.nio.LongBuffer;
@@ -181,7 +182,8 @@ public class RequestAnalyzerService {
         long sepToken = 102L;
 
         for (int start = bodyStartIdx; start < totalTokens - 1; start += STRIDE) {
-            if (chunksProcessed >= MAX_CHUNKS_TO_SCAN) break;
+            if (chunksProcessed >= MAX_CHUNKS_TO_SCAN)
+                throw new RequestRejectedException("Request rejected: AI WAF Engine exceeds Chunks limit: " + MAX_CHUNKS_TO_SCAN);
 
             int currentBodyTokens = Math.min(availableSpaceForBody, (totalTokens - 1) - start);
 

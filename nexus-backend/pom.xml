@@ -348,9 +348,9 @@
                     <!-- Spring Processors -->
                     <include>META-INF/spring.factories</include>
 
-                    <!-- The DistilBERT Model ONNX - HuggingFace Tokenizer Neural Network Env. -->
+                    <!-- The DistilBERT Model int8 ONNX - HuggingFace Tokenizer Neural Network Env. -->
                     <include>model/tokenizer.json</include>
-                    <include>model/nexus_v10_14_2_int8.onnx</include>
+                    <include>model/nexus_v10_14_3_int8.onnx</include>
 
                 </includes>
                 <filtering>false</filtering>
