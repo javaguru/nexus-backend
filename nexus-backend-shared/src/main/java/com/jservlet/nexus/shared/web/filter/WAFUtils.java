@@ -74,7 +74,7 @@ public class WAFUtils {
      * Potential SQL injection evasion. SQL query commands, functions, params and NoSQL Injection
      */
     public static final List<Pattern> SQL_PATTERNS = List.of(
-            Pattern.compile("(?si)'\\s*+(?:;|--|#)|;\\s*+--|\\b(?:or|and)\\s+'?[0-9a-zA-Z]+'?\\s*+=\\s*+'?[0-9a-zA-Z]+'?|'\\s*+(?:or|and|where|not|union)\\b"),
+            Pattern.compile("(?si)'\\s*+(?:;|--|#)|;\\s*+--|(?:^|\\s|['\";()*-])(?:or|and)\\s+'?[0-9a-zA-Z]+'?\\s*+=\\s*+'?[0-9a-zA-Z]+'?|'\\s*+(?:or|and|where|not|union)(?=\\s|$|['\";()*-])"),
             Pattern.compile("(?si)(?:['\";)]|/\\*|--)\\s*\\b(?:delete\\s+from|update\\s+\\w+\\s+set|insert\\s+into|select\\s+[^;]{1,100}?\\s+from)\\b"),
             Pattern.compile("(?si)\\b(?:union\\s+(?:all\\s+)?select|drop\\s+(?:table|database|user)|create\\s+table|benchmark\\s*\\(|exec\\s+xp_|into\\s+outfile|cmdshell|user_name\\s*\\(|information_schema|waitfor\\s+delay|pg_sleep|dbms_pipe\\.receive_message|sleep\\s*\\()\\b"),
             // NoSQL Injection (MongoDB, CouchDB) often targeting REST JSON APIs
@@ -218,6 +218,12 @@ public class WAFUtils {
                 "this.1ssss@example.com",
                 "this.alert@example.com",
                 "abort=\"prompt",
+
+                // accents UTF-8
+                "L'Oréal",
+                "éèàèûôö",
+                // No Unicode support!
+                "L'Or\\u00e9al",
 
                 // HTML Encoding
                 "&lt;script&gt;alert(1)&lt;/script&gt;",

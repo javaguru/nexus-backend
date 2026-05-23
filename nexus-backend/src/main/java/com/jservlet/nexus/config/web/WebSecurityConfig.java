@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -42,6 +43,7 @@ import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.HttpStatusRequestRejectedHandler;
 import org.springframework.security.web.firewall.RequestRejectedException;
 import org.springframework.security.web.firewall.RequestRejectedHandler;
+import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -199,6 +201,16 @@ public class WebSecurityConfig {
             headers.referrerPolicy(referrer ->
                     referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.valueOf(referrerPolicy))
             );
+
+            // Allow writing headers at the beginning of the request
+            headers.withObjectPostProcessor(new ObjectPostProcessor<HeaderWriterFilter>() {
+                @Override
+                @SuppressWarnings("unchecked")
+                public HeaderWriterFilter postProcess(HeaderWriterFilter filter) {
+                    filter.setShouldWriteHeadersEagerly(true);
+                    return filter;
+                }
+            });
         });
 
         return http.build();

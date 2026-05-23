@@ -300,13 +300,14 @@ Use **DistilBERT Model ONNX Environment** an **Open Neural Network Exchange** wi
 
 **Settings keys settings.properties:** Define file model and tokenizer
 
-| **Keys**                                       | **Default value**            | **Descriptions**   |
-|------------------------------------------------|:-----------------------------|:-------------------|
-| nexus.api.backend.analyzer.onnx.maxLength      | 512                          | Length max Token   |   
-| nexus.api.backend.analyzer.onnx.truncation     | false                        | Truncation         |   
-| nexus.api.backend.analyzer.onnx.path.model     | model/nexus_v10_14_int8.onnx | AI Model ONNX INT8 |   
-| nexus.api.backend.analyzer.onnx.path.tokenizer | model/tokenizer.json         | File Tokenizer     |   
-| nexus.api.backend.analyzer.onnx.cpu            | 4                            | Number of CPU      |   
+| **Keys**                                           | **Default value**            | **Descriptions**   |
+|----------------------------------------------------|:-----------------------------|:-------------------|
+| nexus.api.backend.analyzer.onnx.maxLength          | 512                          | Length max Token   |   
+| nexus.api.backend.analyzer.onnx.truncation         | false                        | Truncation         |   
+| nexus.api.backend.analyzer.onnx.path.model         | model/nexus_v10_14_int8.onnx | AI Model ONNX INT8 |   
+| nexus.api.backend.analyzer.onnx.path.tokenizer     | model/tokenizer.json         | File Tokenizer     |   
+| nexus.api.backend.analyzer.onnx.cpu                | 4                            | Number of CPU      |   
+| nexus.api.backend.analyzer.onnx.attack.threshold   | 0.65                         | Attack threshold   |   
 
 **⚔️ Web HttpFirewall**
 
