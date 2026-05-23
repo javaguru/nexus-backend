@@ -835,7 +835,8 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 ## 🗒️ Last News
 
-* Last version **2.0.4**, released at 07/05/2026 Add Fine-tuned new Model nexus_v10_14_3_int8.onnx
+* Last version **2.0.5**, released at 23/05/2026 Fix SQL_PATTERNS, New Model nexus_v10_14_3_int8.onnx (Global Accuracy 98.39%)
+* Version **2.0.4**, released at 07/05/2026 Add Fine-tuned new Model nexus_v10_14_3_int8.onnx
 * Version **2.0.3**, released at 01/05/2026 Add Fine-tuned new Model nexus_v10_14_2_int8.onnx
 * Version **2.0.2**, released at 26/04/2026 Stabilization migration Spring 6, New Resilience4j Circuit Breaker, Fix AnalyzerRequestService Sequential Sliding Window and ONNX Tensor Padding.
 * Version **2.0.1**, released at 19/04/2026 Fix EnvironmentPostProcessor, RequestAnalyzerService ResourceLoader, Build WAR external/internal.
