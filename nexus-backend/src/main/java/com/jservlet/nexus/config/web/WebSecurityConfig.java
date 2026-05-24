@@ -205,8 +205,7 @@ public class WebSecurityConfig {
             // Allow writing headers at the beginning of the request
             headers.withObjectPostProcessor(new ObjectPostProcessor<HeaderWriterFilter>() {
                 @Override
-                @SuppressWarnings("unchecked")
-                public HeaderWriterFilter postProcess(HeaderWriterFilter filter) {
+                public <O extends HeaderWriterFilter> O postProcess(O filter) {
                     filter.setShouldWriteHeadersEagerly(true);
                     return filter;
                 }
