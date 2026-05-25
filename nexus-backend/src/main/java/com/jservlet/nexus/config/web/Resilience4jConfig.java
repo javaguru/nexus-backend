@@ -38,10 +38,10 @@ import java.time.Duration;
  * <br>
  * States status:<br>
  * <pre>
- * - CLOSED --> OPEN 20 calls and Error > 30% Error communication --> 30s OPEN Backend unavailable --> HALF_OPEN
- *          --> HALF_OPEN                --> Error < 30% CLOSED
- *                                       --> OPEN 30s Error communication --> 30s OPEN Backend unavailable
- *                                                                        --> HALF_OPEN --> Error < 30% CLOSED
+ * - CLOSED --&gt; OPEN 20 calls and Error &gt; 30% Error communication --&gt; 30s OPEN Backend unavailable --&gt; HALF_OPEN
+ *          --&gt; HALF_OPEN             --&gt; Error &lt; 30% CLOSED
+ *                                     --&gt; OPEN 30s Error communication --&gt; 30s OPEN Backend unavailable
+ *                                                                         --&gt; HALF_OPEN --&gt; Error &lt; 30% CLOSED
  * </pre>
  */
 @Configuration

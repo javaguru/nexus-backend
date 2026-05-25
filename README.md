@@ -1,7 +1,10 @@
 Nexus-Backend Service
 =====================
 
-[![Build](https://github.com/javaguru/nexus-backend/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/build.yml) [![Build](https://github.com/javaguru/nexus-backend/actions/workflows/dynamic/github-code-scanning/codeql/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/dynamic/github-code-scanning/codeql) [![Build](https://github.com/javaguru/nexus-backend/actions/workflows/maven-publish.yml/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/maven-publish.yml)
+[![Build](https://github.com/javaguru/nexus-backend/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/build.yml)
+[![Build Javadoc](https://github.com/javaguru/nexus-backend/actions/workflows/javadoc.yml/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/javadoc.yml)
+[![Build](https://github.com/javaguru/nexus-backend/actions/workflows/dynamic/github-code-scanning/codeql/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/dynamic/github-code-scanning/codeql)
+[![Build](https://github.com/javaguru/nexus-backend/actions/workflows/maven-publish.yml/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/maven-publish.yml)
 
 ## 🛡️ Advanced API Gateway with NLP-Driven Threat Detection
 
