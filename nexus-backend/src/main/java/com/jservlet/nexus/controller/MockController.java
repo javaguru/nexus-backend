@@ -439,7 +439,7 @@ public class MockController extends ApiBase {
         HashMap<String, Object> dataJoe = new HashMap<>(); // no user_id!
         dataJoe.put("name", "Joe");
         dataJoe.put("age", 25);
-        dataJoe.put("AKIAQWERTYUIOPASDF", "AKIAQWERTYUIOPASDF");
+        dataJoe.put("AKIAQWERTYUIOPASDF12", "AKIAQWERTYUIOPASDF12");
         return new ResponseEntity<>(dataJoe, HttpStatus.OK);
     }
     @Operation(summary = "Get Financial Data Joe", description = "Returns mock financial data including IBAN and Credit Card numbers.")

