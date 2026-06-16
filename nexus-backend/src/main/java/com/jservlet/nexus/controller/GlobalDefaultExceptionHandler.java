@@ -34,6 +34,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.RestClientException;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+
 import java.util.Objects;
 
 import static org.springframework.http.HttpStatus.*;
@@ -74,6 +76,12 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
         return super.getResponseEntity(METHOD_NOT_ALLOWED);// 405 or 406 NOT_ACCEPTABLE !?
     }
 
+    @ExceptionHandler(value = { NoResourceFoundException.class })
+    public ResponseEntity<?> handleNotReadableException(HttpServletRequest request, NoResourceFoundException e) {
+        logger.error("Intercepted NoResourceFoundException: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
+                e.getMessage(), request.getRemoteAddr(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+        return super.getResponseEntity(NOT_FOUND);
+    }
 
     @ExceptionHandler(value = { RequestRejectedException.class })
     public ResponseEntity<?> handleRejectedException(HttpServletRequest request, RequestRejectedException e) {
@@ -116,10 +124,13 @@ public class GlobalDefaultExceptionHandler extends ApiBase {
                     e.getMessage(), request.getRemoteAddr(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
             return null; // Spring will do nothing we manage the response!
         }
-        logger.error("Intercepted GlobalException: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
-                e.getMessage(), request.getRemoteAddr(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"));
+
+        String errorId = java.util.UUID.randomUUID().toString();
+        logger.error("Intercepted GlobalException [ErrorID: {}]: {} RemoteAddr: {} RequestURL: {} {} UserAgent: {}",
+                errorId, e.getMessage(), request.getRemoteAddr(), request.getMethod(), request.getServletPath(), request.getHeader("User-Agent"), e);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON); // Mandatory forced ContentType can be null or application/octet-stream
-        return super.getResponseEntity("500",  "ERROR", e, headers, INTERNAL_SERVER_ERROR);
+        return super.getResponseEntity("500", "ERROR", "Internal Server Error. Reference ID: " + errorId, headers, INTERNAL_SERVER_ERROR);
     }
 }

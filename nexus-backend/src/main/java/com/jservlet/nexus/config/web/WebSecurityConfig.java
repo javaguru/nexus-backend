@@ -395,7 +395,8 @@ public class WebSecurityConfig {
                 String uri = (String) request.getAttribute("jakarta.servlet.error.request_uri");
                 // WARN path /error can be reject cause can also contained the reject parameter..
                 if (message != null && uri != null) {
-                    logger.error("Rejecting request due to: {} uri: {}", requestRejectedException.getMessage(), uri);
+                    logger.error("Rejecting request due to: {} uri: {} RemoteAddr: {} UserAgent: {}", 
+                            requestRejectedException.getMessage(), uri, request.getRemoteAddr(), request.getHeader("User-Agent"));
                 }
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, message); // msg never displayed !?
             }

@@ -47,7 +47,7 @@ import java.util.Map;
  *   0.65 = Balanced WAF (tolerates noise, blocks real attacks)<br>
  *   0.85 = Permissive WAF (only blocks absolutely obvious threats)<br>
  * </p>
- * Model ONNX INT8 Nexus v10.14_2
+ * Model ONNX INT8 Nexus v10.18
  *
  * @since version 2.0.0
  */
@@ -92,6 +92,14 @@ public class RequestAnalyzerService {
      */
     @Value("${nexus.api.backend.analyzer.onnx.attack.threshold:0.65}")
     private double THRESHOLD;
+
+    /*
+     * Weight applied to the uncertainty to adjust the threshold.
+     * A higher weight makes the WAF more permissive when the model is uncertain, thus effectively reducing false positives.
+     */
+    @Value("${nexus.api.backend.analyzer.onnx.attack.tolerance:0.20}")
+    private double UNCERTAINTY_TOLERANCE_WEIGHT = 0.20;
+
 
     private final ResourceLoader resourceLoader;
 
@@ -248,18 +256,28 @@ public class RequestAnalyzerService {
             try (OrtSession.Result results = session.run(inputs)) {
                 float[][] output = (float[][]) results.get(0).getValue();
 
-                double expSafe = Math.exp(output[0][0]);
-                double expMalicious = Math.exp(output[0][1]);
-                double attackProbability = expMalicious / (expSafe + expMalicious);
+                // Calculate Softmax probabilities to normalize model outputs
+                double[] probabilities = computeSoftmax(output[0]);
+                double probSafe = probabilities[0];
+                double probMalicious = probabilities[1];
+
+                // Calculate Predictive Entropy as an uncertainty metric
+                double uncertainty = calculateEntropy(probSafe, probMalicious);
+
+                // Dynamically compute the threshold
+                // If the model is uncertain, we raise the threshold to avoid blocking a potential False Positive.
+                double dynamicThreshold = THRESHOLD + (uncertainty * UNCERTAINTY_TOLERANCE_WEIGHT);
 
                 if (logger.isDebugEnabled()) {
-                    logger.debug("WAF AI Score (Chunk {}) - Safe: {}%, Attack: {}%",
+                    logger.debug("WAF AI Score (Chunk {}) - Safe: {}%, Attack: {}%, Uncertainty: {}, Dynamic Threshold: {}",
                             chunkIndex + 1,
-                            String.format("%.2f", (1.0 - attackProbability) * 100),
-                            String.format("%.2f", attackProbability * 100));
+                            String.format("%.2f", probSafe * 100),
+                            String.format("%.2f", probMalicious * 100),
+                            String.format("%.4f", uncertainty),
+                            String.format("%.4f", dynamicThreshold));
                 }
 
-                if (attackProbability > THRESHOLD) {
+                if (probMalicious > dynamicThreshold) {
                      if (logger.isDebugEnabled()) {
                          long endTime = System.currentTimeMillis();
                          logger.debug("WAF Attack Found! Total Execution Time: {} ms", (endTime - startTime));
@@ -280,5 +298,37 @@ public class RequestAnalyzerService {
         if (session != null) session.close();
         if (env != null) env.close();
         if (tokenizer != null) tokenizer.close();
+    }
+
+    /**
+     * Computes the Softmax function for a 2-class logits array with numerical stability.
+     * @param logits Array containing raw model scores.
+     * @return Array containing probabilities summing to 1.0.
+     */
+    private double[] computeSoftmax(float[] logits) {
+        // Subtracting max logit for numerical stability to prevent overflow
+        float maxLogit = Math.max(logits[0], logits[1]);
+        double exp0 = Math.exp(logits[0] - maxLogit);
+        double exp1 = Math.exp(logits[1] - maxLogit);
+        double sum = exp0 + exp1;
+        return new double[]{ exp0 / sum, exp1 / sum };
+    }
+
+    /**
+     * Calculates the normalized Shannon Entropy for a binary probability distribution.
+     * @param p0 Probability of class 0.
+     * @param p1 Probability of class 1.
+     * @return Entropy value from 0.0 to 1.0.
+     */
+    private double calculateEntropy(double p0, double p1) {
+        // Epsilon to prevent log(0) which results in NaN
+        double epsilon = 1e-9;
+        double p0Safe = Math.clamp(p0, epsilon, 1.0 - epsilon);
+        double p1Safe = Math.clamp(p1, epsilon, 1.0 - epsilon);
+
+        // Compute Shannon entropy: H(X) = - sum( P(x) * log2(P(x)) )
+        // Using log base 2 ensures the max entropy for 2 classes is exactly 1.0
+        return - (p0Safe * (Math.log(p0Safe) / Math.log(2.0)) +
+                  p1Safe * (Math.log(p1Safe) / Math.log(2.0)));
     }
 }

@@ -68,13 +68,13 @@ import java.util.UUID;
  * Noted the valid characters are defined in RFC 7230 and RFC 3986 are checked
  * by the Apache Coyote http11 processor (see coyote Error parsing HTTP request header)<br>
  * <p>
- * Default reactive mode is STRICT mode
+ * Default reactive mode is STRICT_ONNX_AI mode, WebHttpFirewall always applied on any mode.
  * <ul>
- * <li>STRICT_ONNX_AI: WebHttpFirewall + STRICT mode + Neural Network AI Scan.</li>
- * <li>ONNX_AI: WebHttpFirewall + Neural Network AI Scan.</li>
- * <li>STRICT:  WebHttpFirewall + Rejects requests with malicious patterns.</li>
+ * <li>STRICT_ONNX_AI: StrictHttpFirewall + STRICT mode + Neural Network AI Scan.</li>
+ * <li>ONNX_AI: Neural Network AI Scan.</li>
+ * <li>STRICT:  StrictHttpFirewall: Rejects requests with malicious patterns.</li>
  * <li>PASSIVE: WebHttpFirewall + Cleans malicious patterns from request body and parameters.</li>
- * <li>UNSAFE:  WebHttpFirewall + No checks on request body.</li>
+ * <li>UNSAFE:  WebHttpFirewall + No checks on request body!</li>
  * </ul>
  * <p>
  * Activated WebFilter by only 'nexus.api.backend.filter.waf.enabled=true' in the configuration
@@ -88,11 +88,11 @@ public class WAFFilter extends ApiBase implements Filter {
     private static final String SOURCE = "INTERNAL-WAF-NEXUS-BACKEND";
 
     public enum Reactive {
-        STRICT_ONNX_AI, // WebHttpFirewall + STRICT mode + Artificial Intelligence Scan by ONNX Neural Network
-        ONNX_AI, // WebHttpFirewall + Artificial Intelligence Scan by ONNX Neural Network
-        STRICT,  // WebHttpFirewall + Rejects requests with malicious patterns.
+        STRICT_ONNX_AI, // StrictHttpFirewall + Artificial Intelligence Scan by ONNX Neural Network
+        ONNX_AI, // Artificial Intelligence Scan by ONNX Neural Network
+        STRICT,  // StrictHttpFirewall: Rejects requests with malicious patterns.
         PASSIVE, // WebHttpFirewall + Cleans malicious patterns from the request.
-        UNSAFE   // WebHttpFirewall + No checks on request body.
+        UNSAFE   // WebHttpFirewall + No checks on request body!
     }
 
     @Value("${nexus.api.backend.filter.waf.reactive.mode:STRICT_ONNX_AI}")
@@ -184,13 +184,13 @@ public class WAFFilter extends ApiBase implements Filter {
             String contextPath = processedRequest.getContextPath().toLowerCase();
 
             String pathWithoutContext = uri;
-            if (contextPath != null && !contextPath.isEmpty() && uri.startsWith(contextPath)) {
+            if (!contextPath.isEmpty() && uri.startsWith(contextPath)) {
                 pathWithoutContext = uri.substring(contextPath.length());
             }
             // Strip path parameters (e.g. ;v=1) for safe routing checks
             String cleanPath = pathWithoutContext.replaceAll(";.*", "");
 
-            boolean isRootPath = cleanPath.equals("") || cleanPath.equals("/");
+            boolean isRootPath = cleanPath.isEmpty() || cleanPath.equals("/");
 
             if (isRootPath ||
                     cleanPath.matches("^/.*\\.(html|htm|css|js|png|jpg|jpeg|ico|woff|woff2|ttf)$") || // svg| max 1 Mo!

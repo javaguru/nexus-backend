@@ -52,6 +52,12 @@ public abstract class ApiBase {
         return new ResponseEntity<>(message, httpStatus);
     }
 
+    protected final ResponseEntity<?> getResponseEntity(String code, String level, String msg, HttpHeaders headers, HttpStatus httpStatus) {
+        Message message = getMessageObject(code, level);
+        message.setMessage(msg);
+        return new ResponseEntity<>(message, headers, httpStatus);
+    }
+
     protected final ResponseEntity<?> getResponseEntity(String code, String level, Exception e, HttpStatus httpStatus) {
         Message message = getMessageObject(code, level);
         message.setMessage(e.getMessage());

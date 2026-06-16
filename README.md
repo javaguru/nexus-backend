@@ -5,6 +5,13 @@ Nexus-Backend Service
 [![Build](https://github.com/javaguru/nexus-backend/actions/workflows/dynamic/github-code-scanning/codeql/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/dynamic/github-code-scanning/codeql)
 [![Build](https://github.com/javaguru/nexus-backend/actions/workflows/maven-publish.yml/badge.svg?branch=master)](https://github.com/javaguru/nexus-backend/actions/workflows/maven-publish.yml)
 
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-green.svg)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-21%2B-orange.svg)](https://openjdk.org/)
+[![AI](https://img.shields.io/badge/AI-ONNX%20int8-lightgray.svg)](https://github.com/onnx/onnx)
+[![Tokenizers](https://img.shields.io/badge/🤗-Tokenizers-yellow.svg)](https://github.com/huggingface/tokenizers)
+[![License](https://img.shields.io/badge/GPL-3.0-blue.svg)](LICENSE)
+
+
 ## 🛡️ Advanced API Gateway with NLP-Driven Threat Detection
 
 **Nexus-Backend Service** acts as a highly secure reverse-proxy and intermediary gateway between REST clients and backend 
@@ -20,7 +27,7 @@ it utilizes a quantized Machine Learning model (DistilBERT) to understand the *s
 * **Zero-Day & Evasion Resistance:** Immune to spatial biases, complex obfuscation, and novel syntax injections.
 * **High Performance:** Operates entirely locally via JNI/ONNX (C++) within the Servlet Container, delivering sub-50ms inference times with strict native memory tracking.
 
-Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Backend REST API.
+**Nexus AI WAF Engine** ensures that only sanitized, perfectly safe traffic ever reaches your Backend REST API.
 
 **All HttpRequests methods supported:** Get, Post, Post Multipart File, Put, Put Multipart File, Patch, Patch Multipart File, Delete.
 
@@ -75,7 +82,7 @@ Nexus ensures that only sanitized, perfectly safe traffic ever reaches your Back
 
 * **Java >= 21 (Virtual Threads)** [Java](https://jdk.java.net/archive/)
 * **SpringBoot 3.3.0** [SpringBoot](https://projects.spring.io/spring-boot/)
-* **Apache Tomcat 10.0.54 & Servlet 6.0.0 (Jakarta)** [Tomcat](https://tomcat.apache.org/download-10.cgi)
+* **Apache Tomcat 10.0.55 & Servlet 6.0.0 (Jakarta)** [Tomcat](https://tomcat.apache.org/download-10.cgi)
 * **Apache Maven >= 3.9.3** [Maven](https://maven.apache.org/download.cgi)
 
 
@@ -205,7 +212,7 @@ The Config keys and values can be modified and override by external path files, 
 | nexus.backend.header.origin.remove              | false                    | false                           | Remove just origin Header                            |
 | nexus.backend.header.cookie                     | -                        | XSession=0XX1YY2ZZ3XX4YY5ZZ6XX  | Set a Cookie Request Header                          |
 | nexus.backend.header.bearer                     | -                        | eyJhbGciO                       | Activated Bearer <br/>Authorization request          |
-| nexus.backend.header.user-agent                 | JavaNexus                | Apache HttpClient/4.5           | User Agent header                                    |
+| nexus.backend.header.user-agent                 | JavaNexus                | Apache HttpClient/5.3.1         | User Agent header                                    |
 | nexus.backend.header.authorization.username     | -                        | XUsername                       | Activated Basic <br/>Authorization request           |
 | nexus.backend.header.authorization.password     | -                        | XPassword                       | "                                                    |
 | **Backend Headers**                             |                          |                                 |                                                      |
@@ -281,11 +288,13 @@ All the Http request with **Cookies, Headers, Parameters and RequestBody** will 
 
 **🛡️ The WAF Reactive mode configuration:**
 
-* **STRICT_ONNX_AI**:  STRICT HttpFirewall + Artificial Intelligence Scan by ONNX Neural Network
-* **ONNX_AI**:  Artificial Intelligence Scan by ONNX Neural Network
-* **STRICT**:  Strict HttpFirewall + JSON RequestBody
-* **PASSIVE**: Strict HttpFirewall + Clean JSON RequestBody and Parameters Map
-* **UNSAFE**:  Strict HttpFirewall + No check JSON RequestBody!
+* **STRICT_ONNX_AI**:  Strict HttpFirewall + Artificial Intelligence Scan by ONNX Neural Network.
+* **ONNX_AI**: Artificial Intelligence Scan by ONNX Neural Network.
+* **STRICT**:  Strict HttpFirewall: Rejects requests with malicious patterns.
+* **PASSIVE**: Web HttpFirewall + Clean JSON RequestBody and Parameters Map.
+* **UNSAFE**:  Web HttpFirewall + No check JSON RequestBody!
+
+Default reactive mode is **STRICT_ONNX_AI** mode, **Web HttpFirewall** always applied on any mode.
 
 **🛸 The AI Model ONNX**
 
@@ -302,14 +311,14 @@ Use **DistilBERT Model ONNX Environment** an **Open Neural Network Exchange** wi
 
 **Settings keys settings.properties:** Define file model and tokenizer
 
-| **Keys**                                           | **Default value**            | **Descriptions**   |
-|----------------------------------------------------|:-----------------------------|:-------------------|
-| nexus.api.backend.analyzer.onnx.maxLength          | 512                          | Length max Token   |   
-| nexus.api.backend.analyzer.onnx.truncation         | false                        | Truncation         |   
-| nexus.api.backend.analyzer.onnx.path.model         | model/nexus_v10_14_int8.onnx | AI Model ONNX INT8 |   
-| nexus.api.backend.analyzer.onnx.path.tokenizer     | model/tokenizer.json         | File Tokenizer     |   
-| nexus.api.backend.analyzer.onnx.cpu                | 4                            | Number of CPU      |   
-| nexus.api.backend.analyzer.onnx.attack.threshold   | 0.65                         | Attack threshold   |   
+| **Keys**                                           | **Default value**            | **Descriptions**          |
+|----------------------------------------------------|:-----------------------------|:--------------------------|
+| nexus.api.backend.analyzer.onnx.maxLength          | 512                          | Length max Token by Chunk |   
+| nexus.api.backend.analyzer.onnx.truncation         | false                        | Truncation                |   
+| nexus.api.backend.analyzer.onnx.path.model         | model/nexus_v10_18_int8.onnx | AI Model ONNX INT8        |   
+| nexus.api.backend.analyzer.onnx.path.tokenizer     | model/tokenizer.json         | File Tokenizer            |   
+| nexus.api.backend.analyzer.onnx.cpu                | 4                            | Number of CPU             |   
+| nexus.api.backend.analyzer.onnx.attack.threshold   | 0.65                         | Attack threshold          |   
 
 **⚔️ Web HttpFirewall**
 
@@ -837,7 +846,10 @@ System.out.println(new String(bytes, StandardCharsets.UTF_8));
 
 ## 🗒️ Last News
 
-* Last version **2.0.6**, released at 25/05/2026 Add maven-javadoc-plugin, Fix generic postProcess
+* Last version **2.0.9**, released at 14/06/2026 Compute logits Softmax and Compute Shannon Entropy in RequestAnalyzerService 
+* Version **2.0.8**, released at 31/05/2026 Fix WAF Filter, add scan decoded URI, fix handleAiScan validateCookies
+* Version **2.0.7**, released at 25/05/2026 Fix GitHub Workflows - Remove javadoc.yml
+* Version **2.0.6**, released at 25/05/2026 Add maven-javadoc-plugin, Fix generic postProcess
 * Version **2.0.5**, released at 23/05/2026 Fix SQL_PATTERNS, New Model nexus_v10_18_int8.onnx (Global Accuracy 98.39%)
 * Version **2.0.4**, released at 07/05/2026 Add Fine-tuned new Model nexus_v10_14_3_int8.onnx
 * Version **2.0.3**, released at 01/05/2026 Add Fine-tuned new Model nexus_v10_14_2_int8.onnx
